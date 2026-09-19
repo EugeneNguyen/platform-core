@@ -1,0 +1,17 @@
+# Local-only, per-developer isolated test-environment overrides.
+docker-compose.override*.yml
+.env
+
+# Backend
+backend/.venv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/*.egg-info/
+backend/.pytest_cache/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# OS
+.DS_Store

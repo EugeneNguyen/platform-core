@@ -1,0 +1,158 @@
+/* Tailwind removed per ADR-0012; CoreUI removed per ADR-0042. AdminLTE v4 is
+   the design system — its stylesheet (which bundles Bootstrap 5) and Font
+   Awesome are imported once in main.tsx. This file is for app-specific
+   overrides only. */
+
+/* BRAND-1 (ADR-0048) — brand marks track the active light/dark theme.
+
+   ADR-0048 Decision §2 says the `fill="currentColor"` assets "inherit whatever
+   text color already applies at their mount point". That is true of the ASSET,
+   but NOT of how it is mounted: an `<img src="...svg">` loads the SVG as an
+   independent document, so `currentColor` inside it resolves against that
+   document's own initial color (black) rather than the host page's. The
+   `<img>` element is what ADR-0048 Decision §6 / UI Design Document §3.3
+   mandate for the sidebar (AdminLTE's own `.brand-image-*` mechanism), so the
+   inheritance simply does not reach the glyph.
+
+   Measured on a live instance (BRAND-1, 2026-09-09, isolated stack): in dark
+   mode the sidebar and header marks painted BLACK against a dark background —
+   effectively invisible — while `getComputedStyle(img).color` reported
+   `rgb(110, 168, 254)`. That computed value is the element's inherited CSS
+   `color`, which the replaced <img> content never consults: reading it as
+   proof of theme-tracking is a false pass, exactly the trap the Test Plan's
+   own BRAND-1 risk row warns about.
+
+   So the theme swap is done here instead, in the host document where the
+   theme actually lives. `brightness(0)` normalises the glyph to solid black
+   regardless of what `currentColor` resolved to inside the SVG document
+   (deterministic rather than relying on that default); dark mode adds
+   `invert(1)` to render it solid white. Keyed off `data-bs-theme`, the same
+   attribute ADR-0042's color-mode toggle already owns, so it follows the theme
+   rather than hardcoding a per-theme asset pair — which is ADR-0048 Decision
+   §2's actual intent (one asset, no duplication), delivered by the mechanism
+   that works for an `<img>` mount. The SVG sources stay `currentColor`-only
+   (TC-DS-025 unaffected).
+
+   **Selector updated 2026-09-10 (ADR-0054):** the sidebar mount's class
+   changed from AdminLTE's `.sidebar-brand .brand-image-xl`/`.brand-image-xs`
+   pair (retired along with `sidebar-mini`, the state they used to cross-fade
+   on) to Tabler's `.navbar-brand .navbar-brand-image`, a single element. */
+.brand-logo img,
+.navbar-brand .navbar-brand-image {
+  filter: brightness(0);
+}
+
+[data-bs-theme="dark"] .brand-logo img,
+[data-bs-theme="dark"] .navbar-brand .navbar-brand-image {
+  filter: brightness(0) invert(1);
+}
+
+/* `btn-ghost-*` is a CoreUI-only button variant with no Bootstrap/AdminLTE
+   equivalent (ADR-0042). The `Button` atom still accepts `ghost` and still
+   emits these classes, so callers and their tests keep working, but nothing
+   styled them after the CoreUI stylesheet was dropped — a bare `.btn` with a
+   ghost color rendered as an unstyled default button.
+
+   Rather than delete a public prop (a breaking API change to a shared atom,
+   out of scope for a design-system swap) or leave it visibly broken, these
+   rules reproduce CoreUI's ghost semantics — transparent until hovered — on
+   top of Bootstrap's own theme variables, so they track the active
+   light/dark theme rather than hardcoding colors. */
+.btn-ghost-primary,
+.btn-ghost-secondary,
+.btn-ghost-success,
+.btn-ghost-danger,
+.btn-ghost-warning,
+.btn-ghost-info,
+.btn-ghost {
+  --bs-btn-bg: transparent;
+  --bs-btn-border-color: transparent;
+  --bs-btn-hover-color: #fff;
+  --bs-btn-active-color: #fff;
+  --bs-btn-disabled-bg: transparent;
+  --bs-btn-disabled-border-color: transparent;
+  --bs-btn-box-shadow: none;
+}
+
+.btn-ghost-primary {
+  --bs-btn-color: var(--bs-primary);
+  --bs-btn-hover-bg: var(--bs-primary);
+  --bs-btn-hover-border-color: var(--bs-primary);
+  --bs-btn-active-bg: var(--bs-primary);
+  --bs-btn-active-border-color: var(--bs-primary);
+  --bs-btn-disabled-color: var(--bs-primary);
+}
+
+.btn-ghost-secondary {
+  --bs-btn-color: var(--bs-secondary);
+  --bs-btn-hover-bg: var(--bs-secondary);
+  --bs-btn-hover-border-color: var(--bs-secondary);
+  --bs-btn-active-bg: var(--bs-secondary);
+  --bs-btn-active-border-color: var(--bs-secondary);
+  --bs-btn-disabled-color: var(--bs-secondary);
+}
+
+.btn-ghost-success {
+  --bs-btn-color: var(--bs-success);
+  --bs-btn-hover-bg: var(--bs-success);
+  --bs-btn-hover-border-color: var(--bs-success);
+  --bs-btn-active-bg: var(--bs-success);
+  --bs-btn-active-border-color: var(--bs-success);
+  --bs-btn-disabled-color: var(--bs-success);
+}
+
+.btn-ghost-danger {
+  --bs-btn-color: var(--bs-danger);
+  --bs-btn-hover-bg: var(--bs-danger);
+  --bs-btn-hover-border-color: var(--bs-danger);
+  --bs-btn-active-bg: var(--bs-danger);
+  --bs-btn-active-border-color: var(--bs-danger);
+  --bs-btn-disabled-color: var(--bs-danger);
+}
+
+.btn-ghost-warning {
+  --bs-btn-color: var(--bs-warning);
+  --bs-btn-hover-bg: var(--bs-warning);
+  --bs-btn-hover-border-color: var(--bs-warning);
+  --bs-btn-active-bg: var(--bs-warning);
+  --bs-btn-active-border-color: var(--bs-warning);
+  --bs-btn-disabled-color: var(--bs-warning);
+  --bs-btn-hover-color: #000;
+  --bs-btn-active-color: #000;
+}
+
+.btn-ghost-info {
+  --bs-btn-color: var(--bs-info);
+  --bs-btn-hover-bg: var(--bs-info);
+  --bs-btn-hover-border-color: var(--bs-info);
+  --bs-btn-active-bg: var(--bs-info);
+  --bs-btn-active-border-color: var(--bs-info);
+  --bs-btn-disabled-color: var(--bs-info);
+  --bs-btn-hover-color: #000;
+  --bs-btn-active-color: #000;
+}
+
+.btn-ghost {
+  --bs-btn-color: var(--bs-body-color);
+  --bs-btn-hover-bg: var(--bs-secondary-bg);
+  --bs-btn-hover-border-color: var(--bs-secondary-bg);
+  --bs-btn-hover-color: var(--bs-body-color);
+  --bs-btn-active-bg: var(--bs-secondary-bg);
+  --bs-btn-active-border-color: var(--bs-secondary-bg);
+  --bs-btn-active-color: var(--bs-body-color);
+  --bs-btn-disabled-color: var(--bs-body-color);
+}
+
+/* ADR-0054 (Tabler shell migration): `AppSidebar`'s entity-group toggles use
+   Tabler's own `.dropdown-toggle` class for its `nav-link` styling/cursor,
+   but Tabler's default `::after` disclosure caret (a small CSS
+   border-triangle) renders too small to read against the sidebar's dark
+   background, and never rotates between the open/closed state — found live
+   (2026-09-11), not from source. A real, explicit Font Awesome icon
+   (`app-sidebar.tsx`'s own `nav-arrow` element) replaces it, swapping glyph
+   on open/close the same way the pre-Tabler AdminLTE version did — this rule
+   only suppresses Tabler's own pseudo-element caret so the two don't render
+   on top of each other. */
+.navbar-vertical .nav-link.dropdown-toggle::after {
+  display: none;
+}

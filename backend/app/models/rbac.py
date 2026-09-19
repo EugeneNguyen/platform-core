@@ -1,0 +1,122 @@
+"""RBAC cluster: Role, Permission, RolePermission, RoleAssignment.
+
+Source: Database Document §3.3. See ADR-0004 for the permission-check design.
+"""
+
+import uuid
+from datetime import datetime
+
+from sqlalchemy import Boolean, ForeignKey, Index, String, UniqueConstraint, Uuid, text
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.db.base import Base, created_at_column, generate_uuid7, updated_at_column
+
+
+class Role(Base):
+    __tablename__ = "role"
+    __table_args__ = (
+        # Partial unique index, not a composite UniqueConstraint(org_id, name):
+        # Postgres treats NULL <> NULL, so a plain UNIQUE(org_id, name) would
+        # NOT stop two (NULL, 'org_admin') rows from coexisting. This index
+        # only applies WHERE org_id IS NULL, i.e. it uniquely names the 5
+        # built-in system-role templates (RBAC-4) while leaving per-org
+        # custom roles (org_id IS NOT NULL) completely unrestricted by it.
+        Index(
+            "uq_role_name_system_role",
+            "name",
+            unique=True,
+            postgresql_where=text("org_id IS NULL"),
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=generate_uuid7)
+    # nullable: null = built-in system-role template, not scoped to any org.
+    org_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("organization.id", ondelete="RESTRICT"), nullable=True, index=True
+    )
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    is_system_role: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    created_at: Mapped[datetime] = created_at_column()
+    updated_at: Mapped[datetime] = updated_at_column()
+
+
+class Permission(Base):
+    """Global catalog, no org scoping."""
+
+    __tablename__ = "permission"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=generate_uuid7)
+    code: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    resource: Mapped[str] = mapped_column(String, nullable=False)
+    action: Mapped[str] = mapped_column(String, nullable=False)
+    created_at: Mapped[datetime] = created_at_column()
+    updated_at: Mapped[datetime] = updated_at_column()
+
+
+class RolePermission(Base):
+    """Junction table. Immutable (delete-and-recreate) — created_at only, no updated_at."""
+
+    __tablename__ = "role_permission"
+    __table_args__ = (UniqueConstraint("role_id", "permission_id", name="uq_role_permission"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=generate_uuid7)
+    role_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("role.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    permission_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("permission.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    created_at: Mapped[datetime] = created_at_column()
+
+
+class RoleAssignment(Base):
+    __tablename__ = "role_assignment"
+    __table_args__ = (
+        # Catches duplicate PROJECT-SCOPED grants (project_id IS NOT NULL):
+        # two rows with equal, non-null project_id values collide as normal.
+        UniqueConstraint(
+            "actor_id", "org_id", "project_id", "role_id", name="uq_role_assignment_actor_org_project_role"
+        ),
+        # Separate partial unique index for ORG-WIDE grants (project_id IS
+        # NULL): Postgres treats NULL <> NULL, so the composite
+        # UniqueConstraint above does NOT stop two (actor_id, org_id, NULL,
+        # role_id) rows from coexisting (RBAC-3/TC-RBAC-029 — the first story
+        # to actually insert `RoleAssignment` rows through a real create
+        # route and hit this). Same `Role.uq_role_name_system_role` pattern
+        # already used in this module for the identical NULL-uniqueness gap.
+        Index(
+            "uq_role_assignment_actor_org_role_when_org_wide",
+            "actor_id",
+            "org_id",
+            "role_id",
+            unique=True,
+            postgresql_where=text("project_id IS NULL"),
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=generate_uuid7)
+    actor_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("actor.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    org_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("organization.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    # nullable: null = org-wide role, non-null = project-scoped role.
+    #
+    # `ondelete="CASCADE"` (DASH-2/ADR-0040, 2026-09-07 — was `RESTRICT`):
+    # `POST /orgs/{org_id}/projects` (ADR-0017 step 5) unconditionally grants
+    # the creator a project-scoped `test_manager` RoleAssignment, so a
+    # `RESTRICT` here meant `DELETE /projects/{id}` 409'd for literally every
+    # Project ever created through the app's own UI — the only kind a real
+    # user can create. A project-scoped RoleAssignment has no meaning once
+    # its own Project is gone (there's no "orphaned scope" state worth
+    # preserving, unlike an org-wide grant), so cascading it away on delete
+    # is the correct semantics, not just a workaround. See ADR-0040.
+    project_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("project.id", ondelete="CASCADE"), nullable=True
+    )
+    role_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("role.id", ondelete="RESTRICT"), nullable=False
+    )
+    created_at: Mapped[datetime] = created_at_column()
+    updated_at: Mapped[datetime] = updated_at_column()
