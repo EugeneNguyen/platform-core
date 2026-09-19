@@ -49,13 +49,13 @@ backfill the new permission onto already-seeded system roles.
 
 ## Docker
 
-- **Backend image has no dev dependencies** — `pip install --no-cache-dir.`
+- **Backend image has no dev dependencies** — `pip install --no-cache-dir .`
   only, no `pytest`/`httpx`. Run tests from a host venv
   (`pip install -e ".[dev]"`), not `docker exec <container> pytest`.
 - **Backend has no dev volume mount** — after any backend code edit in a
   running stack, `docker compose build backend` again.
 - **Frontend's `.dockerignore` (already present, don't delete it) excludes
-  `node_modules`/`dist`** — without it, the `dev`/`build` stages' `COPY..`
+  `node_modules`/`dist`** — without it, the `dev`/`build` stages' `COPY . .`
   silently overwrites the image's freshly-`npm ci`'d `node_modules` with
   whatever's on the host, if a host checkout happens to have one.
 

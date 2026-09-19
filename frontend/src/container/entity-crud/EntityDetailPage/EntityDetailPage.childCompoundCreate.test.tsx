@@ -19,7 +19,7 @@ import { createEntity, createViaCompoundRoute, getEntity, listEntities } from ".
  * `sprockets-no-create`, a one-to-many child with `create` withdrawn and a
  * `childCompoundCreates` entry declared instead, matching this tab's own
  * `scopeField` exactly (the shape all three live declarations have —
- * no parent picker, ever, per `test_adr79_child_compound_create.py`'s own
+ * no parent picker, ever, per `test_child_compound_create.py`'s own
  * `test_path_template_placeholder_equals_far_field`).
  */
 const schemaState = vi.hoisted(() => ({ isLoading: false }));

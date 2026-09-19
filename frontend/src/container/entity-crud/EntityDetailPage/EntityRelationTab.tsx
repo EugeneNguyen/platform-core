@@ -530,7 +530,7 @@ function EntityRelationTab({
    * scope column, not a second FK naming a link row's far side. Every live
    * declaration's placeholder equals that same scope field (no live child
    * entity needing this mechanism also needs a parent picker today — see
-   * `test_adr79_child_compound_create.py`'s own `test_path_template_placeholder_equals_far_field`),
+   * `test_child_compound_create.py`'s own `test_path_template_placeholder_equals_far_field`),
    * so this component builds no picker UI for it: `activeChildCompoundCreate`
    * below is either usable with zero extra input, or (for a future
    * declaration that does need one) intentionally not yet supported — a gap
