@@ -1,4 +1,4 @@
-""": `POST /orgs` — an existing authenticated actor mints a further Organization.
+"""`POST /orgs` — an existing authenticated actor mints a further Organization.
 
 Source: API Document §2 (`POST /orgs` contract), (organization
 bootstrap & creation flow — the "case (b)" route, sibling to `POST
@@ -160,7 +160,7 @@ _ORGANIZATION_CONFIG = CrudEntityConfig(
     scope_field=None,
     resolve_org_id=resolve_organization_org_id,
     methods=frozenset({"get", "update", "delete"}),
-    #. No `field_meta` at all: every label auto-title-cases correctly
+    # No `field_meta` at all: every label auto-title-cases correctly
     # ("default_standards_profile" -> "Default standards profile"), there's no
     # FK (the row IS the tenant), and no enum. `slug` derives `readOnly` (it's
     # summary-only — not reassignable through `PATCH`) and nothing derives as

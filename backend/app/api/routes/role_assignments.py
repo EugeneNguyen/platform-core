@@ -1,4 +1,4 @@
-""": `POST`/`GET /orgs/{org_id}/role-assignments`.
+"""`POST`/`GET /orgs/{org_id}/role-assignments`.
 
 Source: API Document §2 (route table)/§3 (`POST`/`GET
 /orgs/{org_id}/role-assignments` contracts), (role assignment

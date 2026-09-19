@@ -1,5 +1,5 @@
 """ UI slice: `GET /orgs/{org_id}/roles` — populates the role-assignment
-dropdown ( scope plan addendum, per user direction to add this rather
+dropdown (scope plan addendum, per user direction to add this rather
 than a raw `role_id` text input).
 
 Same 404-vs-403 boundary + `require_permission` pattern as every other

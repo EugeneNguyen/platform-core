@@ -1,6 +1,6 @@
 """Tenancy cluster: Organization, OrgMembership, Invite.
 
-Source: Database Document §3.1. `Invite` added ( invite &
+Source: Database Document §3.1. `Invite` added (invite &
 manage org members) — not in the original 07 ERD draft.
 """
 

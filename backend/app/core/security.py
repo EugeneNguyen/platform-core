@@ -34,7 +34,7 @@ _pwd_context = CryptContext(
 # against a nonexistent email (or a user with no `provider=local`
 # AuthIdentity) still pays the same argon2-verify cost as a real one — closes
 # the timing side-channel that would otherwise let an attacker distinguish
-# "no such user" from "wrong password" ( acceptance criteria, Test
+# "no such user" from "wrong password" (acceptance criteria, Test
 # Design §2, scope plan edge case "User-enumeration timing leak"). Computed
 # once at import time, not per-request.
 _DUMMY_PASSWORD_HASH = _pwd_context.hash("dummy-password-for-timing-safety")
@@ -125,7 +125,7 @@ def hash_refresh_token(raw_token: str) -> str:
     human password guessable via brute force — a fast cryptographic hash is
     sufficient to prevent recovering the raw token from a leaked hash, and
     running the deliberately-slow argon2 KDF here would just be needless CPU
-    cost on every refresh ( scope plan edge case "Refresh token
+    cost on every refresh (scope plan edge case "Refresh token
     storage"). The raw token is never persisted, only this hash.
     """
     return hashlib.sha256(raw_token.encode("utf-8")).hexdigest()

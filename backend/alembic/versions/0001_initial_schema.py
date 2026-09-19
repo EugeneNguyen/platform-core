@@ -143,10 +143,9 @@ def upgrade() -> None:
         ),
         sa.ForeignKeyConstraint(["user_id"], ["user.actor_id"], ondelete="RESTRICT"),
         sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint("token_hash"),
     )
     op.create_index("ix_refresh_token_user_id", "refresh_token", ["user_id"])
-    op.create_index("ix_refresh_token_token_hash", "refresh_token", ["token_hash"])
+    op.create_index("ix_refresh_token_token_hash", "refresh_token", ["token_hash"], unique=True)
 
     op.create_table(
         "login_attempt",
@@ -210,9 +209,8 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(["invited_by_actor_id"], ["actor.id"], ondelete="RESTRICT"),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("org_membership_id"),
-        sa.UniqueConstraint("token_hash"),
     )
-    op.create_index("ix_invite_token_hash", "invite", ["token_hash"])
+    op.create_index("ix_invite_token_hash", "invite", ["token_hash"], unique=True)
 
     op.create_table(
         "project",

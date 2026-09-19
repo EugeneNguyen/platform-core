@@ -1,4 +1,4 @@
-""": generic-CRUD factory routes for the RBAC cluster.
+"""Generic-CRUD factory routes for the RBAC cluster.
 
 Named `rbac_routes.py`, not `rbac.py`, to avoid colliding with
 `app/core/rbac.py` (the permission-check module), per the plan.
@@ -76,7 +76,7 @@ async def get_my_permissions(
     actor: User | AIAgent = Depends(get_current_actor),
     db: AsyncSession = Depends(get_db),
 ) -> MyPermissionsResponse | JSONResponse:
-    """: the calling actor's own resolved permission codes in `org_id`.
+    """The calling actor's own resolved permission codes in `org_id`.
 
     Same any-status-`OrgMembership` 404-vs-403 boundary as every other
     org-scoped route (`roles.py`'s `list_roles`) — no membership in `org_id`
@@ -119,9 +119,9 @@ _ROLE_CONFIG = CrudEntityConfig(
     scope_field="org_id",
     resolve_org_id=chain_resolver([]),
     global_read_fallback=True,
-    #. `name` is the only free-text column (`is_system_role` is bool).
+    # `name` is the only free-text column (`is_system_role` is bool).
     search_fields=("name",),
-    #. `org_id` is a real FK the admin surface autocompletes against
+    # `org_id` is a real FK the admin surface autocompletes against
     # (`Organization.name`) even though this entity's scope value normally
     # comes straight from the `:orgId` route param; `is_system_role` is
     # summary-only (absent from both write schemas) so it derives `readOnly`
@@ -143,7 +143,7 @@ _PERMISSION_CONFIG = CrudEntityConfig(
     resolve_org_id=chain_resolver([]), # never called — is_global_catalog handles get/list gating
     is_global_catalog=True,
     methods=frozenset({"list", "get"}),
-    #. All three columns are free-text (`code` is the dotted
+    # All three columns are free-text (`code` is the dotted
     # `resource.action` string, not an enum) and all three are what an admin
     # scanning the permission catalog actually searches by.
     search_fields=("code", "resource", "action"),

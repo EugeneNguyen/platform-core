@@ -17,7 +17,7 @@ class LoginRequest(BaseModel):
     password: str
 
 
-# /: same `slug` pattern `CreateOrgRequest` (`app/schemas/
+# Same `slug` pattern `CreateOrgRequest` (`app/schemas/
 # organizations.py`) validates — kept as a private literal here (not
 # imported from that module) to avoid a schemas-importing-schemas cycle;
 # `app/schemas/organizations.py` imports `OrgSummary` *from* this module,

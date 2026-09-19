@@ -1,4 +1,4 @@
-""": `GET /entities/{resource}/schema` — one route serving every
+"""`GET /entities/{resource}/schema` — one route serving every
 admin-CRUD entity's field shape (`crud_factory.derive_entity_schema`),
 replacing the frontend's static `entityConfigs/<entity>.ts` imports.
 

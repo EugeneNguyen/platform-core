@@ -1,11 +1,11 @@
-""": `Project` create/read/update routes.
+"""`Project` create/read/update routes.
 
 Source: API Document §3 (`POST /orgs/{org_id}/projects`, `GET`/`PATCH
 /projects/{id}` contracts), (project creation flow — bespoke
 org-path-scoped create, row-resolved read/update, `standards_profile`
 inheritance, unconditional creator `test_manager` project-scoped role).
 
-Three routes, two path shapes ( deliberate split, documented there
+Three routes, two path shapes (deliberate split, documented there
 so it doesn't read as an accidental inconsistency):
 
 - `POST /orgs/{org_id}/projects` mirrors `agents.py`/`organizations.py`
@@ -140,7 +140,7 @@ async def create_project(
     await require_permission("project.create")(request, actor)
 
     # 3. Resolve standards_profile: omitted OR explicit null -> inherit org
-    # default; any other supplied value -> use as given ( amendment,
+    # default; any other supplied value -> use as given (amendment,
     # see this function's own docstring §3).
     if payload.standards_profile is None:
         organization = await db.get(Organization, org_id)

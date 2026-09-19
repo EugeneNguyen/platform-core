@@ -1,4 +1,4 @@
-""": invite/list/accept/suspend/reactivate/revoke org members.
+"""Invite/list/accept/suspend/reactivate/revoke org members.
 
 Source: API Document §2 (`/orgs/{org_id}/members*`, `/invites/{token}/accept`
 contracts), (invite & manage org members), Database Document §3.1
@@ -90,7 +90,7 @@ _INVITE_EXPIRY_DAYS = 7
 #: page size 25 default, offset pagination — same default the generic
 # CRUD factory's list routes use.
 #
-# /: this route previously had NO ceiling at all — `page_size`
+# This route previously had NO ceiling at all — `page_size`
 # went straight into `.limit()` unclamped, so `?page_size=100000` was an
 # unbounded escape hatch. It now clamps through `crud_factory.clamp_pagination`
 # with a plain literal `100` ceiling at the call site (see `list_members`),
@@ -178,7 +178,7 @@ async def list_members(
 
     await require_permission("org_membership.read")(request, actor)
 
-    # /: clamp to the shared convention — `page` floors at 1,
+    # Clamp to the shared convention — `page` floors at 1,
     # `page_size` floors at 1 and ceilings at 100 (plain literal, no shared
     # constant, per the ADR). Previously unclamped entirely.
     page, page_size = clamp_pagination(page, page_size, 100)
@@ -233,7 +233,6 @@ async def invite_member(
       existing-user branch, no token involved) a no-op re-confirmation,
       `invite_link: null`.
     - **Existing email, already `active`/`suspended` in this org**: `409`
-      .
     - **New email**: creates `Actor`+`User` (no `AuthIdentity` yet) +
       `OrgMembership(status=invited)` + an `Invite` row, `invite_link`
       non-null.
@@ -541,7 +540,7 @@ _ORG_MEMBERSHIP_CONFIG = CrudEntityConfig(
     scope_field="org_id",
     resolve_org_id=chain_resolver([]),
     methods=frozenset({"list", "get", "update", "delete"}),
-    #. Direct org scope (the route's own `:orgId`), so no
+    # Direct org scope (the route's own `:orgId`), so no
     # scope-selector. `user_id` gets a label override but no `ref_entity`:
     # `User` is excluded from this admin surface entirely, so
     # there's nothing to autocomplete against — it stays a plain read-only

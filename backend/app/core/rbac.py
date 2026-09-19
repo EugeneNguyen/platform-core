@@ -70,7 +70,7 @@ _PERMISSION_DENIED_ERROR = {
     "field_errors": None,
 }
 
-# /: distinct from `_PERMISSION_DENIED_ERROR` above — this
+# Distinct from `_PERMISSION_DENIED_ERROR` above — this
 # fires when a `User` actor's `OrgMembership` in the path's `org_id` exists
 # but isn't `active` (i.e. `suspended`), BEFORE the `RoleAssignment` check
 # even runs, independent of whatever that (suspended) member's still-recorded
@@ -217,7 +217,7 @@ async def _resolve_agent_actor(raw_key: str, db: AsyncSession) -> AIAgent:
     Narrows via `key_prefix` first (extracted from the presented raw key,
     not trusted from anywhere else), then argon2-verifies the full raw key
     against each narrowed candidate's `key_hash` in turn — `key_prefix` is
-    NOT assumed unique ( edge case: two independently generated
+    NOT assumed unique (edge case: two independently generated
     8-char prefixes colliding is astronomically unlikely but not
     impossible), so this iterates rather than `.first()`-and-trusts.
     `revoked_at IS NULL` is enforced in the `WHERE` clause itself, not
@@ -476,7 +476,7 @@ def require_permission(code: str) -> Callable[..., Any]:
         org_id = request.path_params.get("org_id")
         project_id = request.path_params.get("project_id")
 
-        # /: suspended-member gate, checked BEFORE the
+        # Suspended-member gate, checked BEFORE the
         # RoleAssignment check below — a suspended member's still-recorded
         # RoleAssignment rows must never satisfy a permission check. Only
         # applies to a User actor with a target org_id in the path (every

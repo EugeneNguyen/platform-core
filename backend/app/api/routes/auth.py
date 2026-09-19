@@ -1,4 +1,4 @@
-""": local password login route.
+"""Local password login route.
 
 Source: API Document §2 (`POST /auth/login` contract), (auth &
 token strategy), (login rate limiting), scope plan §1/§6.
@@ -48,7 +48,7 @@ from app.schemas.auth import (
 
 router = APIRouter()
 
-# /: 5 failed attempts per (client_ip, email) per 15-minute
+# 5 failed attempts per (client_ip, email) per 15-minute
 # sliding window -> 429, until the window clears.
 _RATE_LIMIT_WINDOW_MINUTES = 15
 _RATE_LIMIT_MAX_ATTEMPTS = 5
@@ -119,7 +119,7 @@ async def signup(
     1. Acquire `pg_advisory_xact_lock(_SIGNUP_BOOTSTRAP_LOCK_KEY)` FIRST,
        inside this call's transaction, before the exists-check below — two
        concurrent first-signup calls both observing zero orgs before either
-       commits would otherwise both succeed ( rejected
+       commits would otherwise both succeed (rejected
        "rely on the slug unique constraint instead" alternative doesn't
        catch this: two concurrent bootstraps typically pick *different*
        slugs). The lock is released automatically when this transaction
@@ -623,11 +623,11 @@ async def logout(
     """Revoke the caller's current-session refresh token; idempotent.
 
     `actor` typed `User | AIAgent`, not just `User`, since `get_current_actor`
-     now resolves either — an `AIAgent` bearer credential is
+    now resolves either — an `AIAgent` bearer credential is
     structurally accepted here rather than rejected outright (no story has
     asked for an agent-specific 403 on this route) but is a no-op in
-    practice: agents never hold a `refresh_token` cookie session ( —
-    bearer-key auth only, no cookie exchange), so `raw_token` is always
+    practice: agents never hold a `refresh_token` cookie session
+    (bearer-key auth only, no cookie exchange), so `raw_token` is always
     absent and the request just falls through to the idempotent-204 path.
 
     No request body. Authenticated the same way `me()` is — a missing/

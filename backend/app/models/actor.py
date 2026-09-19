@@ -77,7 +77,7 @@ class User(Actor):
 
 
 class AIAgent(Actor):
-    """Credential fields added beyond the 07 draft,."""
+    """Credential fields added beyond the 07 draft."""
 
     __tablename__ = "ai_agent"
 
@@ -95,7 +95,7 @@ class AIAgent(Actor):
     key_prefix: Mapped[str] = mapped_column(String(8), nullable=False)
     issued_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    # /: the AC3 `AuthIdentity.last_login_at`-equivalent for
+    # The AC3 `AuthIdentity.last_login_at`-equivalent for
     # agent sessions. Nullable — NULL until the agent's first successful
     # bearer-key authentication (an agent that's been issued a key but never
     # used it yet). Updated on every successful `get_current_actor` agent-key

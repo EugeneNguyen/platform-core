@@ -22,7 +22,7 @@ from app.api.routes.organizations import _ORGANIZATION_CONFIG
 from app.api.routes.projects import _PROJECT_FACTORY_CONFIG
 from app.api.routes.rbac_routes import _PERMISSION_CONFIG, _ROLE_ASSIGNMENT_CONFIG, _ROLE_CONFIG
 
-_ALL_CONFIGS: tuple[CrudEntityConfig,...] = (
+_ALL_CONFIGS: tuple[CrudEntityConfig, ...] = (
     _ORGANIZATION_CONFIG,
     _PROJECT_FACTORY_CONFIG,
     _ORG_MEMBERSHIP_CONFIG,

@@ -1,4 +1,4 @@
-""": AI-agent credential issuance/revocation routes.
+"""AI-agent credential issuance/revocation routes.
 
 Source: API Document §2 (`POST /orgs/{org_id}/agents`,
 `POST /orgs/{org_id}/agents/{agent_id}/revoke` contracts), (AI agent

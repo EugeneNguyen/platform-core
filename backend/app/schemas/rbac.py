@@ -2,20 +2,21 @@
 plus generic-CRUD factory additions for `Role`/`Permission`.
 
 Source: API Document §2/§3 (`POST`/`GET /orgs/{org_id}/role-assignments`
-contracts, generic CRUD routes), (role assignment creation flow),
- (generic CRUD router factory), Database Document §3.3
+contracts, generic CRUD routes; role assignment creation flow;
+generic CRUD router factory), Database Document §3.3
 (`Role`/`Permission`/`RoleAssignment`). Named `app/schemas/rbac.py`, matching
 `app/models/rbac.py`'s own cluster naming — distinct from `app/core/rbac.py`
 (the permission-check module) and `app/api/routes/rbac_routes.py`/
 `role_assignments.py`/`roles.py` (this cluster's route modules).
 
-**Merge note ( x, both landed independently and collided on
-this file and on `RoleAssignment`/`Role` route ownership):** bespoke
-`POST`/`GET /orgs/{org_id}/role-assignments` is the only way to create or
-list a `RoleAssignment` — it already enforces membership/role-scope/
-project-org validation the generic factory doesn't replicate.
-factory-served `RoleAssignment` therefore registers only `get`/`update`/
-`delete` (`app/api/routes/rbac_routes.py`), never `create`/`list` — dropped
+**Merge note (the bespoke route and the generic CRUD factory both landed
+independently and collided on this file and on `RoleAssignment`/`Role`
+route ownership):** bespoke `POST`/`GET /orgs/{org_id}/role-assignments`
+is the only way to create or list a `RoleAssignment` — it already enforces
+membership/role-scope/project-org validation the generic factory doesn't
+replicate. The factory-served `RoleAssignment` therefore registers only
+`get`/`update`/`delete` (`app/api/routes/rbac_routes.py`), never
+`create`/`list` — dropped
 here are `CreateRoleAssignmentRequest`'s factory variant (`org_id` in body)
 and `RoleAssignmentListResponse`; own `CreateRoleAssignmentRequest`
 (`org_id` from the path, not the body) is the one true version. `RoleSummary`
