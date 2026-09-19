@@ -1,5 +1,5 @@
 /**
- * ADR-0025: shared route/permission-context resolution for `EntityListPage`/
+ *: shared route/permission-context resolution for `EntityListPage`/
  * `EntityFormPage` — not a page component itself (the ADR's "only two page
  * components on this surface" claim is about `EntityListPage`/
  * `EntityFormPage`; this is their shared internal plumbing).
@@ -14,23 +14,23 @@
  * bespoke fetch, reuses `entityCrud.getEntity`) and read its `org_id` off the
  * response.
  *
- * **ADR-0053:** both configs this hook needs — the routed `:entity`'s own, and
+ * **:** both configs this hook needs — the routed `:entity`'s own, and
  * `projects`' (used only to build that org-id-resolution request) — now come
  * from `useEntitySchema()` rather than the deleted `entityConfigByKey` map.
  * Two consequences callers must handle:
  *
  * - `config` is `undefined` *while the schema is in flight*, not only for an
- *   unknown `:entity`. `schemaLoading` disambiguates the two, and both page
- *   components gate on it before their own "Unknown admin entity" branch.
- *   ADR-0053 accepts this new loading state explicitly.
+ * unknown `:entity`. `schemaLoading` disambiguates the two, and both page
+ * components gate on it before their own "Unknown admin entity" branch.
+ * accepts this new loading state explicitly.
  * - `orgId` resolution on a project-scoped route is now a two-hop chain
- *   (fetch `projects`' schema -> fetch the Project row), so `usePermissions`
- *   starts one request later than it used to. No behavior changes, only
- *   timing; every consumer already tolerated an initially-`undefined` orgId.
+ * (fetch `projects`' schema -> fetch the Project row), so `usePermissions`
+ * starts one request later than it used to. No behavior changes, only
+ * timing; every consumer already tolerated an initially-`undefined` orgId.
  *
  * `label` deliberately stays on `entityLabelByKey` (frontend-static): the nav
  * label must be renderable before any fetch resolves, which is the whole
- * reason ADR-0053 kept the label half in `registry.ts`. The backend's own
+ * reason kept the label half in `registry.ts`. The backend's own
  * authoritative label is exposed separately as `schemaLabel` for a caller that
  * wants it *after* the fetch has landed — nothing consumes it today, and a
  * caller that does should fall back to `label`, never render an empty heading
@@ -46,7 +46,7 @@ import { useEntitySchema } from "./useEntitySchema";
 export interface AdminRouteContext {
   entityKey: string;
   config: EntityConfig | undefined;
-  /** Registry's nav-label for this entity (e.g. "Requirements"), or `undefined` for an unknown `:entity`. */
+  /** Registry's nav-label for this entity (e.g. "Specs"), or `undefined` for an unknown `:entity`. */
   label: string | undefined;
   /** The backend-served label for this entity — `undefined` until the schema fetch resolves. */
   schemaLabel: string | undefined;
@@ -59,7 +59,7 @@ export interface AdminRouteContext {
    * `{orgId, projectId}` — fed straight into `entityCrud`'s `:param`
    * interpolation. `orgId` is the **resolved** value (same as this
    * interface's own `orgId` field above), not the raw `:orgId` route
-   * param — [ADR-0059](../../../docs/adr/0059-project-generic-admin-create.md):
+   * param —:
    * on a project-scoped route the URL carries no `:orgId` segment at all,
    * but `ROUTE_OVERRIDES.projects.createPath` (`/orgs/:orgId/projects`)
    * still needs a real value to interpolate there too, not just on the
@@ -69,7 +69,7 @@ export interface AdminRouteContext {
 }
 
 /**
- * ADR-0060: `overrideEntityKey`, for a route with no `:entity` segment at
+ *: `overrideEntityKey`, for a route with no `:entity` segment at
  * all — `EntityListPage`/`EntityFormPage` mounted at a fixed, entity-specific
  * path (`/orgs/:orgId/projects`, `Project`'s retired-`ProjectsPage`
  * replacement) rather than the generic `/orgs/:orgId/admin/:entity`. Every

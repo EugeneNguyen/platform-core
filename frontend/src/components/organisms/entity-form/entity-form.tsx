@@ -1,5 +1,5 @@
 /**
- * `components/organisms/` (ADR-0043, superseding ADR-0023's `components/crud/`
+ * `components/organisms/` (, superseding `components/crud/`
  * location). UI Design Document §2/§3: one input per
  * `fields[]` entry, type-dispatched, React Hook Form + a Zod schema built
  * from `fields[]` (`required` -> `.min(1)`/non-optional; `enum` ->
@@ -11,16 +11,16 @@
  * value is wired via `watch`/`setValue` instead, still without `Controller`.
  *
  * `string`/`date` fields reuse `FormField` (`components/molecules/form-field/`)
- * directly, per ADR-0023's still-binding error-display convention;
+ * directly, still-binding error-display convention;
  * `enum`/`boolean`/`text` fields hand-roll the same label + input +
  * invalid-feedback shape inline (not a second convention — just not
- * promoted to their own molecule, since DS-1's own scope names `FormField`
+ * promoted to their own molecule, since own scope names `FormField`
  * as the only inhabitant there today). `text` (2026-09-15, live-manual-test
  * feedback — a nullable/unbounded `Text` column, as opposed to `string`'s
  * length-limited `String`) renders `atoms/textarea`'s `Textarea` instead of
  * a single-line input; Zod validation is identical to `string`.
  *
- * **ADR-0042 (CoreUI -> AdminLTE v4):** the markup is raw Bootstrap 5 now —
+ * ** (CoreUI -> AdminLTE v4):** the markup is raw Bootstrap 5 now —
  * `CForm` -> `<form>`, `CFormLabel` -> `<label class="form-label">`,
  * `CFormInput` -> `<input class="form-control">`, `CFormSelect` ->
  * `<select class="form-select">` (`invalid` -> the `is-invalid` class),
@@ -81,15 +81,15 @@ export interface EntityFormProps {
   /** Scope field(s) already fixed by route/scope-selector context — rendered disabled, never user-editable. */
   lockedValues?: Record<string, string>;
   /**
-   * ADR-0086: passed straight through to every `fk` field's
+   *: passed straight through to every `fk` field's
    * `FkAutocomplete`/`FkSelect` (`routeParams` for a `:param`-shaped
    * `listPath` like `release`'s; `extraParams` for a plain `?project_id=`
-   * scope like `environment`'s, ADR-0058 shape B). Both are no-ops for a ref
+   * scope like `environment`'s, shape B). Both are no-ops for a ref
    * entity whose `listPath` needs neither, so it's always safe to pass the
    * current route's `{projectId}`/`{project_id}` here — this is exactly the
    * scoping every one of this form's `fk` fields needs and none of them had
    * a way to receive before a project-scoped list ever rendered an editable
-   * `fk` field (`TestCycle`'s `release_id`/`environment_id`, the first case).
+   * `fk` field (`Round`'s `release_id`/`environment_id`, the first case).
    */
   fkRouteParams?: Record<string, string | undefined>;
   fkExtraParams?: Record<string, string | undefined>;
@@ -112,19 +112,19 @@ function isLocked(field: FieldConfig, lockedValues?: Record<string, string>): bo
 function buildFieldSchema(field: FieldConfig): ZodTypeAny {
   switch (field.type) {
     case "enum": {
-      const values = (field.values ?? []) as [string, ...string[]];
+      const values = (field.values ?? []) as [string,...string[]];
       if (values.length === 0) {
         return z.string().optional();
       }
-      return field.required ? z.enum(values) : z.union([z.enum(values), z.literal("")]).optional();
+      return field.required ? z.enum(values): z.union([z.enum(values), z.literal("")]).optional();
     }
     case "fk": {
       const uuid = z.string().uuid({ message: `${field.label} must be a valid selection.` });
-      return field.required ? uuid : z.union([uuid, z.literal("")]).optional();
+      return field.required ? uuid: z.union([uuid, z.literal("")]).optional();
     }
     case "date": {
       const required = z.string().min(1, `${field.label} is required.`);
-      return field.required ? required : z.string().optional();
+      return field.required ? required: z.string().optional();
     }
     case "boolean":
       return z.boolean().optional();
@@ -132,7 +132,7 @@ function buildFieldSchema(field: FieldConfig): ZodTypeAny {
     case "text":
     default: {
       const required = z.string().trim().min(1, `${field.label} is required.`);
-      return field.required ? required : z.string().optional();
+      return field.required ? required: z.string().optional();
     }
   }
 }
@@ -150,7 +150,7 @@ function defaultValueFor(field: FieldConfig, initialValues?: Record<string, unkn
   if (field.type === "boolean") {
     return Boolean(raw);
   }
-  return raw === null || raw === undefined ? "" : String(raw);
+  return raw === null || raw === undefined ? "": String(raw);
 }
 
 function EntityForm({
@@ -254,7 +254,7 @@ function EntityForm({
           </div>
         );
       case "fk": {
-        const FkControl = field.select ? FkSelect : FkAutocomplete;
+        const FkControl = field.select ? FkSelect: FkAutocomplete;
         return (
           <FkControl
             key={field.name}
@@ -278,7 +278,7 @@ function EntityForm({
   function renderDisplayOnly(field: FieldConfig) {
     const value = lockedValues?.[field.name] ?? initialValues?.[field.name];
     if (field.type === "fk") {
-      const FkControl = field.select ? FkSelect : FkAutocomplete;
+      const FkControl = field.select ? FkSelect: FkAutocomplete;
       return (
         <FkControl
           key={field.name}
@@ -286,7 +286,7 @@ function EntityForm({
           label={field.label}
           refEntity={field.refEntity ?? ""}
           labelField={field.labelField}
-          value={typeof value === "string" ? value : undefined}
+          value={typeof value === "string" ? value: undefined}
           onChange={() => {}}
           disabled
         />
@@ -297,14 +297,14 @@ function EntityForm({
         key={field.name}
         id={`${field.name}-readonly`}
         label={field.label}
-        defaultValue={value === null || value === undefined ? "" : String(value)}
+        defaultValue={value === null || value === undefined ? "": String(value)}
         disabled
       />
     );
   }
 
   async function handleFormSubmit(values: Record<string, unknown>) {
-    const payload: Record<string, unknown> = { ...values };
+    const payload: Record<string, unknown> = {...values };
     if (mode === "create" && lockedValues) {
       Object.assign(payload, lockedValues);
     }
@@ -331,7 +331,7 @@ function EntityForm({
             </Button>
           )}
           <Button type="submit" color="primary" disabled={isSubmitting}>
-            {isSubmitting ? "Saving..." : mode === "create" ? "Create" : "Save"}
+            {isSubmitting ? "Saving...": mode === "create" ? "Create": "Save"}
           </Button>
         </div>
       </FooterSection>

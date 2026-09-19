@@ -7,7 +7,7 @@ import { AuthProvider } from "../../../auth/AuthContext";
 import { clearAccessToken, getAccessToken } from "../../../lib/auth/tokenStore";
 
 /**
- * RBAC-1: the signup success path, exercised against the REAL
+ *: the signup success path, exercised against the REAL
  * `AuthContext.signup()` -> `lib/api/auth.signup()` -> `apiFetch()` chain
  * with a stubbed `fetch`, mirroring `tests/auth/AuthContext.test.tsx`'s own
  * convention. This proves state actually lands in the token store /
@@ -16,14 +16,14 @@ import { clearAccessToken, getAccessToken } from "../../../lib/auth/tokenStore";
  * (`Signup.test.tsx`, this directory) can't prove that wiring end to end
  * since it never re-renders with updated state after `signup()` resolves.
  *
- * Since DASH-3 (ADR-0063), `Signup.tsx`'s effect always targets `/dashboard`
+ * Since, `Signup.tsx`'s effect always targets `/dashboard`
  * first, not the org directly — so a real `Dashboard` is mounted here too,
  * and the fetch stub also answers its `GET /auth/me/orgs` call (single org
  * -> `Dashboard` auto-`navigate()`s onward to `/orgs/{id}`, proving the
  * whole chain end to end, not just the first hop).
  *
  * Deliberately its own file, not a second `describe` block in
- * `Signup.test.tsx`: that file's `vi.mock("../../../auth/AuthContext", * ...)` is hoisted to the top of its module by Vitest (same hoisting
+ * `Signup.test.tsx`: that file's `vi.mock("../../../auth/AuthContext", *...)` is hoisted to the top of its module by Vitest (same hoisting
  * Jest applies to `jest.mock`), so every static import of `AuthContext` in
  * that file — including `Signup.tsx`'s own internal `useAuth()` call, which
  * resolves against the same mocked module graph — would still be mocked

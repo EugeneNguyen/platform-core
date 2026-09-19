@@ -1,13 +1,13 @@
 /**
- * `components/molecules/` (ADR-0043) — sibling of `FkAutocomplete`
+ * `components/molecules/` — sibling of `FkAutocomplete`
  * (`components/molecules/fk-autocomplete/`), for an fk field whose ref
  * entity's own `FieldConfig.select` is `true` (2026-09-15, live-manual-test
- * feedback on REQ-5's standalone TestCase form: "test level, test type, test
+ * feedback on standalone Item form: "test level, test type, test
  * condition should be dropdown select"). Fetches the ref entity's full list
  * **once** (no debounce, no `?q=` search) and renders a plain native
  * `<select>` — appropriate only for a small, bounded catalog
- * (`TestLevel`/`TestType`/per-project `TestCondition`), never for an
- * unbounded ref entity like `Requirement`/`Project` (those stay on
+ * (`Tier`/`Category`/per-project `Criterion`), never for an
+ * unbounded ref entity like `Spec`/`Project` (those stay on
  * `FkAutocomplete`).
  *
  * Deliberately NOT a variant/prop of `FkAutocomplete` itself — the two have
@@ -48,7 +48,7 @@ function labelFor(row: EntityRow, labelField: string | undefined): string {
     return String(row.id ?? "");
   }
   const raw = row[labelField];
-  return raw === null || raw === undefined || raw === "" ? String(row.id ?? "") : String(raw);
+  return raw === null || raw === undefined || raw === "" ? String(row.id ?? ""): String(raw);
 }
 
 function FkSelect({
@@ -64,7 +64,7 @@ function FkSelect({
   routeParams,
   config,
 }: FkSelectProps) {
-  // ADR-0053: called unconditionally, mirrors `FkAutocomplete`'s own reasoning.
+  //: called unconditionally, mirrors `FkAutocomplete`'s own reasoning.
   const { config: fetchedConfig, isLoading: isSchemaLoading } = useEntitySchema(refEntity);
   const refConfig = config ?? fetchedConfig;
   const isResolvingConfig = !config && isSchemaLoading;
@@ -115,7 +115,7 @@ function FkSelect({
         onChange={(event) => onChange(event.target.value || undefined)}
       >
         <option value="">
-          {canList ? (isLoading || isResolvingConfig ? "Loading..." : "Select...") : "Search unavailable for this field"}
+          {canList ? (isLoading || isResolvingConfig ? "Loading...": "Select..."): "Search unavailable for this field"}
         </option>
         {rows.map((row) => (
           <option key={String(row.id)} value={String(row.id)}>

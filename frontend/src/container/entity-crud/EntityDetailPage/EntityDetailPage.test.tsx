@@ -7,11 +7,11 @@ import { apiFetch } from "../../../lib/api/client";
 import { getEntity } from "../../../lib/api/entityCrud";
 
 /**
- * ADR-0073 — the generic read-only detail view.
+ * — the generic read-only detail view.
  *
  * Same mocking shape as `EntityListPage.test.tsx`: the config arrives by
  * mocking `pages/admin/useEntitySchema` (the fetch hook every admin surface
- * reads its config from, ADR-0055), permissions by mocking `apiFetch`'s
+ * reads its config from, ), permissions by mocking `apiFetch`'s
  * `GET /orgs/{id}/permissions/mine` response, and the record itself by mocking
  * `getEntity`.
  *
@@ -62,14 +62,14 @@ vi.mock("../../../pages/admin/useEntitySchema", () => {
     },
   };
   const labels: Record<string, string> = { widgets: "Widgets", gadgets: "Gadgets" };
-  const resolveEntityKey = (key: string) => (key.endsWith("s") ? key : `${key}s`);
+  const resolveEntityKey = (key: string) => (key.endsWith("s") ? key: `${key}s`);
   return {
     resolveEntityKey,
     useEntitySchema: (key?: string) => {
-      const resolved = key ? resolveEntityKey(key) : undefined;
+      const resolved = key ? resolveEntityKey(key): undefined;
       return {
-        config: schemaState.isLoading || !resolved ? undefined : configs[resolved],
-        label: resolved ? labels[resolved] : undefined,
+        config: schemaState.isLoading || !resolved ? undefined: configs[resolved],
+        label: resolved ? labels[resolved]: undefined,
         isLoading: Boolean(resolved) && schemaState.isLoading,
         isError: false,
       };
@@ -89,12 +89,12 @@ vi.mock("../../../pages/admin/useEntitySchema", () => {
 
 vi.mock("../../../lib/api/entityCrud", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../../lib/api/entityCrud")>();
-  return { ...actual, getEntity: vi.fn() };
+  return {...actual, getEntity: vi.fn() };
 });
 
 vi.mock("../../../lib/api/client", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../../lib/api/client")>();
-  return { ...actual, apiFetch: vi.fn() };
+  return {...actual, apiFetch: vi.fn() };
 });
 
 const mockGetEntity = vi.mocked(getEntity);
@@ -126,22 +126,22 @@ function renderPage(entity: "widgets" | "gadgets" | "unknowns" = "widgets", id =
   );
 }
 
-describe("EntityDetailPage (ADR-0073)", () => {
+describe("EntityDetailPage ", () => {
   afterEach(() => {
     vi.clearAllMocks();
     schemaState.isLoading = false;
   });
 
   /**
-   * TC-ADMIN-059 (unit half): the detail page renders a labeled value for
+   * (unit half): the detail page renders a labeled value for
    * EVERY field the served schema declares — including the two the list table
    * hides (`showInTable: false`), which is the gap this page closes. The e2e
    * spec proves the same claim against a real entity's real schema.
    */
-  it("TC-ADMIN-059: renders every field in the served schema, including ones the list table hides", async () => {
+  it(": renders every field in the served schema, including ones the list table hides", async () => {
     mockApiFetch.mockResolvedValue({ codes: [] });
     mockGetEntity.mockImplementation(async (config: { path: string }, id: string) =>
-      config.path === "/widget-owners" ? { id, name: "Ada Owner" } : WIDGET_ROW,
+      config.path === "/widget-owners" ? { id, name: "Ada Owner" }: WIDGET_ROW,
     );
 
     renderPage();
@@ -166,15 +166,15 @@ describe("EntityDetailPage (ADR-0073)", () => {
   });
 
   /**
-   * TC-ADMIN-059 (formatting half): values render through the same shared
+   * (formatting half): values render through the same shared
    * `EntityFieldValue` molecule `EntityTable`'s cells use, so an enum is the
    * same badge, a boolean is the same badge, a date is the same format, and an
    * fk resolves to the same label — no second renderer to drift.
    */
-  it("TC-ADMIN-059: formats enum/boolean/date/fk values exactly as the list table does", async () => {
+  it(": formats enum/boolean/date/fk values exactly as the list table does", async () => {
     mockApiFetch.mockResolvedValue({ codes: [] });
     mockGetEntity.mockImplementation(async (config: { path: string }, id: string) =>
-      config.path === "/widget-owners" ? { id, name: "Ada Owner" } : WIDGET_ROW,
+      config.path === "/widget-owners" ? { id, name: "Ada Owner" }: WIDGET_ROW,
     );
 
     renderPage();
@@ -188,12 +188,12 @@ describe("EntityDetailPage (ADR-0073)", () => {
   });
 
   /**
-   * TC-ADMIN-060 (unit half): the same component, with no per-entity branch,
+   * (unit half): the same component, with no per-entity branch,
    * renders a structurally different entity correctly — a one-field global
    * catalog with no fk, no enum and no hidden field. The e2e spec covers the
    * same claim across three real entity types end to end.
    */
-  it("TC-ADMIN-060: renders a structurally different entity generically, with no per-entity code path", async () => {
+  it(": renders a structurally different entity generically, with no per-entity code path", async () => {
     mockApiFetch.mockResolvedValue({ codes: [] });
     mockGetEntity.mockResolvedValue({ id: "g-1", name: "System Testing" });
 
@@ -207,12 +207,12 @@ describe("EntityDetailPage (ADR-0073)", () => {
   });
 
   /**
-   * TC-ADMIN-064: an Edit affordance is present only when BOTH the served
+   *: an Edit affordance is present only when BOTH the served
    * schema allows `update` AND the actor holds `<resource>.update` — the same
    * absent-not-disabled posture `EntityListPage`'s New button already takes
-   * (NFR-37).
+   *.
    */
-  it("TC-ADMIN-064: hides the Edit button without <resource>.update, shows it with", async () => {
+  it(": hides the Edit button without <resource>.update, shows it with", async () => {
     mockApiFetch.mockResolvedValue({ codes: [] });
     mockGetEntity.mockResolvedValue(WIDGET_ROW);
 
@@ -232,11 +232,11 @@ describe("EntityDetailPage (ADR-0073)", () => {
   });
 
   /**
-   * TC-ADMIN-064: `gadgets` declares no `update`, so the Edit button is absent
+   *: `gadgets` declares no `update`, so the Edit button is absent
    * on structural grounds even for an actor who holds the permission — the
    * `methods` gap and the permission gap are two independent gates.
    */
-  it("TC-ADMIN-064: hides Edit for an entity whose schema omits update, even with the permission held", async () => {
+  it(": hides Edit for an entity whose schema omits update, even with the permission held", async () => {
     mockApiFetch.mockResolvedValue({ codes: [{ code: "gadget.update", project_id: null }] });
     mockGetEntity.mockResolvedValue({ id: "g-1", name: "System Testing" });
 
@@ -250,12 +250,12 @@ describe("EntityDetailPage (ADR-0073)", () => {
   });
 
   /**
-   * TC-ADMIN-064: ADR-0053's fetched-config loading state — `config` is
+   *: fetched-config loading state — `config` is
    * `undefined` for one round trip on every page load, which must not be
    * mistaken for an unknown `:entity`. Same branch both sibling page
    * components carry.
    */
-  it("TC-ADMIN-064: renders a spinner, not the unknown-entity error, while the schema is in flight", async () => {
+  it(": renders a spinner, not the unknown-entity error, while the schema is in flight", async () => {
     schemaState.isLoading = true;
     mockApiFetch.mockResolvedValue({ codes: [] });
     mockGetEntity.mockResolvedValue(WIDGET_ROW);
@@ -267,8 +267,8 @@ describe("EntityDetailPage (ADR-0073)", () => {
     expect(mockGetEntity).not.toHaveBeenCalled();
   });
 
-  /** TC-ADMIN-064: a genuinely unrecognised `:entity` still errors. */
-  it("TC-ADMIN-064: renders the unknown-entity error once the schema has settled with no config", async () => {
+  /**: a genuinely unrecognised `:entity` still errors. */
+  it(": renders the unknown-entity error once the schema has settled with no config", async () => {
     mockApiFetch.mockResolvedValue({ codes: [] });
 
     renderPage("unknowns", "x-1");
@@ -277,8 +277,8 @@ describe("EntityDetailPage (ADR-0073)", () => {
     expect(mockGetEntity).not.toHaveBeenCalled();
   });
 
-  /** TC-ADMIN-064: a failed record fetch renders an error, not a blank page. */
-  it("TC-ADMIN-064: renders an error alert when the record fetch fails", async () => {
+  /**: a failed record fetch renders an error, not a blank page. */
+  it(": renders an error alert when the record fetch fails", async () => {
     mockApiFetch.mockResolvedValue({ codes: [] });
     mockGetEntity.mockRejectedValue(new Error("boom"));
 

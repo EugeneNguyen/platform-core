@@ -1,14 +1,14 @@
 /**
- * RBAC-3 role-assignment UI (ADR-0021), mounted inside `OrgHome.tsx`.
+ * role-assignment UI, mounted inside `OrgHome.tsx`.
  *
  * Split out as its own component (rather than growing `OrgHome.tsx` further
- * inline, the way PROJ-1's Project section did) — a second independent
+ * inline, the way Project section did) — a second independent
  * list+modal slice belongs in its own file with its own clear boundary:
  * what it does (list + grant RoleAssignments for one org), how it's used
  * (`<RoleAssignmentsPanel orgId={orgId} />`), what it depends on
  * (`lib/api/roleAssignments`). `OrgHome.tsx` stays about Projects.
  *
- * Unlike PROJ-1's Project list (no `GET` route existed in that story's
+ * Unlike Project list (no `GET` route existed in that story's
  * scope, so it's local-state-only), `GET /orgs/{org_id}/role-assignments`
  * and `GET /orgs/{org_id}/roles` both exist — this panel fetches real data
  * on mount rather than only tracking what it created this session, and
@@ -19,15 +19,15 @@
  * `role_id` is a `CFormSelect` populated from `listRoles` (per-org, this
  * story's explicit UI decision — no raw UUID paste for the role). `actor_id`
  * stays a raw UUID text input: no member/agent-listing endpoint exists yet
- * (RBAC-2/an agent-list route are both separate, unbuilt scope) — the field
+ * — the field
  * label and helper text say so plainly rather than pretending otherwise.
  *
- * **DS-2/ADR-0041 (2026-09-07):** the list, previously an unpaginated
+ * **(2026-09-07):** the list, previously an unpaginated
  * `CTable` (the one table-backing screen in this codebase with no
  * pagination at all), now uses the shared `container/Table.tsx` in server
  * mode, against `listRoleAssignments`'s newly-paginated route.
  *
- * **ADR-0042 (2026-09-08):** originally built with CoreUI (ADR-0012); the
+ * ** (2026-09-08):** originally built with CoreUI; the
  * `@coreui/react` components are now raw Bootstrap 5 / AdminLTE v4 markup.
  * The RHF+Zod wiring (including the `CFormSelect` → `<select>` `register()`
  * spread) and every behavior above are unchanged — only elements and classes
@@ -119,7 +119,7 @@ function RoleAssignmentsPanel({ orgId }: RoleAssignmentsPanelProps) {
         setTotal(assignmentResponse.total);
         setRoles(roleRows);
       } catch (err) {
-        setLoadError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
+        setLoadError(err instanceof ApiError ? err.message: "Something went wrong. Please try again.");
       } finally {
         setLoading(false);
       }
@@ -151,7 +151,7 @@ function RoleAssignmentsPanel({ orgId }: RoleAssignmentsPanelProps) {
       await createRoleAssignment(orgId, {
         actor_id: values.actorId,
         role_id: values.roleId,
-        ...(values.scope === "project-scoped" && values.projectId ? { project_id: values.projectId } : {}),
+        ...(values.scope === "project-scoped" && values.projectId ? { project_id: values.projectId }: {}),
       });
       // Re-fetch (rather than locally append) so `total`/the page-size
       // selector's pagination stay correct — a locally-appended row would
@@ -190,17 +190,17 @@ function RoleAssignmentsPanel({ orgId }: RoleAssignmentsPanelProps) {
         </div>
 
         {loading ? (
-          // `CSpinner` carried `role="status"` implicitly (ADR-0042 §4.5.5) — a raw div must say so.
+          // `CSpinner` carried `role="status"` implicitly — a raw div must say so.
           <div className="spinner-border spinner-border-sm" role="status">
             <span className="visually-hidden">Loading...</span>
           </div>
-        ) : loadError ? (
+        ): loadError ? (
           <div className="alert alert-danger" role="alert">
             {loadError}
           </div>
-        ) : assignments.length === 0 ? (
+        ): assignments.length === 0 ? (
           <p className="text-body-secondary mb-0">No role assignments yet.</p>
-        ) : (
+        ): (
           <Table
             mode="server"
             items={assignments}
@@ -225,7 +225,7 @@ function RoleAssignmentsPanel({ orgId }: RoleAssignmentsPanelProps) {
                 <td>
                   {assignment.project_id ? (
                     <span className="font-monospace small">Project {assignment.project_id}</span>
-                  ) : (
+                  ): (
                     "Org-wide"
                   )}
                 </td>
@@ -245,7 +245,7 @@ function RoleAssignmentsPanel({ orgId }: RoleAssignmentsPanelProps) {
               <input
                 id="actorId"
                 type="text"
-                className={`form-control${errors.actorId ? " is-invalid" : ""}`}
+                className={`form-control${errors.actorId ? " is-invalid": ""}`}
                 placeholder="00000000-0000-0000-0000-000000000000"
                 {...register("actorId")}
               />
@@ -265,14 +265,14 @@ function RoleAssignmentsPanel({ orgId }: RoleAssignmentsPanelProps) {
               </label>
               <select
                 id="roleId"
-                className={`form-select${errors.roleId ? " is-invalid" : ""}`}
+                className={`form-select${errors.roleId ? " is-invalid": ""}`}
                 {...register("roleId")}
               >
                 <option value="">Select a role…</option>
                 {roles.map((role) => (
                   <option key={role.id} value={role.id}>
                     {role.name}
-                    {role.is_system_role ? "" : " (custom)"}
+                    {role.is_system_role ? "": " (custom)"}
                   </option>
                 ))}
               </select>
@@ -299,7 +299,7 @@ function RoleAssignmentsPanel({ orgId }: RoleAssignmentsPanelProps) {
                 <input
                   id="projectId"
                   type="text"
-                  className={`form-control${errors.projectId ? " is-invalid" : ""}`}
+                  className={`form-control${errors.projectId ? " is-invalid": ""}`}
                   placeholder="00000000-0000-0000-0000-000000000000"
                   {...register("projectId")}
                 />
@@ -320,7 +320,7 @@ function RoleAssignmentsPanel({ orgId }: RoleAssignmentsPanelProps) {
               Cancel
             </button>
             <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
-              {isSubmitting ? "Granting..." : "Grant"}
+              {isSubmitting ? "Granting...": "Grant"}
             </button>
           </Modal.Footer>
         </form>

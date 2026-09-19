@@ -1,5 +1,5 @@
 /**
- * `Modal` molecule — hand-rolled Bootstrap 5 modal + backdrop (ADR-0042),
+ * `Modal` molecule — hand-rolled Bootstrap 5 modal + backdrop,
  * replacing `CModal`/`CModalHeader`/`CModalTitle`. Promoted from two
  * near-identical private copies that had drifted slightly apart:
  * `EntityListPage`'s own `AdminModal` (auto-wrapped `children` in
@@ -16,14 +16,14 @@
  *
  * Deliberate parity choices, unchanged from both prior copies:
  * - **Renders nothing at all when closed** — `queryByText(...)`-is-null
- *   assertions and e2e `.modal-content` locators depend on the closed modal
- *   contributing no DOM, matching `CModal`'s unmount behavior.
+ * assertions and e2e `.modal-content` locators depend on the closed modal
+ * contributing no DOM, matching `CModal`'s unmount behavior.
  * - **ESC closes**, matching `CModal`'s own default `keyboard` behavior. The
- *   listener is bound only while open and removed on close/unmount.
+ * listener is bound only while open and removed on close/unmount.
  * - The header's close `<button class="btn-close" aria-label="Close">` is
- *   kept — `CModalHeader` rendered one by default.
+ * kept — `CModalHeader` rendered one by default.
  *
- * Deliberate gaps, accepted in ADR-0042 rather than reimplemented: no focus
+ * Deliberate gaps, accepted in rather than reimplemented: no focus
  * trap, no focus restore on close, no backdrop-click-to-close.
  *
  * `Modal.Body`/`Modal.Footer` are the reusable `.modal-body`/`.modal-footer`
@@ -34,8 +34,8 @@
  *
  * ```tsx
  * <Modal visible title="..." onClose={...}>
- *   <Modal.Body>...</Modal.Body>
- *   <Modal.Footer>...</Modal.Footer>
+ * <Modal.Body>...</Modal.Body>
+ * <Modal.Footer>...</Modal.Footer>
  * </Modal>
  * ```
  */

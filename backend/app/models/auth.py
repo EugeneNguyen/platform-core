@@ -2,7 +2,7 @@
 
 Source: Database Document §3.2. Only `provider="local"` has working auth
 logic anywhere in this scaffold; other providers are schema-ready, unimplemented.
-`LoginAttempt` backs the AUTH-1/ADR-0011 login throttle (NFR-11).
+`LoginAttempt` backs the / login throttle.
 """
 
 import enum
@@ -45,7 +45,7 @@ class AuthIdentity(Base):
 
 
 class RefreshToken(Base):
-    """Not in the 07 ERD — added per ADR-0003 for revocable sessions."""
+    """Not in the 07 ERD — added for revocable sessions."""
 
     __tablename__ = "refresh_token"
 
@@ -54,8 +54,8 @@ class RefreshToken(Base):
     user_id: Mapped[uuid.UUID] = mapped_column(
         Uuid(as_uuid=True), ForeignKey("user.actor_id", ondelete="RESTRICT"), nullable=False, index=True
     )
-    # Unique index (ADR-0013): AUTH-2's `POST /auth/refresh` makes
-    # `WHERE token_hash = ?` a hot-path lookup on every renewal — AUTH-1
+    # Unique index: `POST /auth/refresh` makes
+    # `WHERE token_hash = ?` a hot-path lookup on every renewal —
     # never indexed this since nothing looked it up by value. Uniqueness
     # also backs the single-use rotation invariant at the DB level.
     token_hash: Mapped[str] = mapped_column(String, nullable=False, unique=True, index=True)
@@ -68,7 +68,7 @@ class RefreshToken(Base):
 
 
 class LoginAttempt(Base):
-    """Not in the 07 ERD — added per ADR-0011 for the login throttle (NFR-11).
+    """Not in the 07 ERD — added for the login throttle.
 
     Append-only: no `updated_at`, no update/delete API path (same
     immutability pattern as `TestLog`) — the throttle query is "count

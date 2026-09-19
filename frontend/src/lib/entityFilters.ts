@@ -1,5 +1,5 @@
 /**
- * ADR-0072 (ENTITY-FILTER-1) — the draft-condition model behind `EntityTable`'s
+ * (ENTITY-FILTER-1) — the draft-condition model behind `EntityTable`'s
  * "Filter" header button and its `FilterModal`.
  *
  * This module is the *pure* half of the feature: no React, no DOM, no network,
@@ -37,7 +37,7 @@ export interface FilterCondition {
  * The fields this entity's list route will actually honour as filters.
  *
  * Source of truth is the backend-served `filterFields` list
- * (`GET /entities/{resource}/schema`, derived per ADR-0072 from the entity's
+ * (`GET /entities/{resource}/schema`, derived from the entity's
  * own schema rather than a hand-kept tuple) — intersected with `config.fields`
  * so the modal can only ever offer a field it also has a label, type and (for
  * an enum) a value list for. Order follows `config.fields`, i.e. the same
@@ -118,7 +118,7 @@ export function updateCondition(
     if (patch.field !== undefined && patch.field !== condition.field) {
       return { field: patch.field, value: "" };
     }
-    return { ...condition, ...patch };
+    return {...condition,...patch };
   });
 }
 
@@ -162,7 +162,7 @@ export function conditionsFromFilters(
  * How many filters are currently applied — the number painted in the Filter
  * button's own badge.
  *
- * This badge is load-bearing, not decoration. ADR-0072 deliberately does *not*
+ * This badge is load-bearing, not decoration. deliberately does *not*
  * persist filters (unlike the sibling column-preferences feature), and the
  * reason is exactly what this count exists to mitigate: a hidden column is
  * visible as an absence in a row of headers, but an active filter is invisible

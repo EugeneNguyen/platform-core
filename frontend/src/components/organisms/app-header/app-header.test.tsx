@@ -52,14 +52,14 @@ describe("AppHeader", () => {
     localStorage.clear();
   });
 
-  // TC-DS-026 (BRAND-1, ADR-0048 Decision §7 — revised 2026-09-09, direct CTO
-  // instruction). BRAND-1 originally put the small mark here; that was
+  // (, Decision §7 — revised 2026-09-09, direct CTO
+  // instruction). originally put the small mark here; that was
   // reversed the same day after a manual look at the running app — the
   // sidebar (always visible) is now the single source of the brand mark, and
   // the header carries none at all. This asserts the negative explicitly
   // (not just "no crash") so a future re-add doesn't silently duplicate the
   // sidebar's own mark without anyone noticing.
-  it("TC-DS-026: renders no brand mark/link (sidebar is the sole brand mount) and a Log out button", () => {
+  it(": renders no brand mark/link (sidebar is the sole brand mount) and a Log out button", () => {
     renderHeader();
 
     expect(screen.queryByRole("link", { name: /platform-core home/i })).toBeNull();
@@ -90,12 +90,12 @@ describe("AppHeader", () => {
     expect(onToggleSidebar).toHaveBeenCalledTimes(1);
   });
 
-  // ADR-0054: the header root moved from AdminLTE's `.app-header navbar
+  //: the header root moved from AdminLTE's `.app-header navbar
   // navbar-expand` to Tabler's own `header.navbar.navbar-expand-md
   // d-print-none` — no `data-lte-toggle` attribute at all now (this
   // button's state is fully React-owned; not setting a `data-bs-toggle`
   // attribute is what keeps Tabler's own loaded JS from also reacting to
-  // this click, per ADR-0054's own duplicate-listener note).
+  // this click, own duplicate-listener note).
   it("renders the Tabler header shell contract", () => {
     const { container } = renderHeader();
 
@@ -109,7 +109,7 @@ describe("AppHeader", () => {
     expect(screen.getByTestId("sidebar-toggler")).toHaveClass("navbar-toggler");
   });
 
-  // FR-SHELL-4 / TC-SHELL-012's unit-level half. ADR-0054 renames the
+  // FR- / unit-level half. renames the
   // storage key a second time (AdminLTE's `lte-theme` → Tabler's own
   // documented `tabler-theme` convention); the `data-bs-theme` attribute
   // itself is unchanged — both AdminLTE and Tabler are Bootstrap-5-based and
@@ -137,7 +137,7 @@ describe("AppHeader", () => {
   // one-sided — `applyColorMode` writes "dark" only when the media query
   // matches and otherwise writes the raw mode through, so a non-dark system
   // yields the literal `data-bs-theme="auto"` rather than "light". Unchanged
-  // by ADR-0054's rename, which only retargets the storage key name.
+  // rename, which only retargets the storage key name.
   // jsdom's matchMedia stub (tests/setup.ts) always reports no match.
   it("keeps 'auto' as a distinct stored choice resolved via prefers-color-scheme", () => {
     renderHeader();

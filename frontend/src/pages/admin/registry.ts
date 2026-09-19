@@ -37,7 +37,7 @@ export const orgScopedEntities: RegistryEntry[] = [
 /** `/projects/:projectId/admin/:entity` — project-scoped entities. Empty until a downstream app adds one. */
 export const projectScopedEntities: RegistryEntry[] = [];
 
-export const allEntities: RegistryEntry[] = [...orgScopedEntities, ...projectScopedEntities];
+export const allEntities: RegistryEntry[] = [...orgScopedEntities,...projectScopedEntities];
 
 /**
  * Flat `:entity` key -> nav-label map, so page components render the same

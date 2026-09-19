@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { Card } from "./card";
 
 describe("Card", () => {
-  it("renders the bare .card wrapper with no auto .card-body", () => {
+  it("renders the bare.card wrapper with no auto.card-body", () => {
     const { container } = render(<Card>plain content</Card>);
 
     expect(container.querySelector(".card")).toBeInTheDocument();
@@ -11,7 +11,7 @@ describe("Card", () => {
     expect(screen.getByText("plain content")).toBeInTheDocument();
   });
 
-  it("appends className to the outer .card", () => {
+  it("appends className to the outer.card", () => {
     const { container } = render(<Card className="h-100">content</Card>);
 
     expect(container.querySelector(".card")).toHaveClass("h-100");

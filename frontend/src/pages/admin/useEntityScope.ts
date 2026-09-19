@@ -1,45 +1,45 @@
 /**
- * ADR-0025 / UI Design Document §4: resolves the concrete `{field, value}`
+ * / UI Design Document §4: resolves the concrete `{field, value}`
  * scope pair `EntityListPage`/`EntityFormPage` need before they can call
  * `listEntities`/`createEntity`, across all three scope shapes plus this
  * story's two documented extensions (`entityConfigs/types.ts`'s module doc
  * comment):
  *
  * - No `scopeField` at all (global catalog, §4 shape A) — always ready,
- *   nothing to resolve.
+ * nothing to resolve.
  * - Plain `scopeField` of exactly `"project_id"`/`"org_id"` matching a route
- *   param already in context (§4 shape B, the *narrow* set of entities
- *   where that's actually true — `Environment`/`TestPlan`/`Requirement`/
- *   `TestSuite`/`Role`/`RoleAssignment`/`Permission`/`OrgMembership`, plus
- *   `Project` itself on its two org-scoped routes since ADR-0060) — ready
- *   immediately, value taken straight from the route. **Checked before
- *   `scopeResolution` below**, not after (ADR-0060 fix — see that ADR) —
- *   an entity can have both a `scopeResolution` (for one of its routes)
- *   and a route context where the plain field is already present (for
- *   another of its routes); the fast, no-fetch path must win whenever it
- *   genuinely can, or a `scopeResolution` declared for one route silently
- *   disables scope resolution entirely on the entity's other routes.
+ * param already in context (§4 shape B, the *narrow* set of entities
+ * where that's actually true — `Environment`/`Batch`/`Spec`/
+ * `Collection`/`Role`/`RoleAssignment`/`Permission`/`OrgMembership`, plus
+ * `Project` itself on its two org-scoped routes since ) — ready
+ * immediately, value taken straight from the route. **Checked before
+ * `scopeResolution` below**, not after —
+ * an entity can have both a `scopeResolution` (for one of its routes)
+ * and a route context where the plain field is already present (for
+ * another of its routes); the fast, no-fetch path must win whenever it
+ * genuinely can, or a `scopeResolution` declared for one route silently
+ * disables scope resolution entirely on the entity's other routes.
  * - `scopeResolution` set (`Project` only, on its project-scoped
- *   generic-admin route specifically — the *only* remaining route where
- *   `org_id` isn't already directly available) — fetched automatically, no
- *   user interaction; "ready" once the fetch resolves.
+ * generic-admin route specifically — the *only* remaining route where
+ * `org_id` isn't already directly available) — fetched automatically, no
+ * user interaction; "ready" once the fetch resolves.
  * - `scopeSelector` set (§4 shape C, plus this story's generalization of it
- *   to every "plain" entity whose real `scope_field` isn't `project_id`/
- *   `org_id` — see e.g. `entityConfigs/test-condition.ts`) — "ready" only
- *   once the caller has picked something via `ScopeSelector`.
+ * to every "plain" entity whose real `scope_field` isn't `project_id`/
+ * `org_id` — see e.g. `entityConfigs/criterion.ts`) — "ready" only
+ * once the caller has picked something via `ScopeSelector`.
  *
- * **ADR-0053:** the `scopeResolution` branch's "via" config (the entity whose
+ * **:** the `scopeResolution` branch's "via" config (the entity whose
  * row carries the value we need — `Project`, today's only case) is fetched via
  * `useEntitySchema` instead of the deleted `entityConfigByKey` map. Two things
  * to keep in mind when editing this file:
  *
  * - `useEntitySchema` is a **hook**, so it is called unconditionally at the
- *   top, before any of the early `return`s below. It tolerates an `undefined`
- *   key (no fetch, no config) — that is what makes the unconditional call
- *   legal for the entities that have no `scopeResolution` at all.
+ * top, before any of the early `return`s below. It tolerates an `undefined`
+ * key (no fetch, no config) — that is what makes the unconditional call
+ * legal for the entities that have no `scopeResolution` at all.
  * - `scopeResolution.viaEntity` is **singular** (`"project"`), while schema
- *   keys are the plural route slugs; `useEntitySchema`'s own
- *   `resolveEntityKey()` does that mapping, so it is passed through as-is.
+ * keys are the plural route slugs; `useEntitySchema`'s own
+ * `resolveEntityKey()` does that mapping, so it is passed through as-is.
  *
  * Behavior is unchanged: while the via-entity's schema is in flight the
  * resolution query stays disabled, so `scope.ready` is `false` — exactly the
@@ -68,7 +68,7 @@ export function useEntityScope(
   // Unconditional hook call — see this file's own docstring. `undefined` key
   // (no `scopeResolution`) means no fetch and no config, not a skipped hook.
   const { config: viaConfig } = useEntitySchema(scopeResolution?.viaEntity);
-  const routeParamValue = scopeResolution ? routeParams[scopeResolution.fromRouteParam] : undefined;
+  const routeParamValue = scopeResolution ? routeParams[scopeResolution.fromRouteParam]: undefined;
 
   const resolutionQuery = useQuery({
     queryKey: ["entity-scope-resolution", config?.resource, routeParamValue],
@@ -84,7 +84,7 @@ export function useEntityScope(
     return { scope: { ready: true }, onScopeSelectorResolved };
   }
 
-  // ADR-0060: this direct-from-route-params check now runs BEFORE
+  //: this direct-from-route-params check now runs BEFORE
   // `scopeResolution` below, not after — see this file's own module
   // docstring for why. A route that already carries `:orgId`/`:projectId`
   // directly should never pay for the extra fetch, even when the entity's
@@ -93,11 +93,11 @@ export function useEntityScope(
   // it doesn't stop applying just because another of Project's routes
   // doesn't need it).
   //
-  // ADR-0084: `scopeArmsOf` (not a bare `config.scopeField === "project_id"`
+  //: `scopeArmsOf` (not a bare `config.scopeField === "project_id"`
   // string check) so this fast path also fires when `project_id`/`org_id` is
-  // one arm of a branching `scopeField` tuple (`TestCycle`'s new
-  // `(test_plan_id, project_id)` shape) — the same array-vs-string gap
-  // ADR-0078's own `pickerScopeParams` fix already closed for a different
+  // one arm of a branching `scopeField` tuple (`Round`'s new
+  // `(batch_id, project_id)` shape) — the same array-vs-string gap
+  // own `pickerScopeParams` fix already closed for a different
   // call site; this one was missed at the time and left the picker's
   // "By project" tab requiring a manual pick instead of auto-resolving.
   const arms = scopeArmsOf(config);
@@ -114,7 +114,7 @@ export function useEntityScope(
     }
     const value = resolutionQuery.data[scopeResolution.viaField];
     return {
-      scope: { ready: true, field: scopeResolution.viaField === "org_id" ? "org_id" : (config.scopeField as string), value: String(value) },
+      scope: { ready: true, field: scopeResolution.viaField === "org_id" ? "org_id": (config.scopeField as string), value: String(value) },
       onScopeSelectorResolved,
     };
   }

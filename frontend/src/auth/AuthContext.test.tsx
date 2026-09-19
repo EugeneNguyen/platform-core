@@ -108,7 +108,7 @@ describe("AuthProvider boot-time silent refresh", () => {
       const originalLocation = window.location;
       Object.defineProperty(window, "location", {
         configurable: true,
-        value: { ...originalLocation, assign: assignMock },
+        value: {...originalLocation, assign: assignMock },
       });
 
       renderProvider();
@@ -132,9 +132,9 @@ describe("AuthProvider boot-time silent refresh", () => {
 });
 
 /**
- * AUTH-3 (ADR-0014): `logout()`'s client-side cleanup must run unconditionally,
+ *: `logout()`'s client-side cleanup must run unconditionally,
  * even when the underlying `POST /auth/logout` API call rejects outright
- * (network failure) — that cleanup is the actual security property AUTH-3
+ * (network failure) — that cleanup is the actual security property
  * delivers for a shared/public machine, and must not be held hostage to
  * network reachability.
  */

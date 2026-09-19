@@ -1,5 +1,5 @@
 /**
- * `components/molecules/` (ADR-0043, superseding ADR-0023's `components/crud/`
+ * `components/molecules/` (, superseding `components/crud/`
  * location): a generic entity-CRUD widget, not a markup-duplication-driven
  * composition primitive — this is driven entirely by an `EntityConfig`'s
  * shape, tiered here on composition complexity (one control unit) same as
@@ -9,7 +9,7 @@
  * matches, `?q=<term>` against the referenced entity's own list route;
  * selecting an option stores its `id`, displays its `labelField`.
  *
- * **ADR-0042 (CoreUI -> AdminLTE v4):** raw Bootstrap 5 markup now —
+ * ** (CoreUI -> AdminLTE v4):** raw Bootstrap 5 markup now —
  * `CFormLabel`/`CFormInput` -> `<label class="form-label">` + `<input
  * class="form-control">` (`invalid` -> the `is-invalid` class), `CSpinner` ->
  * `<div class="spinner-border spinner-border-sm">`, `CFormFeedback invalid`
@@ -37,13 +37,13 @@
  * `<button>`, so it stays keyboard-reachable and Enter/Space-activatable.
  *
  * `refEntity` is an entity key, not necessarily an entity with its own admin
- * page — only its `list` method needs to exist (ADR-0025). If the resolved
- * config's `methods` doesn't include `"list"` at all (`TestCase` today — see
- * `entityConfigs/test-case.ts`'s own docstring), this renders a plain
+ * page — only its `list` method needs to exist. If the resolved
+ * config's `methods` doesn't include `"list"` at all (`Item` today — see
+ * `entityConfigs/item.ts`'s own docstring), this renders a plain
  * disabled input explaining why, rather than firing a request against a
  * route that doesn't exist.
  *
- * **ADR-0053:** that resolution is `useEntitySchema(refEntity)` now — the
+ * **:** that resolution is `useEntitySchema(refEntity)` now — the
  * static `entityConfigByKey` map it used to index no longer exists. Two
  * consequences worth knowing: the hook is called **unconditionally**, even
  * when the optional `config` prop below is supplied (Rules of Hooks; the prop
@@ -72,7 +72,7 @@ export interface FkAutocompleteProps {
   /** Extra fixed query params merged into the ref entity's own list call (e.g. an already-known `project_id`). */
   extraParams?: Record<string, string | undefined>;
   /**
-   * Route params for interpolating a `listPath` placeholder (PLAN-3).
+   * Route params for interpolating a `listPath` placeholder.
    * Only `Release` has one today (`/projects/:projectId/releases`,
    * `entityConfigs/release.ts`) — every other config's `listPath` is a literal,
    * so omitting this (the default) is correct for all of them. Without it a
@@ -80,15 +80,15 @@ export interface FkAutocompleteProps {
    */
   routeParams?: Record<string, string | undefined>;
   /**
-   * EXEC-1 (ADR-0034): use this `EntityConfig` instead of the one fetched for
+   *: use this `EntityConfig` instead of the one fetched for
    * `refEntity`. Additive and optional — every existing call site omits it and
-   * keeps the fetched config (pre-ADR-0053: the registry lookup) unchanged.
+   * keeps the fetched config unchanged.
    *
-   * The one real use today is `TestCycleDetail`'s "Record Result" picker,
-   * which must list from `GET /test-plans/{id}/test-cases` (PLAN-1's coverage
-   * query) rather than a project-wide `TestCase` list. The
-   * `test-case` config deliberately has **no `list` method at all** — there is
-   * no `GET /test-cases` route (`entityConfigs/test-case.ts`) — so without an
+   * The one real use today is `RoundDetail`'s "Record Result" picker,
+   * which must list from `GET /batchs/{id}/items` ( coverage
+   * query) rather than a project-wide `Item` list. The
+   * `item` config deliberately has **no `list` method at all** — there is
+   * no `GET /items` route (`entityConfigs/item.ts`) — so without an
    * override this widget would correctly render its disabled "search
    * unavailable" state and the scoped picker would be impossible to express.
    *
@@ -98,7 +98,7 @@ export interface FkAutocompleteProps {
    * one field in isolation would leave those two reading the registry's
    * config and the search reading another — two sources of truth for one
    * widget. Callers derive the override from the registry config with a
-   * spread, the same `{...config, ...}` derivation `TestPlanDetail`'s own
+   * spread, the same `{...config,...}` derivation `BatchDetail`'s own
    * `editConfig`/`criteriaConfig` already use.
    */
   config?: EntityConfig;
@@ -109,7 +109,7 @@ function labelFor(row: EntityRow, labelField: string | undefined): string {
     return String(row.id ?? "");
   }
   const raw = row[labelField];
-  return raw === null || raw === undefined || raw === "" ? String(row.id ?? "") : String(raw);
+  return raw === null || raw === undefined || raw === "" ? String(row.id ?? ""): String(raw);
 }
 
 function FkAutocomplete({
@@ -125,9 +125,9 @@ function FkAutocomplete({
   routeParams,
   config,
 }: FkAutocompleteProps) {
-  // ADR-0053: called unconditionally, even when the caller supplied `config` —
+  //: called unconditionally, even when the caller supplied `config` —
   // a hook can't sit behind a prop check. An explicit `config` still wins
-  // (EXEC-1/ADR-0034); with it omitted this is the fetched equivalent of the
+  //; with it omitted this is the fetched equivalent of the
   // original `entityConfigByKey[refEntity]` lookup.
   const { config: fetchedConfig, isLoading: isSchemaLoading } = useEntitySchema(refEntity);
   const refConfig = config ?? fetchedConfig;
@@ -214,13 +214,13 @@ function FkAutocomplete({
         {label}
       </label>
       <input
-        className={`form-control${error ? " is-invalid" : ""}`}
+        className={`form-control${error ? " is-invalid": ""}`}
         id={id}
         type="text"
         value={query}
         disabled={disabled || !canSearch}
         placeholder={
-          canSearch ? "Type to search..." : isResolvingConfig ? "Loading..." : "Search unavailable for this field"
+          canSearch ? "Type to search...": isResolvingConfig ? "Loading...": "Search unavailable for this field"
         }
         onChange={(event) => {
           hasUserTypedRef.current = true;

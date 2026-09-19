@@ -1,14 +1,14 @@
 /**
- * SHELL-1 (ADR-0018) persistent sidebar, mounted once inside `AppShell` so
+ * persistent sidebar, mounted once inside `AppShell` so
  * every `ProtectedRoute` screen gets it for free. Owns exactly one nav-item
  * list — org-home, org-members today — the single, obvious place a future
  * story adds its own entry (AC5); do not scatter per-page `<Link>` back-links
  * the way `OrgHome.tsx`'s pre-existing pattern does.
  *
- * `orgId` comes from `useResolvedOrgId()` (SHELL-9, see below), not a
+ * `orgId` comes from `useResolvedOrgId()`, not a
  * required route param: on `/dashboard` (no org selected yet) there is no
  * `orgId` to link org-scoped items to, so the nav-item list is empty rather
- * than a disabled/greyed pair (ADR-0018) — a disabled control implies a
+ * than a disabled/greyed pair — a disabled control implies a
  * temporarily-unavailable action, which isn't the case here.
  *
  * Active-route highlighting is React Router's own `NavLink` default
@@ -16,21 +16,21 @@
  * not a bespoke `useLocation` comparison. The org-home item passes `end` so
  * it does NOT read "active" while on `/orgs/:orgId/members`.
  *
- * ## Tabler v1.5.1 (ADR-0054, Phase 2) — what changed from AdminLTE v4
+ * ## Tabler v1.5.1 — what changed from AdminLTE v4
  *
- * Raw HTML, same as under ADR-0042/ADR-0037, but every class is now
+ * Raw HTML, same as under /, but every class is now
  * Tabler's own, read verbatim out of the CTO-supplied Tabler page-layout doc
  * (the "Sidebar layout" sample). The renames that matter:
  *
- * | AdminLTE v4 (was)              | Tabler v1.5.1 (now)                    |
+ * | AdminLTE v4 (was) | Tabler v1.5.1 (now) |
  * |---------------------------------|-----------------------------------------|
- * | `.app-sidebar`                  | `.navbar.navbar-vertical.navbar-expand-lg` |
- * | `.sidebar-brand`/`.brand-link`  | `.navbar-brand` (inside `.container-fluid`) |
+ * | `.app-sidebar` | `.navbar.navbar-vertical.navbar-expand-lg` |
+ * | `.sidebar-brand`/`.brand-link` | `.navbar-brand` (inside `.container-fluid`) |
  * | `.sidebar-wrapper`/`.sidebar-menu` (`nav.sidebar-menu`) | `.collapse.navbar-collapse#sidebar-menu` > `ul.navbar-nav` |
- * | `.nav-item` + `.menu-open`      | `.nav-item.dropdown` (+ `.show` on the toggle link) |
- * | `.nav-link` group toggle        | `.nav-link.dropdown-toggle`             |
- * | `ul.nav.nav-treeview`           | `div.dropdown-menu`                     |
- * | `<p>{label}</p>`                | `<span class="nav-link-title">{label}</span>` |
+ * | `.nav-item` + `.menu-open` | `.nav-item.dropdown` (+ `.show` on the toggle link) |
+ * | `.nav-link` group toggle | `.nav-link.dropdown-toggle` |
+ * | `ul.nav.nav-treeview` | `div.dropdown-menu` |
+ * | `<p>{label}</p>` | `<span class="nav-link-title">{label}</span>` |
  *
  * **Groups render as Bootstrap dropdowns, not an AdminLTE treeview.** Tabler's
  * own folded-sidebar doc example uses `.nav-item.dropdown` for a group; the
@@ -53,12 +53,12 @@
  * `matchMedia`/breakpoint-listener plumbing is needed here at all, unlike
  * AdminLTE's hand-ported `push-menu.ts` state machine.
  *
- * **`sidebar-mini` (SHELL-7, ADR-0046) has no Tabler equivalent in this
- * pass.** AdminLTE's icon-only collapsed rail is retired outright (ADR-0054
+ * **`sidebar-mini` has no Tabler equivalent in this
+ * pass.** AdminLTE's icon-only collapsed rail is retired outright (
  * Consequences) — there is no third, icon-only state, only shown/hidden.
  * The brand logo therefore no longer needs an xl/xs swap pair; a single
  * `sidebar-brand-logo` image replaces `sidebar-brand-logo-xl`/`-xs`
- * (BRAND-1/ADR-0048's mini-rail cross-fade no longer has a target to fade
+ * (/ mini-rail cross-fade no longer has a target to fade
  * between).
  */
 import { useState } from "react";
@@ -73,7 +73,7 @@ interface SidebarNavItem {
   to: string;
   end: boolean;
   testId: string;
-  /** Font Awesome classes, e.g. `"fa-solid fa-gauge-high"` (ADR-0042 §3.2). */
+  /** Font Awesome classes, e.g. `"fa-solid fa-gauge-high"`. */
   icon?: string;
 }
 
@@ -83,8 +83,8 @@ interface SidebarNavGroup {
   testId: string;
   /**
    * Font Awesome classes, e.g. `"fa-solid fa-user-shield"`. Optional because
-   * `UI Elements` (ADR-0020 scaffolding) deliberately still has none —
-   * SHELL-7/ADR-0046 only added icons to the three groups it created plus the
+   * `UI Elements` deliberately still has none —
+   * / only added icons to the three groups it created plus the
    * `Members` flat item, and explicitly does not touch `UI Elements`.
    */
   icon?: string;
@@ -92,7 +92,7 @@ interface SidebarNavGroup {
 }
 
 /**
- * SHELL-7 (ADR-0046): the presentation-layer partition of the org-scoped
+ *: the presentation-layer partition of the org-scoped
  * CRUD entities into 3 named, individually-iconed groups. Keyed off each
  * registry entry's own `key` — `orgScopedEntities` itself is NOT reordered or
  * re-keyed (that registry is also consumed by `App.tsx`'s route wiring and
@@ -102,11 +102,11 @@ interface SidebarNavGroup {
  * Labels come from the registry, never hardcoded here, so this stays a pure
  * grouping decision. Order *within* a group is this array's own order, which
  * is deliberately not the registry's (Access Control reads Role → Permission
- * → RoleAssignment → OrgMembership, matching ADR-0046's own listing).
+ * → RoleAssignment → OrgMembership, matching own listing).
  *
  * This must remain a complete, non-overlapping partition of
  * `orgScopedEntities` **together with `ORG_EXCLUDED_ENTITY_KEYS` below** —
- * enforced by `AppSidebar.test.tsx`'s TC-SHELL-025 test, which fails if an
+ * enforced by `AppSidebar.test.tsx`'s test, which fails if an
  * entity is missing, duplicated, or added to the registry without landing in
  * a group or the exclusion list.
  */
@@ -193,9 +193,9 @@ interface AppSidebarProps {
 }
 
 function AppSidebar({ mobileOpen = false }: AppSidebarProps) {
-  // SHELL-9 (ADR-0050): resolves `orgId` on both `/orgs/:orgId/...` routes
+  //: resolves `orgId` on both `/orgs/:orgId/...` routes
   // (route param, no fetch) and `/projects/:projectId/...` routes (a `GET
-  // /projects/{id}` fetch, read `org_id`). SHELL-10 (ADR-0050) additionally
+  // /projects/{id}` fetch, read `org_id`). additionally
   // reads `mode`, the explicit org-vs-project route-kind signal.
   const { orgId, projectId, mode } = useResolvedOrgId();
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
@@ -212,10 +212,10 @@ function AppSidebar({ mobileOpen = false }: AppSidebarProps) {
     });
   }
 
-  // The single, obvious extension point (ADR-0018 AC5): a future story adds
+  // The single, obvious extension point: a future story adds
   // its own screen's nav entry here, and nowhere else.
   //
-  // SHELL-10 (ADR-0050): org-mode only. On a project-scoped route these flat
+  //: org-mode only. On a project-scoped route these flat
   // org items are replaced wholesale by the project-mode nav below.
   const navItems: SidebarNavItem[] = orgId && mode === "org"
     ? [
@@ -228,7 +228,7 @@ function AppSidebar({ mobileOpen = false }: AppSidebarProps) {
           icon: "fa-solid fa-gauge-high",
         },
         {
-          // PROJ-4 (ADR-0047): Project CRUD's own dedicated page gets its own
+          //: Project CRUD's own dedicated page gets its own
           // flat nav entry — the single extension point this file's own
           // docstring names (AC5). Icon reuses the same `fa-solid fa-folder`
           // glyph `ProjectCountWidget` (`OrgHome.tsx`) already uses.
@@ -250,7 +250,7 @@ function AppSidebar({ mobileOpen = false }: AppSidebarProps) {
       ]
     : [];
 
-  // ADR-0025 generic admin CRUD surface: the org/global-scoped entities
+  // generic admin CRUD surface: the org/global-scoped entities
   // (Sitemap's own table), generated from the registry
   // (`pages/admin/registry.ts`) — one item per registry entry, never a
   // hardcoded literal per entity.
@@ -279,10 +279,10 @@ function AppSidebar({ mobileOpen = false }: AppSidebarProps) {
       ]
     : [];
 
-  // SHELL-10 (ADR-0050): project-mode nav. Same generated-from-the-registry
+  //: project-mode nav. Same generated-from-the-registry
   // discipline as the org side.
   //
-  // Gated on `orgId` too, not just `projectId` (SHELL-10's own documented
+  // Gated on `orgId` too, not just `projectId` ( own documented
   // fix): content that depends on a project genuinely existing shouldn't
   // render before `useResolvedOrgId()`'s fetch has confirmed it.
   const projectEntityByKey = new Map(projectScopedEntities.map((item) => [item.key, item]));
@@ -309,9 +309,9 @@ function AppSidebar({ mobileOpen = false }: AppSidebarProps) {
         }))
       : [];
 
-  const navGroups: SidebarNavGroup[] = mode === "project" ? projectNavGroups : orgNavGroups;
+  const navGroups: SidebarNavGroup[] = mode === "project" ? projectNavGroups: orgNavGroups;
 
-  // SHELL-10 (ADR-0050): the "back to projects" link, rendered *below* the
+  //: the "back to projects" link, rendered *below* the
   // entity groups (hence a separate array — `navItems` renders above
   // `navGroups`). "Overview" used to live here too; it now renders at the
   // top of `navItems` instead (see that array's own comment).
@@ -332,7 +332,7 @@ function AppSidebar({ mobileOpen = false }: AppSidebarProps) {
   return (
     <aside
       className="navbar navbar-vertical navbar-expand-lg"
-      // FR-SHELL-5 (ADR-0026): the sidebar keeps its own dark scheme
+      // FR-: the sidebar keeps its own dark scheme
       // regardless of the app-wide light/dark/auto toggle — AdminLTE
       // expressed this as a static `bg-body-secondary` utility (no v4 skin
       // class existed); Tabler's own documented mechanism for the same claim
@@ -354,13 +354,13 @@ function AppSidebar({ mobileOpen = false }: AppSidebarProps) {
             <span className="brand-text ps-2">platform-core</span>
           </a>
         </h1>
-        <div className={mobileOpen ? "collapse navbar-collapse show" : "collapse navbar-collapse"} id="sidebar-menu">
+        <div className={mobileOpen ? "collapse navbar-collapse show": "collapse navbar-collapse"} id="sidebar-menu">
           <ul className="navbar-nav pt-lg-3">
             {navItems.map(renderFlatItem)}
             {navGroups.map((group) => {
               const isOpen = openGroups.has(group.key);
               return (
-                <li className={isOpen ? "nav-item dropdown active" : "nav-item dropdown"} data-testid={group.testId} key={group.key}>
+                <li className={isOpen ? "nav-item dropdown active": "nav-item dropdown"} data-testid={group.testId} key={group.key}>
                   <a
                     href="#"
                     className="nav-link dropdown-toggle"
@@ -381,11 +381,11 @@ function AppSidebar({ mobileOpen = false }: AppSidebarProps) {
                         version used. `ms-auto` pushes it to the row's far
                         edge — `.nav-link` is `display:flex` here. */}
                     <i
-                      className={isOpen ? "nav-arrow fa-solid fa-angle-down ms-auto" : "nav-arrow fa-solid fa-angle-right ms-auto"}
+                      className={isOpen ? "nav-arrow fa-solid fa-angle-down ms-auto": "nav-arrow fa-solid fa-angle-right ms-auto"}
                       aria-hidden="true"
                     />
                   </a>
-                  <div className={isOpen ? "dropdown-menu show" : "dropdown-menu"}>
+                  <div className={isOpen ? "dropdown-menu show": "dropdown-menu"}>
                     {group.items.map((item) => (
                       <NavLink to={item.to} className="dropdown-item" data-testid={item.testId} key={item.testId}>
                         {item.label}
@@ -395,7 +395,7 @@ function AppSidebar({ mobileOpen = false }: AppSidebarProps) {
                 </li>
               );
             })}
-            {/* SHELL-10 (ADR-0050): the project-mode "back" links, below the
+            {/*: the project-mode "back" links, below the
                 entity groups. Identical markup to the flat `navItems` above —
                 same `renderFlatItem` helper, so the two can't drift apart. */}
             {bottomNavItems.map(renderFlatItem)}

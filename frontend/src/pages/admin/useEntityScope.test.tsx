@@ -7,7 +7,7 @@ import { getEntity } from "../../lib/api/entityCrud";
 import type { EntityConfig } from "../../entityConfigs/types";
 
 /**
- * ADR-0060 regression test: found live (not by any mock) when the retired
+ * regression test: found live (not by any mock) when the retired
  * `ProjectsPage`'s replacement route rendered "No records found." forever —
  * `Project`'s config carries a `scopeResolution` (for its project-scoped
  * generic-admin route specifically) *and* a plain `scopeField: "org_id"`
@@ -28,7 +28,7 @@ import type { EntityConfig } from "../../entityConfigs/types";
  */
 vi.mock("../../lib/api/entityCrud", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../lib/api/entityCrud")>();
-  return { ...actual, getEntity: vi.fn() };
+  return {...actual, getEntity: vi.fn() };
 });
 
 vi.mock("./useEntitySchema", () => ({
@@ -58,19 +58,19 @@ function wrapper({ children }: { children: ReactNode }) {
   return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
 }
 
-describe("useEntityScope — scopeField-vs-scopeResolution priority (ADR-0060)", () => {
+describe("useEntityScope — scopeField-vs-scopeResolution priority ", () => {
   afterEach(() => {
     vi.clearAllMocks();
   });
 
-  it("resolves immediately from routeParams.orgId, never fetching, when :orgId is already in the route", () => {
+  it("resolves immediately from routeParams.orgId, never fetching, when:orgId is already in the route", () => {
     const { result } = renderHook(() => useEntityScope(PROJECT_CONFIG, { orgId: "org-1" }), { wrapper });
 
     expect(result.current.scope).toEqual({ ready: true, field: "org_id", value: "org-1" });
     expect(mockGetEntity).not.toHaveBeenCalled();
   });
 
-  it("falls back to the scopeResolution fetch when routeParams.orgId is absent but :projectId is present", async () => {
+  it("falls back to the scopeResolution fetch when routeParams.orgId is absent but:projectId is present", async () => {
     mockGetEntity.mockResolvedValue({ org_id: "org-from-fetch" });
 
     const { result } = renderHook(() => useEntityScope(PROJECT_CONFIG, { projectId: "proj-1" }), { wrapper });
@@ -82,7 +82,7 @@ describe("useEntityScope — scopeField-vs-scopeResolution priority (ADR-0060)",
     );
   });
 
-  it("stays not-ready (never crashes) when neither :orgId nor :projectId is present", () => {
+  it("stays not-ready (never crashes) when neither:orgId nor:projectId is present", () => {
     const { result } = renderHook(() => useEntityScope(PROJECT_CONFIG, {}), { wrapper });
 
     expect(result.current.scope).toEqual({ ready: false });
@@ -91,28 +91,28 @@ describe("useEntityScope — scopeField-vs-scopeResolution priority (ADR-0060)",
 });
 
 /**
- * ADR-0084 regression test: found live (not by any mock either) —
- * `TestCycle`'s config widened `scopeField` to the branching tuple
- * `["test_plan_id", "project_id"]`, but the fast-path check above compared
+ * regression test: found live (not by any mock either) —
+ * `Round`'s config widened `scopeField` to the branching tuple
+ * `["batch_id", "project_id"]`, but the fast-path check above compared
  * it against the literal string `"project_id"` — always false for an array
  * — so the check silently fell through to the `scopeSelector` picker branch
- * even on `/projects/:projectId/admin/test-cycles`, where `:projectId` was
+ * even on `/projects/:projectId/admin/rounds`, where `:projectId` was
  * already sitting right there in the route. The symptom: a manual
  * "By test plan / By project" toggle defaulting to an empty "By test plan"
  * search box, instead of the list just rendering — the same class of
  * array-vs-string gap `EntityRelationTab.tsx`'s own `scopeArmsOf` helper
- * was built to close for a different call site (ADR-0078), reused here
+ * was built to close for a different call site, reused here
  * rather than re-invented.
  */
 const TEST_CYCLE_CONFIG: EntityConfig = {
-  resource: "test_cycle",
-  path: "/test-cycles",
-  scopeField: ["test_plan_id", "project_id"],
+  resource: "round",
+  path: "/rounds",
+  scopeField: ["batch_id", "project_id"],
   methods: ["list", "get", "update", "delete"],
   fields: [],
 };
 
-describe("useEntityScope — branching scopeField tuple containing project_id/org_id (ADR-0084)", () => {
+describe("useEntityScope — branching scopeField tuple containing project_id/org_id ", () => {
   afterEach(() => {
     vi.clearAllMocks();
   });

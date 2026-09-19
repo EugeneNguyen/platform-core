@@ -1,7 +1,7 @@
-"""AUTH-1: local password login route.
+""": local password login route.
 
-Source: API Document §2 (`POST /auth/login` contract), ADR-0003 (auth &
-token strategy), ADR-0011 (login rate limiting), AUTH-1 scope plan §1/§6.
+Source: API Document §2 (`POST /auth/login` contract), (auth &
+token strategy), (login rate limiting), scope plan §1/§6.
 
 Errors are returned as plain `JSONResponse`s with the exact top-level shape
 `{"code", "message", "field_errors"}` (API Document §1 error shape) rather
@@ -48,7 +48,7 @@ from app.schemas.auth import (
 
 router = APIRouter()
 
-# ADR-0011 / NFR-11: 5 failed attempts per (client_ip, email) per 15-minute
+# /: 5 failed attempts per (client_ip, email) per 15-minute
 # sliding window -> 429, until the window clears.
 _RATE_LIMIT_WINDOW_MINUTES = 15
 _RATE_LIMIT_MAX_ATTEMPTS = 5
@@ -82,7 +82,7 @@ async def _active_orgs_for_user(db: AsyncSession, user_id) -> list[Organization]
     """Every `Organization` the given user holds an **active** membership in.
 
     `status == active` only — `suspended`/`invited` memberships never appear
-    (API Document §2). Extracted (SHELL-6 / ADR-0036) from the two places
+    (API Document §2). Extracted from the two places
     that had this exact query inline — `login()` step 5 and `refresh()`'s
     re-check — so `GET /auth/me/orgs` shares one definition of "the caller's
     orgs" with the login/refresh flows rather than growing a third copy that
@@ -107,7 +107,7 @@ async def signup(
     response: Response,
     db: AsyncSession = Depends(get_db),
 ) -> LoginResponse | JSONResponse:
-    """Bootstrap-only public signup: first-ever User + Organization (RBAC-1, ADR-0016).
+    """Bootstrap-only public signup: first-ever User + Organization.
 
     Public — no `get_current_actor` dependency at all. Distinct code path
     from `POST /orgs` (`app/api/routes/organizations.py`): this route takes
@@ -119,7 +119,7 @@ async def signup(
     1. Acquire `pg_advisory_xact_lock(_SIGNUP_BOOTSTRAP_LOCK_KEY)` FIRST,
        inside this call's transaction, before the exists-check below — two
        concurrent first-signup calls both observing zero orgs before either
-       commits would otherwise both succeed (ADR-0016's rejected
+       commits would otherwise both succeed ( rejected
        "rely on the slug unique constraint instead" alternative doesn't
        catch this: two concurrent bootstraps typically pick *different*
        slugs). The lock is released automatically when this transaction
@@ -135,11 +135,11 @@ async def signup(
     4. Create the `Organization(name=org_name, slug=org_slug)` row; flush
        alone so a `slug` collision is caught (and reported) independently of
        step 3's email collision — `422`, not `409` (`409` is reserved
-       exclusively for the bootstrap-closed case in step 2, ADR-0016).
+       exclusively for the bootstrap-closed case in step 2, ).
     5. Create the `OrgMembership(status=active)` + an org-wide
-       (`project_id=None`) `RoleAssignment` pointing at RBAC-4's seeded
+       (`project_id=None`) `RoleAssignment` pointing at seeded
        `org_admin` system `Role` (`org_id IS NULL`) — this row already
-       exists from RBAC-4's migration; this route only assigns it, never
+       exists from migration; this route only assigns it, never
        creates a new `Role`.
     6. Issue tokens + set the refresh-token cookie exactly like `login()`
        does (same helpers, same cookie params); commit; return a
@@ -164,8 +164,8 @@ async def signup(
             "Self-registration is closed. Contact your administrator for an invite.",
         )
 
-    # RBAC-4's seeded org-wide org_admin system Role (org_id IS NULL) — must
-    # exist post RBAC-4's migration; not created here (ADR-0016).
+    # seeded org-wide org_admin system Role (org_id IS NULL) — must
+    # exist post migration; not created here.
     org_admin_role = await db.scalar(
         select(Role).where(Role.name == "org_admin", Role.org_id.is_(None))
     )
@@ -192,7 +192,7 @@ async def signup(
     db.add(AuthIdentity(user_id=user.actor_id, provider=AuthProvider.local, is_primary=True))
 
     # 4. Create the Organization; flush alone to isolate a slug-uniqueness
-    # collision (TC-RBAC-003) — 422, not 409 (ADR-0016).
+    # collision — 422, not 409.
     org = Organization(name=payload.org_name, slug=payload.org_slug)
     db.add(org)
     try:
@@ -206,7 +206,7 @@ async def signup(
             field_errors={"org_slug": ["This organization slug is already taken."]},
         )
 
-    # 5. Membership + org-wide org_admin RoleAssignment (Q3/ADR-0016: the
+    # 5. Membership + org-wide org_admin RoleAssignment (Q3/: the
     # creator of an org always auto-joins it as its org_admin).
     now = datetime.now(UTC)
     db.add(
@@ -226,7 +226,7 @@ async def signup(
         )
     )
 
-    # 6. Issue tokens; persist the refresh token's hash (ADR-0003) — same
+    # 6. Issue tokens; persist the refresh token's hash — same
     # shape as login()'s own token-issuance block.
     access_token = create_access_token(str(user.actor_id))
     raw_refresh_token = create_refresh_token(str(user.actor_id))
@@ -268,7 +268,7 @@ async def login(
 ) -> LoginResponse | JSONResponse:
     """Authenticate a human user by email+password; issue tokens; resolve org context.
 
-    Order of operations (AUTH-1 scope plan §6 / this task's brief):
+    Order of operations:
     1. Rate-limit check FIRST, before any credentials check.
     2. Look up `User` joined to a `provider=local` `AuthIdentity` by lowercased email.
     3. Timing-safe password verify (real hash if found, dummy hash otherwise —
@@ -285,7 +285,7 @@ async def login(
     # 1. Rate limit. A request rejected here is never itself recorded as a
     # LoginAttempt — it never reached a credentials check.
     #
-    # ADR-0011 / AUTH-1 scope plan: "A successful login clears that pair's
+    # / scope plan: "A successful login clears that pair's
     # counter." Only counting `succeeded=false` rows in the trailing window
     # is not sufficient on its own to implement that — a failure recorded
     # before a later success would still count toward the threshold forever
@@ -358,7 +358,7 @@ async def login(
 
     org_context: Literal["auto", "picker"] = "auto" if len(orgs) == 1 else "picker"
 
-    # 6. Issue tokens; persist the refresh token's hash (ADR-0003).
+    # 6. Issue tokens; persist the refresh token's hash.
     access_token = create_access_token(str(user.actor_id))
     raw_refresh_token = create_refresh_token(str(user.actor_id))
     now = datetime.now(UTC)
@@ -376,7 +376,7 @@ async def login(
     # `secure=False` is only acceptable for local dev over plain HTTP.
     # `max_age` (fix round 2, Finding 1): without it Starlette emits a
     # session cookie (no `Max-Age`/`Expires` on the wire at all), which the
-    # browser discards on close — defeating AUTH-2's entire premise of
+    # browser discards on close — defeating entire premise of
     # surviving a browser restart even though the DB-side `RefreshToken` row
     # is still live for `JWT_REFRESH_TTL_DAYS`. Tying the cookie's lifetime
     # to that same window keeps the two in sync.
@@ -402,14 +402,14 @@ async def refresh(
     response: Response,
     db: AsyncSession = Depends(get_db),
 ) -> RefreshResponse | JSONResponse:
-    """Rotate a refresh token; issue a new access token (ADR-0013).
+    """Rotate a refresh token; issue a new access token.
 
     No request body — the only input is the `refresh_token` httpOnly cookie.
     Errors are returned as plain `JSONResponse`s via `_error()`, same pattern
     as `login()` above, NOT `HTTPException` — this is a route handler with
     its own response object, not a dependency.
 
-    Order of operations (ADR-0013 / API Document §2):
+    Order of operations:
     1. Missing cookie -> 401 `invalid_refresh_token`.
     2. Hash the cookie value; look up `RefreshToken` by `token_hash`.
     3. Not found, or already revoked (includes rotated-out), or expired ->
@@ -421,12 +421,12 @@ async def refresh(
        fails — a later refresh can still succeed if membership is
        reactivated before the token's `expires_at`.
     5. Rotate: revoke the presented row (`revoked_reason="rotated"`) via a
-       conditional `UPDATE ... WHERE id = :id AND revoked_at IS NULL`
+       conditional `UPDATE... WHERE id =:id AND revoked_at IS NULL`
        compare-and-swap (see below), not an ORM attribute-mutation +
        commit; insert a new row with a freshly generated raw token, same
        `user_id`, `issued_at=now`, and `expires_at` copied verbatim from
        the old row (NOT recomputed as `now + JWT_REFRESH_TTL_DAYS` — the
-       ADR-0013 absolute-expiry-inheritance rule).
+        absolute-expiry-inheritance rule).
     6. Issue a new access token; set the new raw refresh token as the
        httpOnly cookie (same params as `login()`); return `{access_token}`
        only — no `org_context`/`orgs` (the frontend already holds those from
@@ -439,14 +439,14 @@ async def refresh(
     safe against this — both requests' `UPDATE`s are unconditional on `id`
     alone, so Postgres serializes them and BOTH succeed, BOTH insert a live
     child token. That silently mints a second live session from a single
-    stolen-and-replayed token, breaking ADR-0013's stated guarantee that
+    stolen-and-replayed token, breaking stated guarantee that
     rotation kills every outstanding copy of the old token. The fix is a
-    single atomic conditional `UPDATE ... WHERE id = :id AND revoked_at IS
+    single atomic conditional `UPDATE... WHERE id =:id AND revoked_at IS
     NULL`, checked by `rowcount`: whichever request's `UPDATE` commits
     first flips `revoked_at` from `NULL`, so the loser's own `UPDATE`
     matches zero rows (its `WHERE` clause no longer holds) and must be
     treated as "already rotated" — 401, no child token inserted, no cookie
-    set. This needs no `SELECT ... FOR UPDATE` / row lock held across the
+    set. This needs no `SELECT... FOR UPDATE` / row lock held across the
     request; the database's own row-level locking during the `UPDATE`
     itself is sufficient to make exactly one of the two calls win.
     """
@@ -474,7 +474,7 @@ async def refresh(
             "Your session has expired. Please log in again.",
         )
 
-    # Re-check active org membership (ADR-0013) — same rule as login, but a
+    # Re-check active org membership — same rule as login, but a
     # rejection here does NOT revoke the presented token. Same shared
     # `_active_orgs_for_user` query login uses.
     orgs = await _active_orgs_for_user(db, stored_token.user_id)
@@ -487,7 +487,7 @@ async def refresh(
 
     # Rotate: revoke the presented token via an atomic compare-and-swap, not
     # an unconditional ORM attribute-mutation + commit — see the docstring's
-    # "Concurrency" section. `WHERE id = :id AND revoked_at IS NULL` only
+    # "Concurrency" section. `WHERE id =:id AND revoked_at IS NULL` only
     # matches (and only flips `revoked_at`) if this call is the first to
     # revoke this specific row; a concurrent duplicate call loses the race
     # and gets rowcount == 0 here.
@@ -515,7 +515,7 @@ async def refresh(
             user_id=stored_token.user_id,
             token_hash=hash_refresh_token(new_raw_refresh_token),
             issued_at=now,
-            expires_at=stored_token.expires_at,  # inherited verbatim, ADR-0013
+            expires_at=stored_token.expires_at, # inherited verbatim,
         )
     )
     await db.commit()
@@ -540,14 +540,14 @@ async def refresh(
 
 @router.get("/auth/me", response_model=MeResponse, response_model_exclude_none=True)
 async def me(actor: User | AIAgent = Depends(get_current_actor)) -> MeResponse:
-    """Return the current actor's identity (API Document §2, ADR-0013, ADR-0015).
+    """Return the current actor's identity.
 
     Identity-only — no resolved permission codes yet. Both `User` and
     `AIAgent`'s PK column is `actor_id`, not `id` (joined-table-inheritance
     quirk, Database Document §3.4) — there is no separate `.id`.
 
-    AUTH-4: `get_current_actor` can now resolve either a `User` (human JWT)
-    or an `AIAgent` (`tnx_agent_...` API key, ADR-0015) — branch on
+    : `get_current_actor` can now resolve either a `User` (human JWT)
+    or an `AIAgent` — branch on
     `isinstance` to serialize the right shape (`MeResponse.email` for a
     `User`, `MeResponse.agent_name` for an `AIAgent`; the other field stays
     `None` either way, per `MeResponse`'s own docstring).
@@ -556,7 +556,7 @@ async def me(actor: User | AIAgent = Depends(get_current_actor)) -> MeResponse:
     (`email` for an agent, `agent_name` for a human) is omitted from the
     response body entirely rather than serialized as an explicit `null`.
     This keeps the human-actor response body byte-for-byte identical to
-    AUTH-2's original `{actor_id, email, actor_type}` shape (no new
+     original `{actor_id, email, actor_type}` shape (no new
     `"agent_name": null` key appearing) — additive on the wire only when an
     `AIAgent` is actually the caller, per the plan's "additive" framing.
     """
@@ -570,12 +570,12 @@ async def me_orgs(
     actor: User | AIAgent = Depends(get_current_actor),
     db: AsyncSession = Depends(get_db),
 ) -> MeOrgsResponse | JSONResponse:
-    """The calling human's own `active`-membership Organizations (SHELL-6, ADR-0036).
+    """The calling human's own `active`-membership Organizations.
 
     Backs `AppHeader`'s organization-switcher dropdown, which lazy-fetches
     this on every open rather than reading a login-time-cached list — so it
     stays correct after a page reload, which `AuthContext.orgs` does not
-    (the AUTH-2 gap ADR-0035 deferred and ADR-0036 closes for this one
+    (the gap deferred and closes for this one
     surface).
 
     Identity-scoped, not org-scoped: no `org_id` path param, so there is no
@@ -620,13 +620,13 @@ async def logout(
     db: AsyncSession = Depends(get_db),
     actor: User | AIAgent = Depends(get_current_actor),
 ) -> Response:
-    """Revoke the caller's current-session refresh token; idempotent (ADR-0014).
+    """Revoke the caller's current-session refresh token; idempotent.
 
     `actor` typed `User | AIAgent`, not just `User`, since `get_current_actor`
-    (AUTH-4) now resolves either — an `AIAgent` bearer credential is
+     now resolves either — an `AIAgent` bearer credential is
     structurally accepted here rather than rejected outright (no story has
     asked for an agent-specific 403 on this route) but is a no-op in
-    practice: agents never hold a `refresh_token` cookie session (ADR-0003 —
+    practice: agents never hold a `refresh_token` cookie session ( —
     bearer-key auth only, no cookie exchange), so `raw_token` is always
     absent and the request just falls through to the idempotent-204 path.
 
@@ -636,16 +636,16 @@ async def logout(
     `GET /auth/me` produces). That is the ONLY non-2xx outcome this route
     ever produces.
 
-    Order of operations (ADR-0014 / API Document §2):
+    Order of operations:
     1. Read the `refresh_token` httpOnly cookie, same as `refresh()`. Missing
        entirely -> nothing to revoke, fall through to the success response.
     2. If present, hash it and attempt to revoke the matching `RefreshToken`
-       row via the same atomic conditional `UPDATE ... WHERE ... AND
+       row via the same atomic conditional `UPDATE... WHERE... AND
        revoked_at IS NULL` compare-and-swap `refresh()` uses (see that
        route's docstring "Concurrency" section for why this must be a CAS
        and not an ORM attribute-mutation + commit) — NOT an unconditional
        `UPDATE` keyed on `token_hash` alone. The `WHERE` clause here also
-       scopes on `user_id = :authenticated_user_id`, which `refresh()`'s
+       scopes on `user_id =:authenticated_user_id`, which `refresh()`'s
        version has no need for (it only ever sees the token's own claimed
        owner): this closes the case where the authenticated caller's bearer
        token and their `refresh_token` cookie name different users, so
@@ -667,7 +667,7 @@ async def logout(
        either way, but sloppy).
 
     The access token itself is never invalidated here — it remains usable
-    until its own short TTL naturally lapses (AUTH-3 AC2, out of scope for
+    until its own short TTL naturally lapses ( AC2, out of scope for
     this route; no token-blocklist exists in this scaffold).
     """
     raw_token = request.cookies.get("refresh_token")

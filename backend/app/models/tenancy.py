@@ -1,6 +1,6 @@
 """Tenancy cluster: Organization, OrgMembership, Invite.
 
-Source: Database Document §3.1. `Invite` added per ADR-0017 (RBAC-2 invite &
+Source: Database Document §3.1. `Invite` added ( invite &
 manage org members) — not in the original 07 ERD draft.
 """
 
@@ -22,7 +22,7 @@ class OrgMembershipStatus(str, enum.Enum):
 
 
 class Organization(Base):
-    """Deployment-wide tenant root. See ADR-0007 (real multi-tenancy)."""
+    """Deployment-wide tenant root. See (real multi-tenancy)."""
 
     __tablename__ = "organization"
 
@@ -63,7 +63,7 @@ class OrgMembership(Base):
 
 
 class Invite(Base):
-    """One-time invite token, RBAC-2's "new email" invite path only (ADR-0017).
+    """One-time invite token, "new email" invite path only.
 
     Source: Database Document §3.1 (`Invite` table spec). Not on the 07 ERD —
     an implementation necessity for invite-token mechanics, same category as
@@ -102,7 +102,7 @@ class Invite(Base):
     # a deliberately-slow KDF. See `app/core/security.py`'s
     # `hash_invite_token`.
     token_hash: Mapped[str] = mapped_column(String, nullable=False, unique=True, index=True)
-    # 7 days from issuance (ADR-0017); set by the route, not a column default,
+    # 7 days from issuance; set by the route, not a column default,
     # since "issuance" is an application-level moment, not insert time alone
     # (resending updates this same column on an existing row).
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

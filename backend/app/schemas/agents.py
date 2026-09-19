@@ -1,9 +1,9 @@
-"""Pydantic v2 schemas for the AUTH-4 agent-credential routes.
+"""Pydantic v2 schemas for the agent-credential routes.
 
 Source: API Document §2 (`POST /orgs/{org_id}/agents`,
 `POST /orgs/{org_id}/agents/{agent_id}/revoke`,
-`GET /orgs/{org_id}/agents` contracts), ADR-0015 (AI agent credential
-mechanics), ADR-0063 (MCP Integration screens — the `GET` list route this
+`GET /orgs/{org_id}/agents` contracts), (AI agent credential
+mechanics), (MCP Integration screens — the `GET` list route this
 last schema pair backs).
 """
 
@@ -31,7 +31,7 @@ class CreateAgentResponse(BaseModel):
 
     `api_key` is the raw, unhashed credential — shown here once, at
     issuance, and never persisted or retrievable again (GitHub-PAT-style,
-    ADR-0015). Callers must never log this response body.
+    ). Callers must never log this response body.
     """
 
     agent_id: UUID
@@ -45,7 +45,7 @@ class RevokeAgentResponse(BaseModel):
 
     Idempotent: revoking an already-revoked agent returns 200 with the
     existing `revoked_at` (not a fresh one, not an error) — mirrors
-    `RefreshToken`'s revoke-is-idempotent posture (ADR-0015).
+    `RefreshToken`'s revoke-is-idempotent posture.
     """
 
     agent_id: UUID
@@ -53,11 +53,11 @@ class RevokeAgentResponse(BaseModel):
 
 
 class AgentSummary(BaseModel):
-    """Response shape for `GET /orgs/{org_id}/agents` list rows (ADR-0063).
+    """Response shape for `GET /orgs/{org_id}/agents` list rows.
 
     Never includes `api_key` — the raw credential is returned exactly once,
     by `CreateAgentResponse`, at issuance, and is not persisted anywhere
-    this route could read it back from (ADR-0015).
+    this route could read it back from.
     """
 
     agent_id: UUID
@@ -71,12 +71,12 @@ class AgentSummary(BaseModel):
 
 
 class ListAgentsResponse(BaseModel):
-    """Response of `GET /orgs/{org_id}/agents` (ADR-0063).
+    """Response of `GET /orgs/{org_id}/agents`.
 
     Same `{items,total,page,page_size}` envelope every other list route in
-    this codebase uses (NFR-6, ADR-0022) — this is a brand-new route with no
+    this codebase uses — this is a brand-new route with no
     prior bare-array shape to migrate away from, so it starts on the
-    envelope directly rather than needing its own DS-2/ADR-0041-style
+    envelope directly rather than needing its own /-style
     breaking-change pass later.
     """
 

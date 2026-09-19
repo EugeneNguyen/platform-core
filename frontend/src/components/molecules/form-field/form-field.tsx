@@ -1,16 +1,16 @@
 /**
- * Shared form-field primitive (DS-1): a labeled text/email/password input
- * (raw Bootstrap 5 markup, ADR-0042) bound to a React Hook Form field, with
+ * Shared form-field primitive: a labeled text/email/password input
+ * bound to a React Hook Form field, with
  * Zod-driven error feedback.
  *
- * Location/reuse scope: `frontend/src/components/molecules/` (ADR-0043,
- * superseding ADR-0023's `components/shared/` location) — cross-screen UI
- * building blocks with duplication evidence behind them (per the DS-1
+ * Location/reuse scope: `frontend/src/components/molecules/` (,
+ * superseding `components/shared/` location) — cross-screen UI
+ * building blocks with duplication evidence behind them (per the
  * story), tiered on composition complexity same as every other molecule —
  * as opposed to `components/organisms/`/`components/molecules/` (generic
  * entity CRUD widgets) or page-local components under `pages/<page>/`.
  *
- * Raw Bootstrap 5 markup per ADR-0042 (AdminLTE v4 design system), replacing
+ * Raw Bootstrap 5 markup (AdminLTE v4 design system), replacing
  * `@coreui/react`'s `CFormLabel` + `CFormInput` + `CFormFeedback`. Expects to
  * be bound via React Hook Form's `register()` return value spread as rest
  * props — this codebase never uses RHF's `Controller`, only `register()`
@@ -24,14 +24,14 @@
  *
  * Two class details that are load-bearing, not incidental:
  * - `is-invalid` on the input is what `FormField.test.tsx` asserts on
- *   (both the present and absent cases). It is also what Bootstrap's own
- *   sibling-selector CSS keys off to reveal the feedback element.
+ * (both the present and absent cases). It is also what Bootstrap's own
+ * sibling-selector CSS keys off to reveal the feedback element.
  * - `d-block` is added alongside `invalid-feedback` because the feedback is
- *   rendered **conditionally**. Bootstrap only unhides `.invalid-feedback`
- *   when it is an adjacent sibling of a `.is-invalid` control; that holds
- *   here today, but `d-block` makes the message's visibility independent of
- *   the surrounding DOM shape, so a caller wrapping the input can't silently
- *   render an invisible error.
+ * rendered **conditionally**. Bootstrap only unhides `.invalid-feedback`
+ * when it is an adjacent sibling of a `.is-invalid` control; that holds
+ * here today, but `d-block` makes the message's visibility independent of
+ * the surrounding DOM shape, so a caller wrapping the input can't silently
+ * render an invisible error.
  *
  * Composes `atoms/text-input` for the control itself (was a second,
  * independently hand-rolled `.form-control` — the same "check for an
@@ -53,7 +53,7 @@ export interface FormFieldProps
 }
 
 const FormField = forwardRef<HTMLInputElement, FormFieldProps>(function FormField(
-  { id, label, type = "text", error, size, ...rest },
+  { id, label, type = "text", error, size,...rest },
   ref,
 ) {
   return (

@@ -1,6 +1,6 @@
 """RBAC cluster: Role, Permission, RolePermission, RoleAssignment.
 
-Source: Database Document §3.3. See ADR-0004 for the permission-check design.
+Source: Database Document §3.3. See for the permission-check design.
 """
 
 import uuid
@@ -19,7 +19,7 @@ class Role(Base):
         # Postgres treats NULL <> NULL, so a plain UNIQUE(org_id, name) would
         # NOT stop two (NULL, 'org_admin') rows from coexisting. This index
         # only applies WHERE org_id IS NULL, i.e. it uniquely names the 5
-        # built-in system-role templates (RBAC-4) while leaving per-org
+        # built-in system-role templates while leaving per-org
         # custom roles (org_id IS NOT NULL) completely unrestricted by it.
         Index(
             "uq_role_name_system_role",
@@ -80,7 +80,7 @@ class RoleAssignment(Base):
         # Separate partial unique index for ORG-WIDE grants (project_id IS
         # NULL): Postgres treats NULL <> NULL, so the composite
         # UniqueConstraint above does NOT stop two (actor_id, org_id, NULL,
-        # role_id) rows from coexisting (RBAC-3/TC-RBAC-029 — the first story
+        # role_id) rows from coexisting (/ — the first story
         # to actually insert `RoleAssignment` rows through a real create
         # route and hit this). Same `Role.uq_role_name_system_role` pattern
         # already used in this module for the identical NULL-uniqueness gap.
@@ -103,15 +103,15 @@ class RoleAssignment(Base):
     )
     # nullable: null = org-wide role, non-null = project-scoped role.
     #
-    # `ondelete="CASCADE"` (DASH-2/ADR-0040, 2026-09-07 — was `RESTRICT`):
-    # `POST /orgs/{org_id}/projects` (ADR-0017 step 5) unconditionally grants
+    # `ondelete="CASCADE"`:
+    # `POST /orgs/{org_id}/projects` unconditionally grants
     # the creator a project-scoped `test_manager` RoleAssignment, so a
     # `RESTRICT` here meant `DELETE /projects/{id}` 409'd for literally every
     # Project ever created through the app's own UI — the only kind a real
     # user can create. A project-scoped RoleAssignment has no meaning once
     # its own Project is gone (there's no "orphaned scope" state worth
     # preserving, unlike an org-wide grant), so cascading it away on delete
-    # is the correct semantics, not just a workaround. See ADR-0040.
+    # is the correct semantics, not just a workaround. See.
     project_id: Mapped[uuid.UUID | None] = mapped_column(
         Uuid(as_uuid=True), ForeignKey("project.id", ondelete="CASCADE"), nullable=True
     )

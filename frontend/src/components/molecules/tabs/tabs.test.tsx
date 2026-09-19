@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { Tabs, panelId, tabTriggerId } from "./tabs";
 
 /**
- * ADR-0074: the `Tabs` molecule built for `EntityDetailPage`'s Info +
+ *: the `Tabs` molecule built for `EntityDetailPage`'s Info +
  * relationship tabs.
  *
  * The two claims worth pinning are both about *not* handing control to a
@@ -16,7 +16,7 @@ import { Tabs, panelId, tabTriggerId } from "./tabs";
 const ITEMS = [
   { id: "info", label: "Info" },
   { id: "test-steps", label: "Test steps" },
-  { id: "test-case-defect-links", label: "Defects (linked)" },
+  { id: "item-issue-links", label: "Issues (linked)" },
 ];
 
 function renderTabs(activeId = "info", onSelect = vi.fn()) {
@@ -24,7 +24,7 @@ function renderTabs(activeId = "info", onSelect = vi.fn()) {
   return onSelect;
 }
 
-describe("Tabs molecule (ADR-0074)", () => {
+describe("Tabs molecule ", () => {
   it("renders stock Bootstrap 5 tab markup with one tab per item", () => {
     renderTabs();
 
@@ -38,7 +38,7 @@ describe("Tabs molecule (ADR-0074)", () => {
     });
   });
 
-  it("marks only the active tab with .active and aria-selected", () => {
+  it("marks only the active tab with.active and aria-selected", () => {
     renderTabs("test-steps");
 
     const active = screen.getByTestId("entity-detail-tab-test-steps");
@@ -61,7 +61,7 @@ describe("Tabs molecule (ADR-0074)", () => {
   });
 
   /**
-   * ADR-0074's Amendment: the panel points back with `aria-labelledby`, so
+   * Amendment: the panel points back with `aria-labelledby`, so
    * each trigger needs an `id` of its own — `tabTriggerId` is what the caller
    * uses, so the pair can't drift.
    */
@@ -77,7 +77,7 @@ describe("Tabs molecule (ADR-0074)", () => {
   });
 
   /**
-   * ADR-0074's Amendment: Tabler's "tabs in the card header" pattern needs
+   * Amendment: Tabler's "tabs in the card header" pattern needs
    * `card-header-tabs` on this `<ul>`. It is deliberately not baked in — a
    * strip mounted anywhere else must not carry it — so the caller passes it
    * through `className`, and it must land on the list itself, alongside (not
@@ -105,10 +105,10 @@ describe("Tabs molecule (ADR-0074)", () => {
     const user = userEvent.setup();
     const onSelect = renderTabs();
 
-    await user.click(screen.getByTestId("entity-detail-tab-test-case-defect-links"));
+    await user.click(screen.getByTestId("entity-detail-tab-item-issue-links"));
 
     expect(onSelect).toHaveBeenCalledTimes(1);
-    expect(onSelect).toHaveBeenCalledWith("test-case-defect-links");
+    expect(onSelect).toHaveBeenCalledWith("item-issue-links");
   });
 
   /**
@@ -127,7 +127,7 @@ describe("Tabs molecule (ADR-0074)", () => {
   });
 
   /**
-   * Load-bearing, not cosmetic: Tabler's JS bundle IS loaded (ADR-0053 Phase
+   * Load-bearing, not cosmetic: Tabler's JS bundle IS loaded ( Phase
    * 1) and would act on a `data-bs-toggle="tab"` attribute, fighting React for
    * ownership of which panel shows.
    */

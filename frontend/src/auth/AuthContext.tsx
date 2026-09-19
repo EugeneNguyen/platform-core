@@ -1,5 +1,5 @@
 /**
- * AUTH-1/AUTH-2 auth state: access token + org-context data.
+ * / auth state: access token + org-context data.
  *
  * The access token itself is NOT held in this component's own `useState` —
  * it lives in the module-level `lib/auth/tokenStore` (so `apiFetch`, a plain
@@ -9,7 +9,7 @@
  * truth. `orgContext`/`orgs` are still plain local `useState`, set only by
  * `login()` (`POST /auth/login`'s response carries them; nothing else does).
  *
- * AUTH-2 boot-time silent refresh: on mount, this provider calls
+ * boot-time silent refresh: on mount, this provider calls
  * `POST /auth/refresh` once (via `requestRefresh()`, `lib/api/client.ts` —
  * NOT the raw `refresh()` from `lib/api/auth.ts`) to attempt restoring a
  * session from the httpOnly `refresh_token` cookie — the token store starts
@@ -25,12 +25,12 @@
  * directly) matters beyond just UX: `apiFetch`'s own 401 interceptor and
  * this boot effect now share the exact same in-flight-promise dedup
  * (`requestRefresh`'s `refreshPromise` memoization in `client.ts`). Refresh
- * tokens are single-use (ADR-0013) — without sharing that dedup, this
+ * tokens are single-use — without sharing that dedup, this
  * boot-time call and a near-simultaneous interceptor-triggered refresh could
  * each present the same cookie, and one would get spuriously rejected. This
  * is reachable in practice (React StrictMode double-invoking this effect in
  * dev; two tabs cold-loading concurrently in prod) and was fixed after being
- * reproduced by the AUTH-2 E2E suite.
+ * reproduced by the E2E suite.
  *
  * On boot-refresh failure — `401 invalid_refresh_token` (no/expired/revoked/
  * rotated-out cookie) or `403 no_active_organization` (org membership lost),
@@ -52,20 +52,20 @@
  * `org_context`/`orgs` after a reload without a dedicated endpoint that
  * doesn't exist yet. Practical effect: after a page reload, a direct
  * navigation to `/orgs/:orgId` still works (that route only needs the access
- * token). `Dashboard` (`/dashboard`, DASH-3/ADR-0063) is unaffected by this
+ * token). `Dashboard` is unaffected by this
  * gap — it deliberately never reads this context's `orgs`, fetching
  * `GET /auth/me/orgs` fresh on every mount instead, specifically so a
  * reload lands on a correct org list rather than the stale/empty one this
- * gap would otherwise produce. This is an accepted AUTH-2-scope limitation,
+ * gap would otherwise produce. This is an accepted -scope limitation,
  * not a bug.
  *
- * AUTH-3 logout (ADR-0014): `logout()` calls the `POST /auth/logout` API
+ * logout: `logout()` calls the `POST /auth/logout` API
  * function, then — in a `finally` block, so it runs whether that call
  * resolves or rejects — unconditionally clears the token store
  * (`clearAccessToken()`) and resets `orgContext`/`orgs` back to `null`/`[]`.
  * The client-side clear is what actually protects a shared/public machine,
  * so it must never be skipped just because the network round-trip to revoke
- * the server-side refresh token failed (accepted trade-off, ADR-0014's
+ * the server-side refresh token failed (accepted trade-off,
  * Consequences section). Any rejection from the API call itself is swallowed
  * here (not rethrown) — logout isn't a security boundary the caller needs to
  * react to failing; the cleanup already happened. Navigation to `/login`
@@ -135,7 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // near-simultaneous interceptor-triggered refresh (e.g. React
         // StrictMode's double-invoked effects in dev, or two tabs
         // cold-loading at once in prod) from presenting the same
-        // single-use refresh cookie (ADR-0013) twice.
+        // single-use refresh cookie twice.
         const response = await requestRefresh();
         if (!cancelled) {
           setStoredAccessToken(response.access_token);
@@ -165,7 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setOrgs(response.orgs);
   }, []);
 
-  // RBAC-1 bootstrap signup: same post-success state update as `login()`
+  // bootstrap signup: same post-success state update as `login()`
   // above — `POST /auth/signup`'s response is `LoginResponse`-shaped
   // (`org_context: "auto"`, `orgs: [the new org]`), so this mirrors `login`
   // field-for-field rather than introducing a distinct code path.
@@ -176,12 +176,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setOrgs(response.orgs);
   }, []);
 
-  // RBAC-2 (ADR-0017) invite acceptance: `POST /invites/{token}/accept`'s
+  // invite acceptance: `POST /invites/{token}/accept`'s
   // response is `LoginResponse`-shaped too (access token in the body,
   // refresh token as an httpOnly cookie, issued exactly like
   // `POST /auth/login`'s success path) — same post-success state update as
   // `login()`/`signup()` above, so the invitee lands authenticated instead
-  // of back at a login screen, per ADR-0017's decision.
+  // of back at a login screen, decision.
   const acceptInvite = useCallback(async (token: string, password: string) => {
     const response = await acceptInviteRequest(token, { password });
     setStoredAccessToken(response.access_token);
@@ -193,7 +193,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await logoutRequest();
     } catch {
-      // Swallowed deliberately (ADR-0014): logout isn't a security boundary
+      // Swallowed deliberately: logout isn't a security boundary
       // the caller needs to react to failing — the client-side clear below
       // is what actually matters and must run regardless.
     } finally {

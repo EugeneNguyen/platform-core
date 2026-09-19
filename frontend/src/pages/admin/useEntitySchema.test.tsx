@@ -6,7 +6,7 @@ import { resolveEntityKey, toEntityConfig, useEntitySchema, useEntitySchemas } f
 import { EntitySchemaResponse, getEntitySchema } from "../../lib/api/entitySchema";
 
 /**
- * ADR-0053 (ADMIN-3): unit coverage for the fetch boundary that replaced the
+ *: unit coverage for the fetch boundary that replaced the
  * deleted static `entityConfigByKey` lookup.
  *
  * Scope note: these tests deliberately mock `getEntitySchema` rather than the
@@ -15,7 +15,7 @@ import { EntitySchemaResponse, getEntitySchema } from "../../lib/api/entitySchem
  * do that (`frontend/CLAUDE.md`'s own note on mocks staying green through a
  * real contract change), and the claim is instead pinned where it can actually
  * be proven: `backend/tests/integration/test_adr53_entity_schema.py` against
- * the live route, and TC-ADMIN-034's e2e spec against a real browser. What is
+ * the live route, and e2e spec against a real browser. What is
  * genuinely unit-testable here, and is what this file covers, is the hook's own
  * logic: which key gets requested, which entity is deliberately never requested
  * at all, and how a fetched response is assembled into the `EntityConfig` shape
@@ -23,15 +23,15 @@ import { EntitySchemaResponse, getEntitySchema } from "../../lib/api/entitySchem
  */
 vi.mock("../../lib/api/entitySchema", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../lib/api/entitySchema")>();
-  return { ...actual, getEntitySchema: vi.fn() };
+  return {...actual, getEntitySchema: vi.fn() };
 });
 
 const mockGetEntitySchema = vi.mocked(getEntitySchema);
 
 function schemaResponse(overrides: Partial<EntitySchemaResponse> = {}): EntitySchemaResponse {
   return {
-    resource: "requirement",
-    label: "Requirements",
+    resource: "spec",
+    label: "Specs",
     methods: ["list", "get", "create", "update", "delete"],
     scopeField: "project_id",
     scopeSelector: null,
@@ -73,7 +73,7 @@ afterEach(() => {
 
 describe("resolveEntityKey", () => {
   it("passes a real plural route slug through unchanged", () => {
-    expect(resolveEntityKey("requirements")).toBe("requirements");
+    expect(resolveEntityKey("specs")).toBe("specs");
     expect(resolveEntityKey("role-assignments")).toBe("role-assignments");
   });
 
@@ -102,12 +102,12 @@ describe("resolveEntityKey", () => {
 
 describe("toEntityConfig", () => {
   it("assembles the fetched schema plus the frontend-static route wiring", () => {
-    const config = toEntityConfig("requirements", schemaResponse());
+    const config = toEntityConfig("specs", schemaResponse());
 
-    expect(config.resource).toBe("requirement");
-    // `path` is derived (`pathFor`), not served — ADR-0053 keeps route wiring
+    expect(config.resource).toBe("spec");
+    // `path` is derived (`pathFor`), not served — keeps route wiring
     // frontend-static.
-    expect(config.path).toBe("/requirements");
+    expect(config.path).toBe("/specs");
     expect(config.methods).toEqual(["list", "get", "create", "update", "delete"]);
     expect(config.scopeField).toBe("project_id");
     expect(config.searchFields).toEqual(["title", "description"]);
@@ -137,14 +137,14 @@ describe("toEntityConfig", () => {
     const branching = toEntityConfig(
       "risk-items",
       schemaResponse({
-        scopeField: ["requirement_id", "test_plan_id"],
+        scopeField: ["spec_id", "batch_id"],
         scopeSelector: [
-          { refEntity: "requirement", paramName: "requirement_id", label: "By requirement" },
-          { refEntity: "test-plan", paramName: "test_plan_id", label: "By test plan" },
+          { refEntity: "spec", paramName: "spec_id", label: "By spec" },
+          { refEntity: "batch", paramName: "batch_id", label: "By test plan" },
         ],
       }),
     );
-    expect(branching.scopeField).toEqual(["requirement_id", "test_plan_id"]);
+    expect(branching.scopeField).toEqual(["spec_id", "batch_id"]);
     expect(Array.isArray(branching.scopeSelector)).toBe(true);
 
     const resolved = toEntityConfig(
@@ -168,7 +168,7 @@ describe("toEntityConfig", () => {
   });
 
   /**
-   * ADR-0059: `projects` gets a `createPath` override too — unlike
+   *: `projects` gets a `createPath` override too — unlike
    * `releases`, only `createPath` is overridden (`listPath` stays the
    * default flat `/projects`, since `list`/`get`/`update`/`delete` all fit
    * the plain convention; only the real create route is org-path-nested).
@@ -185,15 +185,15 @@ describe("toEntityConfig", () => {
 describe("useEntitySchema", () => {
   it("requests the resolved plural key and returns the assembled config plus the backend label", async () => {
     mockGetEntitySchema.mockResolvedValue(schemaResponse());
-    const { result } = renderHook(() => useEntitySchema("requirements"), { wrapper: makeWrapper() });
+    const { result } = renderHook(() => useEntitySchema("specs"), { wrapper: makeWrapper() });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    expect(mockGetEntitySchema).toHaveBeenCalledWith("requirements");
-    expect(result.current.config?.resource).toBe("requirement");
-    expect(result.current.config?.path).toBe("/requirements");
+    expect(mockGetEntitySchema).toHaveBeenCalledWith("specs");
+    expect(result.current.config?.resource).toBe("spec");
+    expect(result.current.config?.path).toBe("/specs");
     // The heading label is backend-served, not re-derived from the route slug.
-    expect(result.current.label).toBe("Requirements");
+    expect(result.current.label).toBe("Specs");
     expect(result.current.isError).toBe(false);
   });
 
@@ -207,11 +207,11 @@ describe("useEntitySchema", () => {
   });
 
   it("reports the loading state the static import never had", () => {
-    // ADR-0053's own accepted trade-off: every admin page now waits on a fetch
+    // own accepted trade-off: every admin page now waits on a fetch
     // before it can render anything. `config` must be undefined meanwhile —
     // a page that rendered a half-config would render the wrong columns.
     mockGetEntitySchema.mockReturnValue(new Promise(() => {}));
-    const { result } = renderHook(() => useEntitySchema("requirements"), { wrapper: makeWrapper() });
+    const { result } = renderHook(() => useEntitySchema("specs"), { wrapper: makeWrapper() });
 
     expect(result.current.isLoading).toBe(true);
     expect(result.current.config).toBeUndefined();
@@ -227,7 +227,7 @@ describe("useEntitySchema", () => {
 
   it("surfaces a fetch failure as isError with no config", async () => {
     mockGetEntitySchema.mockRejectedValue(new Error("boom"));
-    const { result } = renderHook(() => useEntitySchema("requirements"), { wrapper: makeWrapper() });
+    const { result } = renderHook(() => useEntitySchema("specs"), { wrapper: makeWrapper() });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(result.current.config).toBeUndefined();
@@ -243,7 +243,7 @@ describe("useEntitySchemas", () => {
     // `EntityTable` resolves one ref-entity config per FK column, and the
     // column list is data — so the single hook can't be called in a loop.
     // "project" and "projects" are the same entity by two names.
-    const { result } = renderHook(() => useEntitySchemas(["project", "projects", "requirements"]), {
+    const { result } = renderHook(() => useEntitySchemas(["project", "projects", "specs"]), {
       wrapper: makeWrapper(),
     });
 
@@ -251,8 +251,8 @@ describe("useEntitySchemas", () => {
 
     expect(mockGetEntitySchema).toHaveBeenCalledTimes(2);
     expect(mockGetEntitySchema).toHaveBeenCalledWith("projects");
-    expect(mockGetEntitySchema).toHaveBeenCalledWith("requirements");
+    expect(mockGetEntitySchema).toHaveBeenCalledWith("specs");
     expect(result.current.projects?.path).toBe("/projects");
-    expect(result.current.requirements?.path).toBe("/requirements");
+    expect(result.current.specs?.path).toBe("/specs");
   });
 });

@@ -273,8 +273,8 @@ describe("OrgMembers page", () => {
     it("suspends an active member and refreshes the list", async () => {
       mockListMembers
         .mockResolvedValueOnce(page([ACTIVE_MEMBER]))
-        .mockResolvedValueOnce(page([{ ...ACTIVE_MEMBER, status: "suspended" }]));
-      mockUpdateMembershipStatus.mockResolvedValue({ ...ACTIVE_MEMBER, status: "suspended" });
+        .mockResolvedValueOnce(page([{...ACTIVE_MEMBER, status: "suspended" }]));
+      mockUpdateMembershipStatus.mockResolvedValue({...ACTIVE_MEMBER, status: "suspended" });
       renderPage();
 
       const suspendButton = await screen.findByRole("button", { name: /suspend/i });
@@ -288,7 +288,7 @@ describe("OrgMembers page", () => {
 
     it("reactivates a suspended member", async () => {
       mockListMembers.mockResolvedValue(page([SUSPENDED_MEMBER]));
-      mockUpdateMembershipStatus.mockResolvedValue({ ...SUSPENDED_MEMBER, status: "active" });
+      mockUpdateMembershipStatus.mockResolvedValue({...SUSPENDED_MEMBER, status: "active" });
       renderPage();
 
       const reactivateButton = await screen.findByRole("button", { name: /reactivate/i });

@@ -7,7 +7,7 @@ import { listEntities } from "../../lib/api/entityCrud";
  * UI Design Document §2: `FkAutocomplete` debounces (300ms) then fires
  * `?q=<term>` against the referenced entity's own list route.
  *
- * **ADR-0053:** the ref-entity config arrives from `useEntitySchema(refEntity)`
+ * **:** the ref-entity config arrives from `useEntitySchema(refEntity)`
  * now — the `entityConfigByKey` registry map this file used to mock is gone.
  * The hook is mocked (rather than a `QueryClientProvider` + a mocked
  * `getEntitySchema`) for the same reason the registry was: the debounce
@@ -34,7 +34,7 @@ const { schemaState, OWNER_SCHEMA } = vi.hoisted(() => ({
 
 vi.mock("../../pages/admin/useEntitySchema", () => ({
   useEntitySchema: (key: string) => ({
-    config: key === "widget-owner" && !schemaState.isLoading ? OWNER_SCHEMA : undefined,
+    config: key === "widget-owner" && !schemaState.isLoading ? OWNER_SCHEMA: undefined,
     label: undefined,
     isLoading: schemaState.isLoading,
     isError: false,
@@ -43,7 +43,7 @@ vi.mock("../../pages/admin/useEntitySchema", () => ({
 
 vi.mock("../../lib/api/entityCrud", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../lib/api/entityCrud")>();
-  return { ...actual, listEntities: vi.fn(), getEntity: vi.fn() };
+  return {...actual, listEntities: vi.fn(), getEntity: vi.fn() };
 });
 
 const mockListEntities = vi.mocked(listEntities);
@@ -101,14 +101,14 @@ describe("FkAutocomplete", () => {
     expect(mockListEntities).toHaveBeenCalledWith(expect.anything(), {}, expect.objectContaining({ q: "ali" }));
   });
 
-  // ADR-0053: the `config` prop (EXEC-1/ADR-0034) is unchanged by the move to
+  //: the `config` prop is unchanged by the move to
   // a fetched config — `useEntitySchema` is still called (Rules of Hooks), but
   // the prop is what the search actually runs against.
   it("uses the explicit config prop over the fetched schema when one is supplied", async () => {
     const override = {
       resource: "widget_owner",
       path: "/widget-owners",
-      listPath: "/test-plans/plan-1/widget-owners",
+      listPath: "/batchs/plan-1/widget-owners",
       methods: ["list", "get"] as const,
       fields: [{ name: "name", label: "Name", type: "string" as const }],
     };
@@ -119,7 +119,7 @@ describe("FkAutocomplete", () => {
         refEntity="widget-owner"
         labelField="name"
         onChange={vi.fn()}
-        config={{ ...override, methods: [...override.methods] }}
+        config={{...override, methods: [...override.methods] }}
       />,
     );
 
@@ -127,13 +127,13 @@ describe("FkAutocomplete", () => {
     await vi.advanceTimersByTimeAsync(300);
 
     expect(mockListEntities).toHaveBeenCalledWith(
-      expect.objectContaining({ listPath: "/test-plans/plan-1/widget-owners" }),
+      expect.objectContaining({ listPath: "/batchs/plan-1/widget-owners" }),
       {},
       expect.objectContaining({ q: "alice" }),
     );
   });
 
-  // ADR-0053: the config is no longer available on first render. "Still
+  //: the config is no longer available on first render. "Still
   // fetching" must not be presented as "this field can't be searched".
   it("renders a disabled Loading... input while the ref-entity schema is still fetching", () => {
     schemaState.isLoading = true;

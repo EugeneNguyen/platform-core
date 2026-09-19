@@ -1,5 +1,5 @@
 /**
- * AUTH-4/ADR-0015 agent-credential API calls, extended by ADR-0063's
+ * / agent-credential API calls, extended
  * `GET /orgs/{org_id}/agents` list route.
  *
  * Same thin-wrapper-over-`apiFetch` shape as `lib/api/members.ts` — no
@@ -14,7 +14,7 @@ export interface CreateAgentPayload {
 }
 
 /**
- * `POST /orgs/{org_id}/agents` (ADR-0015): `ai_agent.create`, human-only.
+ * `POST /orgs/{org_id}/agents`: `ai_agent.create`, human-only.
  * `api_key` is the raw, unhashed credential — shown here once, never
  * retrievable again. Callers must never log/persist this response body
  * beyond the one-time "copy it now" UI moment.
@@ -39,7 +39,7 @@ export interface RevokeAgentResponse {
 }
 
 /**
- * `POST /orgs/{org_id}/agents/{agent_id}/revoke` (ADR-0015): `ai_agent.update`,
+ * `POST /orgs/{org_id}/agents/{agent_id}/revoke`: `ai_agent.update`,
  * human-only, idempotent — revoking an already-revoked agent returns 200
  * with the existing `revoked_at`, not an error.
  */
@@ -50,7 +50,7 @@ export async function revokeAgent(orgId: string, agentId: string): Promise<Revok
 }
 
 /**
- * A single row from `GET /orgs/{org_id}/agents`'s `items` array (ADR-0063).
+ * A single row from `GET /orgs/{org_id}/agents`'s `items` array.
  * Never carries `api_key` — the raw credential is issuance-only.
  */
 export interface AgentSummary {
@@ -77,7 +77,7 @@ export interface ListAgentsParams {
 }
 
 /**
- * `GET /orgs/{org_id}/agents` (ADR-0063): `ai_agent.create` (reused, not a
+ * `GET /orgs/{org_id}/agents`: `ai_agent.create` (reused, not a
  * new `.read` permission code — see the route's own docstring), human-only,
  * same 404-vs-403 boundary as `createAgent`/`revokeAgent`. Includes revoked
  * agents (not filtered out) — management needs the full history.
@@ -87,5 +87,5 @@ export async function listAgents(orgId: string, params: ListAgentsParams = {}): 
   if (params.page !== undefined) query.set("page", String(params.page));
   if (params.page_size !== undefined) query.set("page_size", String(params.page_size));
   const qs = query.toString();
-  return apiFetch<AgentsPage>(`/api/v1/orgs/${orgId}/agents${qs ? `?${qs}` : ""}`);
+  return apiFetch<AgentsPage>(`/api/v1/orgs/${orgId}/agents${qs ? `?${qs}`: ""}`);
 }

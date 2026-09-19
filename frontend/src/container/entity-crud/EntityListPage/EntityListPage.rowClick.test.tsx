@@ -7,16 +7,16 @@ import { apiFetch } from "../../../lib/api/client";
 import { listEntities } from "../../../lib/api/entityCrud";
 
 /**
- * ADR-0073 — where a row click goes.
+ * — where a row click goes.
  *
  * `EntityTable` owns the affordance itself (covered in
  * `components/organisms/entity-table.test.tsx`); this file covers the
- * destination, which is `EntityListPage`'s, including ADR-0073 Decision §4's
+ * destination, which is `EntityListPage`'s, including Decision §4's
  * `detailPath`-takes-precedence rule.
  *
  * Two fixture entities: `widgets` (no `detailPath` — the 27-entity majority
  * case) and `projectlikes` (declares one, standing in for `Project`'s own
- * ADR-0060 `detailPath: "/projects/:id"` bespoke workspace). The branch under
+ * `detailPath: "/projects/:id"` bespoke workspace). The branch under
  * test is on config data, never on an entity name, so a fixture proves it.
  */
 vi.mock("../../../pages/admin/registry", async (importOriginal) => {
@@ -45,13 +45,13 @@ vi.mock("../../../pages/admin/useEntitySchema", () => {
       fields: [{ name: "title", label: "Title", type: "string" }],
     },
   };
-  const resolveEntityKey = (key: string) => (key.endsWith("s") ? key : `${key}s`);
+  const resolveEntityKey = (key: string) => (key.endsWith("s") ? key: `${key}s`);
   return {
     resolveEntityKey,
     useEntitySchema: (key?: string) => {
-      const resolved = key ? resolveEntityKey(key) : undefined;
+      const resolved = key ? resolveEntityKey(key): undefined;
       return {
-        config: resolved ? configs[resolved] : undefined,
+        config: resolved ? configs[resolved]: undefined,
         label: undefined,
         isLoading: false,
         isError: false,
@@ -63,12 +63,12 @@ vi.mock("../../../pages/admin/useEntitySchema", () => {
 
 vi.mock("../../../lib/api/entityCrud", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../../lib/api/entityCrud")>();
-  return { ...actual, listEntities: vi.fn(), getEntity: vi.fn(), deleteEntity: vi.fn() };
+  return {...actual, listEntities: vi.fn(), getEntity: vi.fn(), deleteEntity: vi.fn() };
 });
 
 vi.mock("../../../lib/api/client", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../../lib/api/client")>();
-  return { ...actual, apiFetch: vi.fn() };
+  return {...actual, apiFetch: vi.fn() };
 });
 
 const mockListEntities = vi.mocked(listEntities);
@@ -102,10 +102,10 @@ function renderPage(entity: "widgets" | "projectlikes") {
   );
 }
 
-describe("EntityListPage row click (ADR-0073)", () => {
+describe("EntityListPage row click ", () => {
   afterEach(() => vi.clearAllMocks());
 
-  it("TC-ADMIN-059: clicking a row navigates to that row's generic detail route", async () => {
+  it(": clicking a row navigates to that row's generic detail route", async () => {
     mockApiFetch.mockResolvedValue({ codes: [] });
     mockListEntities.mockResolvedValue({ items: ROWS, total: 2, page: 1, page_size: 25 });
 
@@ -118,22 +118,22 @@ describe("EntityListPage row click (ADR-0073)", () => {
   });
 
   /**
-   * TC-ADMIN-063: ADR-0073 Decision §4. An entity declaring `detailPath`
-   * (ADR-0060 — only `Project` does today) already links its own name cell to
+   *: Decision §4. An entity declaring `detailPath`
+   * already links its own name cell to
    * that bespoke workspace; a row click must land in the same place, or one
    * row would have two destinations.
    */
-  it("TC-ADMIN-063: clicking a row of an entity declaring detailPath navigates there, not to the generic route", async () => {
+  it(": clicking a row of an entity declaring detailPath navigates there, not to the generic route", async () => {
     mockApiFetch.mockResolvedValue({ codes: [] });
     mockListEntities.mockResolvedValue({ items: ROWS, total: 2, page: 1, page_size: 25 });
 
     renderPage("projectlikes");
 
-    // The name cell's own ADR-0060 link points at the bespoke path...
+    // The name cell's own link points at the bespoke path...
     const link = await screen.findByRole("link", { name: "First" });
     expect(link).toHaveAttribute("href", "/projectlikes/row-1");
 
-    // ...and so does a click anywhere else on the same row.
+    //...and so does a click anywhere else on the same row.
     fireEvent.click(screen.getByTestId("entity-table-row-row-1"));
 
     expect(screen.getByTestId("pathname")).toHaveTextContent("/projectlikes/row-1");
@@ -141,12 +141,12 @@ describe("EntityListPage row click (ADR-0073)", () => {
   });
 
   /**
-   * TC-ADMIN-061 (page half): the Edit icon still routes to the edit form and
+   * (page half): the Edit icon still routes to the edit form and
    * the Delete icon still opens the confirm modal — a row click has not
    * swallowed either. `entity-table.test.tsx` covers the propagation
    * mechanism; this covers the real wiring end to end on the page.
    */
-  it("TC-ADMIN-061: the Edit and Delete row actions still work, and do not open the detail page", async () => {
+  it(": the Edit and Delete row actions still work, and do not open the detail page", async () => {
     mockApiFetch.mockResolvedValue({
       codes: [
         { code: "widget.update", project_id: null },

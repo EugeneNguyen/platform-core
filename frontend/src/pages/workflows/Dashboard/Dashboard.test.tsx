@@ -7,9 +7,9 @@ import * as organizationsApi from "../../../lib/api/organizations";
 import { ApiError } from "../../../lib/api/client";
 
 /**
- * DASH-3 dashboard org list + chooser (ADR-0063, supersedes DASH-1's empty
- * placeholder). Covers TC-DASH-007..010 (count-branching + fresh-fetch),
- * TC-DASH-011's unit-level half (mounting with a fresh `getMyOrgs` mock
+ * dashboard org list + chooser (, supersedes empty
+ * placeholder). Covers..010 (count-branching + fresh-fetch),
+ * unit-level half (mounting with a fresh `getMyOrgs` mock
  * simulates "reload with a stale/absent `AuthContext.orgs`" — the full
  * real-browser reload proof lives in `e2e/tests/root-redirect.spec.ts`).
  *
@@ -41,7 +41,7 @@ describe("Dashboard", () => {
     vi.restoreAllMocks();
   });
 
-  // TC-DASH-007
+  //
   it("exactly 1 org: navigates straight to /orgs/{id}, no intermediate render, no click", async () => {
     vi.spyOn(authApi, "getMyOrgs").mockResolvedValue({
       orgs: [{ id: "org-1", name: "Acme Corp", slug: "acme-corp" }],
@@ -55,7 +55,7 @@ describe("Dashboard", () => {
     expect(screen.queryByText(/select an organization/i)).not.toBeInTheDocument();
   });
 
-  // TC-DASH-008 + TC-DASH-011 (unit half)
+  // + (unit half)
   it("fetches the org list fresh via getMyOrgs on every mount", async () => {
     const getMyOrgsSpy = vi.spyOn(authApi, "getMyOrgs").mockResolvedValue({
       orgs: [
@@ -70,7 +70,7 @@ describe("Dashboard", () => {
     expect(getMyOrgsSpy).toHaveBeenCalledTimes(1);
   });
 
-  // TC-DASH-009
+  //
   it("2+ orgs: renders a 'Select an organization' card list, clicking one navigates to /orgs/{id}", async () => {
     vi.spyOn(authApi, "getMyOrgs").mockResolvedValue({
       orgs: [
@@ -90,7 +90,7 @@ describe("Dashboard", () => {
     await waitFor(() => expect(screen.getByTestId("landed-org-id")).toHaveTextContent("org-2"));
   });
 
-  // TC-DASH-010
+  //
   it("0 orgs: renders an empty state with a 'Create organization' CTA, not the literal word Dashboard as heading", async () => {
     vi.spyOn(authApi, "getMyOrgs").mockResolvedValue({ orgs: [] });
 

@@ -20,13 +20,13 @@ import {
 } from "../../../lib/api/entityCrud";
 
 /**
- * ADR-0078 — "Create new <far entity>" when the far entity has **no generic
- * `create` at all** (TC-ADMIN-124 … TC-ADMIN-127).
+ * — "Create new <far entity>" when the far entity has **no generic
+ * `create` at all**.
  *
  * A sibling of `EntityDetailPage.relationActions.test.tsx` rather than an
- * addition to it, for that file's own stated reason: its claim is ADR-0076/0077's
+ * addition to it, for that file's own stated reason: its claim is /0077's
  * ("which write action renders, gated twice, and what the two calls are"), and
- * the claim here is the one ADR-0078 adds — *which route makes the far record*,
+ * the claim here is the one adds — *which route makes the far record*,
  * and what changes when that route also writes this tab's link row. The harness
  * below is that file's, verbatim in shape (the same synthetic entity fixtures,
  * the same `useEntitySchema`/`entityCrud`/`apiFetch` mocks, the same
@@ -35,25 +35,25 @@ import {
  * existing ones:
  *
  * - `widget-thing-links` gains a `compoundCreates` entry whose `pathTemplate`
- *   placeholder **is** the tab's own `scopeField` and which
- *   `linksAutomatically` — the `Requirement` -> "Test conditions (linked)"
- *   shape (`trace.py`), the one-request case. TC-ADMIN-124.
+ * placeholder **is** the tab's own `scopeField` and which
+ * `linksAutomatically` — the `Spec` -> "Test conditions (linked)"
+ * shape (`trace.py`), the one-request case..
  * - a new `widget-gadget-links` -> `gadgets` junction whose placeholder names a
- *   *different* record and which does **not** link automatically — the
- *   `TestCase` -> "Test conditions (linked)" / `TestCase` -> "Defects (linked)"
- *   shape, the parent-picker-then-two-calls case. TC-ADMIN-125.
+ * *different* record and which does **not** link automatically — the
+ * `Item` -> "Test conditions (linked)" / `Item` -> "Issues (linked)"
+ * shape, the parent-picker-then-two-calls case..
  * - both declare a `permission` that is deliberately **not**
- *   `<far resource>.create` (`thing.author`/`gadget.author`), so a gate reading
- *   the conventional code instead of the declared one fails TC-ADMIN-126
- *   rather than passing by coincidence.
+ * `<far resource>.create` (`thing.author`/`gadget.author`), so a gate reading
+ * the conventional code instead of the declared one fails
+ * rather than passing by coincidence.
  * - a new `widget-cog-links` -> `cogs` junction where the far entity has a
- *   generic `create` **and** a `compoundCreates` entry is declared — the
- *   characterization case at the bottom of this file. See its own comment: the
- *   component does not behave the way ADR-0078's "generic wins" prose reads.
+ * generic `create` **and** a `compoundCreates` entry is declared — the
+ * characterization case at the bottom of this file. See its own comment: the
+ * component does not behave the way "generic wins" prose reads.
  *
  * `gizmos` (generic `create`, no `compoundCreates`) is kept exactly as the
  * sibling file has it, and is what the first regression test uses: the 9 of 12
- * live link directions ADR-0078 changes nothing about.
+ * live link directions changes nothing about.
  */
 const schemaState = vi.hoisted(() => ({ isLoading: false }));
 
@@ -105,7 +105,7 @@ vi.mock("../../../pages/admin/useEntitySchema", () => {
           targetEntity: "gizmos",
           targetField: "gizmo_id",
         },
-        /** ADR-0078, case A: no generic create, parent IS the record being viewed, route links automatically. */
+        /**, case A: no generic create, parent IS the record being viewed, route links automatically. */
         {
           kind: "many-to-many",
           entity: "widget-thing-links",
@@ -114,7 +114,7 @@ vi.mock("../../../pages/admin/useEntitySchema", () => {
           targetEntity: "things",
           targetField: "thing_id",
         },
-        /** ADR-0078, case B: no generic create, parent must be picked, route does NOT link this junction. */
+        /**, case B: no generic create, parent must be picked, route does NOT link this junction. */
         {
           kind: "many-to-many",
           entity: "widget-gadget-links",
@@ -124,7 +124,7 @@ vi.mock("../../../pages/admin/useEntitySchema", () => {
           targetField: "gadget_id",
         },
         /**
-         * The **pre-ADR-0078 state**, still reachable and still correct: no
+         * The **pre- state**, still reachable and still correct: no
          * generic create AND no compound declaration for this direction, i.e.
          * no create path at all. Its "Create new" must stay absent in EVERY
          * permission cell — the API-capability half of the gate, which no grant
@@ -156,11 +156,11 @@ vi.mock("../../../pages/admin/useEntitySchema", () => {
       path: "/sprockets",
       methods: ["list", "get", "create", "update", "delete"],
       /**
-       * Scoped by the very column the `widget-gadget-links` tab is scoped by —
+       * Scoped by the very column the `widget-gadget-links` tab is scoped —
        * which is what makes `compoundParentScopeParams`' new first clause fire
        * for that tab's parent picker. The real instance of this is
-       * `TestExecution`'s branching `("test_cycle_id", "test_case_id")` scope,
-       * widened by ADR-0078 precisely so a `TestCase` tab can narrow the
+       * `Run`'s branching `("round_id", "item_id")` scope,
+       * widened precisely so a `Item` tab can narrow the
        * execution picker to its own runs.
        */
       scopeField: "widget_id",
@@ -200,7 +200,7 @@ vi.mock("../../../pages/admin/useEntitySchema", () => {
     /**
      * Authored only through a bespoke route: no generic `create`. `widget_id`
      * is a real field of it so the locked parent renders as a disabled display
-     * field, exactly as `TestCondition.requirement_id` does.
+     * field, exactly as `Criterion.spec_id` does.
      */
     things: {
       resource: "thing",
@@ -227,7 +227,7 @@ vi.mock("../../../pages/admin/useEntitySchema", () => {
         permission: "widget_thing_link.create",
       },
       /**
-       * ADR-0078's cleanest shape (`Requirement` -> test conditions): the
+       * cleanest shape (`Spec` -> test conditions): the
        * single placeholder names this tab's own `scopeField`, so no picker is
        * needed, and the route writes THIS junction's link row itself, so no
        * second call is owed. `permission` is NOT `thing.create` on purpose.
@@ -258,8 +258,8 @@ vi.mock("../../../pages/admin/useEntitySchema", () => {
          * ("Sprocket") deliberately: both controls are on screen at once once a
          * parent is picked — the picker above and this locked display below —
          * and identical labels would make every `getByLabelText` in this file's
-         * TC-ADMIN-125 test a strict-mode failure rather than an assertion. The
-         * real `Defect` action makes the same distinction for a different
+         * test a strict-mode failure rather than an assertion. The
+         * real `Issue` action makes the same distinction for a different
          * reason (`parent_label_field="executed_at"`, not `result`).
          */
         { name: "sprocket_id", label: "Owning sprocket", type: "fk", refEntity: "sprocket", labelField: "name" },
@@ -286,13 +286,13 @@ vi.mock("../../../pages/admin/useEntitySchema", () => {
           permission: "gadget.author",
           // The bespoke route links the gadget to its sprocket, NOT to this
           // widget — so the client still owes the identical `linkCreate` call
-          // ADR-0076 Amendment 1 makes.
+          // Amendment 1 makes.
           linksAutomatically: false,
           parentEntity: "sprocket",
           parentLabel: "Sprocket",
           parentLabelField: "name",
           // The route's own business-rule precondition, invisible to the picker
-          // — `{"result": "fail"}` in the live `Defect` declaration.
+          // — `{"result": "fail"}` in the live `Issue` declaration.
           parentFilters: { state: "ready" },
         },
       ],
@@ -326,7 +326,7 @@ vi.mock("../../../pages/admin/useEntitySchema", () => {
         pathTemplate: "/widgets/{widget_id}/doodad-links/{doodad_id}",
         permission: "widget_doodad_link.create",
       },
-      /** Deliberately empty — this is the shape ADR-0078 exists to eliminate, kept to prove the gate still closes on it. */
+      /** Deliberately empty — this is the shape exists to eliminate, kept to prove the gate still closes on it. */
       compoundCreates: [],
     },
     "widget-cog-links": {
@@ -369,14 +369,14 @@ vi.mock("../../../pages/admin/useEntitySchema", () => {
       relations: [],
     },
   };
-  const resolveEntityKey = (key: string) => (key.endsWith("s") ? key : `${key}s`);
+  const resolveEntityKey = (key: string) => (key.endsWith("s") ? key: `${key}s`);
   return {
     resolveEntityKey,
     useEntitySchema: (key?: string) => {
-      const resolved = key ? resolveEntityKey(key) : undefined;
+      const resolved = key ? resolveEntityKey(key): undefined;
       return {
-        config: schemaState.isLoading || !resolved ? undefined : configs[resolved],
-        label: resolved ? "Widgets" : undefined,
+        config: schemaState.isLoading || !resolved ? undefined: configs[resolved],
+        label: resolved ? "Widgets": undefined,
         isLoading: Boolean(resolved) && schemaState.isLoading,
         isError: false,
       };
@@ -402,14 +402,14 @@ vi.mock("../../../lib/api/entityCrud", async (importOriginal) => {
     listEntities: vi.fn(),
     createEntity: vi.fn(),
     createLinkRow: vi.fn(),
-    // ADR-0078's new first call.
+    // new first call.
     createViaCompoundRoute: vi.fn(),
   };
 });
 
 vi.mock("../../../lib/api/client", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../../lib/api/client")>();
-  return { ...actual, apiFetch: vi.fn() };
+  return {...actual, apiFetch: vi.fn() };
 });
 
 const mockGetEntity = vi.mocked(getEntity);
@@ -466,9 +466,9 @@ function renderPage(search: string) {
   );
 }
 
-/** The `Requirement` -> "Test conditions (linked)" shape: no picker, one request. */
+/** The `Spec` -> "Test conditions (linked)" shape: no picker, one request. */
 const AUTO_LINKING = "?tab=widget-thing-links";
-/** The `TestCase` -> "Defects (linked)" shape: pick a parent, then two requests. */
+/** The `Item` -> "Issues (linked)" shape: pick a parent, then two requests. */
 const PICKER_TWO_CALL = "?tab=widget-gadget-links";
 
 const THING_COMPOUND_CODE = "thing.author";
@@ -479,17 +479,17 @@ const GADGET_LINK_CODE = "widget_gadget_link.create";
 const NO_CREATE_PATH = "?tab=widget-doodad-links";
 const DOODAD_LINK_CODE = "widget_doodad_link.create";
 
-describe("EntityRelationTab compound create (ADR-0078)", () => {
+describe("EntityRelationTab compound create ", () => {
   afterEach(() => {
     vi.clearAllMocks();
     schemaState.isLoading = false;
   });
 
-  // --- TC-ADMIN-124: no parent picker, the route links the row itself ------------------------
+  // ---: no parent picker, the route links the row itself ------------------------
 
-  it("TC-ADMIN-124: Create new renders even though the far entity has no generic create, with no parent picker", async () => {
+  it(": Create new renders even though the far entity has no generic create, with no parent picker", async () => {
     /**
-     * The whole point of ADR-0078, stated as the one assertion ADR-0076
+     * The whole point of, stated as the one assertion
      * Amendment 1 could not make: `things` has no `"create"` in `methods`, so
      * Amendment 1's own condition 3 (`farConfig.methods.includes("create")`)
      * refused the action outright and this tab showed "Link existing" alone —
@@ -517,7 +517,7 @@ describe("EntityRelationTab compound create (ADR-0078)", () => {
 
     // The form is there...
     expect(await screen.findByLabelText("Name", { exact: true })).toBeInTheDocument();
-    // ...and the parent step is not, in either of its two rendered parts.
+    //...and the parent step is not, in either of its two rendered parts.
     // `FkAutocomplete` carries this as its element `id` (it has no test id of
     // its own), which is also what makes the label/input association work.
     expect(document.getElementById("entity-relation-compound-parent-picker")).toBeNull();
@@ -527,7 +527,7 @@ describe("EntityRelationTab compound create (ADR-0078)", () => {
     expect(screen.getByLabelText("Widget", { exact: true })).toBeDisabled();
   });
 
-  it("TC-ADMIN-124: submitting calls the bespoke route once and NEVER the generic create or the link route", async () => {
+  it(": submitting calls the bespoke route once and NEVER the generic create or the link route", async () => {
     /**
      * Three claims, and the third is the load-bearing one: with
      * `linksAutomatically: true` the route wrote this junction's link row inside
@@ -561,8 +561,8 @@ describe("EntityRelationTab compound create (ADR-0078)", () => {
 
     // Not the generic path...
     expect(mockCreateEntity).not.toHaveBeenCalled();
-    // ...and NOT a second write. The route already linked it; calling
-    // `linkCreate` here is the `409` ADR-0078 exists to avoid.
+    //...and NOT a second write. The route already linked it; calling
+    // `linkCreate` here is the `409` exists to avoid.
     expect(mockCreateLinkRow).not.toHaveBeenCalled();
 
     // Success closes the modal and leaves no "created, not linked" notice —
@@ -571,9 +571,9 @@ describe("EntityRelationTab compound create (ADR-0078)", () => {
     expect(screen.queryByTestId("entity-relation-create-link-error")).not.toBeInTheDocument();
   });
 
-  // --- TC-ADMIN-125: parent picker, then the second call ------------------------------------
+  // ---: parent picker, then the second call ------------------------------------
 
-  it("TC-ADMIN-125: the parent picker gates the create form until a parent is chosen", async () => {
+  it(": the parent picker gates the create form until a parent is chosen", async () => {
     /**
      * The form is *about* a record that does not exist yet, under a parent the
      * tab does not hold — so rendering it first would offer a submit that
@@ -621,7 +621,7 @@ describe("EntityRelationTab compound create (ADR-0078)", () => {
     );
   });
 
-  it("TC-ADMIN-125: the PICKED parent is used, then the link call follows carrying the created id", async () => {
+  it(": the PICKED parent is used, then the link call follows carrying the created id", async () => {
     /**
      * Four claims. The parent id is the one the user **picked** (`s-1`), not the
      * tab's own `parentId` (`w-1`) — a component reading `parentId` here would
@@ -673,12 +673,12 @@ describe("EntityRelationTab compound create (ADR-0078)", () => {
     expect(mockCreateEntity).not.toHaveBeenCalled();
   });
 
-  it("TC-ADMIN-125: when the link half fails the modal closes and the created-not-linked alert appears", async () => {
+  it(": when the link half fails the modal closes and the created-not-linked alert appears", async () => {
     /**
-     * The same partial state ADR-0076 Amendment 1 has, reached through
-     * ADR-0078's first call instead of `createEntity` — which is exactly why
+     * The same partial state Amendment 1 has, reached through
+     * first call instead of `createEntity` — which is exactly why
      * this path is shared rather than duplicated. Mirrors the sibling file's own
-     * TC-ADMIN-098 assertions: label, id, the API's own reason verbatim, the
+     * assertions: label, id, the API's own reason verbatim, the
      * recovery, and the modal **gone**, so pressing Create again cannot mint a
      * second row for one intent.
      */
@@ -708,16 +708,16 @@ describe("EntityRelationTab compound create (ADR-0078)", () => {
     expect(mockCreateViaCompoundRoute).toHaveBeenCalledTimes(1);
   });
 
-  // --- TC-ADMIN-126: the permission matrix for compound mode --------------------------------
+  // ---: the permission matrix for compound mode --------------------------------
   //
   // Four cells. The second is the single most surprising one and is the
-  // deliberate relaxation ADR-0078 makes to ADR-0076 Amendment 1's rule — see
+  // deliberate relaxation makes to Amendment 1's rule — see
   // its own comment. Every cell uses the action's OWN declared `permission`
   // (`thing.author`/`gadget.author`), which is deliberately NOT
   // `<far resource>.create`, so a gate reading the conventional code fails here
   // instead of passing by coincidence.
 
-  it("TC-ADMIN-126 (cell 1a): both the compound and link codes, linksAutomatically TRUE -> renders", async () => {
+  it(" (cell 1a): both the compound and link codes, linksAutomatically TRUE -> renders", async () => {
     primeMocks([THING_COMPOUND_CODE, THING_LINK_CODE]);
 
     renderPage(AUTO_LINKING);
@@ -728,7 +728,7 @@ describe("EntityRelationTab compound create (ADR-0078)", () => {
     expect(screen.getByTestId("entity-relation-link")).toBeInTheDocument();
   });
 
-  it("TC-ADMIN-126 (cell 1b): both codes, linksAutomatically FALSE -> renders", async () => {
+  it(" (cell 1b): both codes, linksAutomatically FALSE -> renders", async () => {
     primeMocks([GADGET_COMPOUND_CODE, GADGET_LINK_CODE]);
 
     renderPage(PICKER_TWO_CALL);
@@ -737,9 +737,9 @@ describe("EntityRelationTab compound create (ADR-0078)", () => {
     expect(screen.getByTestId("entity-relation-link")).toBeInTheDocument();
   });
 
-  it("TC-ADMIN-126 (cell 2): ONLY the compound code, linksAutomatically TRUE -> STILL renders", async () => {
+  it(" (cell 2): ONLY the compound code, linksAutomatically TRUE -> STILL renders", async () => {
     /**
-     * The surprising cell, and the deliberate relaxation: ADR-0076 Amendment 1
+     * The surprising cell, and the deliberate relaxation: Amendment 1
      * gated "Create new" on the link permission **unconditionally**, and its
      * reason was specific — an actor who may create but may not link gets a
      * `201` then a `403`, stranding a real row this tab cannot display. When the
@@ -760,11 +760,11 @@ describe("EntityRelationTab compound create (ADR-0078)", () => {
     expect(screen.queryByTestId("entity-relation-link")).not.toBeInTheDocument();
   });
 
-  it("TC-ADMIN-126 (cell 3): ONLY the compound code, linksAutomatically FALSE -> absent", async () => {
+  it(" (cell 3): ONLY the compound code, linksAutomatically FALSE -> absent", async () => {
     /**
      * The other half of the same relaxation, and the reason it is a relaxation
      * rather than a removal: this route links something else, so the client
-     * still owes a second, separately-gated call — ADR-0076 Amendment 1's
+     * still owes a second, separately-gated call — Amendment 1's
      * original reasoning applies unchanged and the button must not render.
      */
     primeMocks([GADGET_COMPOUND_CODE]);
@@ -780,7 +780,7 @@ describe("EntityRelationTab compound create (ADR-0078)", () => {
     expect(screen.queryByTestId("entity-relation-actions")).not.toBeInTheDocument();
   });
 
-  it("TC-ADMIN-126 (cell 4): neither code -> absent", async () => {
+  it(" (cell 4): neither code -> absent", async () => {
     primeMocks(["thing.read", "widget_thing_link.read"]);
 
     renderPage(AUTO_LINKING);
@@ -791,7 +791,7 @@ describe("EntityRelationTab compound create (ADR-0078)", () => {
     expect(screen.queryByTestId("entity-relation-actions")).not.toBeInTheDocument();
   });
 
-  it("TC-ADMIN-126: the conventional `<far resource>.create` code does NOT unlock the compound action", async () => {
+  it(": the conventional `<far resource>.create` code does NOT unlock the compound action", async () => {
     /**
      * The gate reads the declaration's own `permission`, never a
      * `${resource}.create` convention — which is the whole reason it is
@@ -808,7 +808,7 @@ describe("EntityRelationTab compound create (ADR-0078)", () => {
     expect(screen.queryByTestId("entity-relation-create-link")).not.toBeInTheDocument();
   });
 
-  it("TC-ADMIN-126 (link-only): the link code alone hides the compound action on BOTH directions", async () => {
+  it(" (link-only): the link code alone hides the compound action on BOTH directions", async () => {
     /**
      * The mirror of cell 2, and the reason the matrix is a *cross* rather than
      * a list. Cell 2 shows that dropping the LINK code can still leave the
@@ -835,10 +835,10 @@ describe("EntityRelationTab compound create (ADR-0078)", () => {
     expect(screen.queryByTestId("entity-relation-create-link")).not.toBeInTheDocument();
   });
 
-  it("TC-ADMIN-126 (no create path): a direction with neither mechanism hides Create new in EVERY cell", async () => {
+  it(" (no create path): a direction with neither mechanism hides Create new in EVERY cell", async () => {
     /**
      * The API-capability half of the double gate, independent of permissions —
-     * and the state all three real directions were in before ADR-0078.
+     * and the state all three real directions were in before.
      * `doodads` has no generic `create` and `widget-doodad-links` declares no
      * `compoundCreates` entry, so `createLinkMode` is `null` and no grant can
      * open it.
@@ -868,11 +868,11 @@ describe("EntityRelationTab compound create (ADR-0078)", () => {
 
   // --- Regression: the 9 directions whose far entity HAS a generic create -------------------
 
-  it("a far entity with its own generic create still takes the generic path, untouched by ADR-0078", async () => {
+  it("a far entity with its own generic create still takes the generic path, untouched by ", async () => {
     /**
      * `gizmos` registers `create` and `widget-gizmo-links` declares no
      * `compoundCreates` — the shape 9 of the 12 live link directions have, and
-     * the one ADR-0078 changes nothing about. `createEntity` runs,
+     * the one changes nothing about. `createEntity` runs,
      * `createViaCompoundRoute` never does, and the second call is still owed.
      */
     const user = userEvent.setup();
@@ -895,15 +895,15 @@ describe("EntityRelationTab compound create (ADR-0078)", () => {
 
   it("a generic create WINS over a compound declaration, and every gate agrees with the call", async () => {
     /**
-     * **This test was written as a CHARACTERIZATION of a real defect, then
-     * inverted when the defect was fixed — the sequence `docs/CLAUDE.md`
+     * **This test was written as a CHARACTERIZATION of a real issue, then
+     * inverted when the issue was fixed — the sequence `docs/CLAUDE.md`
      * prescribes, kept rather than deleted because the inverted assertion is
      * the only thing that stops the bug returning.**
      *
      * As first written, `EntityRelationTab` branched its mutation body on
      * `compoundCreate` being truthy rather than on `createLinkMode`:
      *
-     *     const created = compoundCreate ? await createViaCompoundRoute(...) : await createEntity(...)
+     * const created = compoundCreate ? await createViaCompoundRoute(...): await createEntity(...)
      *
      * while `canCreateAndLink`, `createLinkPermission` and
      * `createLinkFormLockedValues` all branched on `createLinkMode`, which
@@ -921,8 +921,8 @@ describe("EntityRelationTab compound create (ADR-0078)", () => {
      * because there is only one value to disagree about.
      *
      * Still not reachable from any live configuration — all three real
-     * `compound_creates` declarations (`trace.py`) point at `TestCondition`/
-     * `Defect`, neither of which has a generic `create`, and the backend's own
+     * `compound_creates` declarations (`trace.py`) point at `Criterion`/
+     * `Issue`, neither of which has a generic `create`, and the backend's own
      * `test_no_declaration_is_dead_code` fails a declaration for a direction
      * that would not need one. That is precisely why it needs a test here:
      * "unreachable because another layer forbids it" is not the same as
@@ -947,7 +947,7 @@ describe("EntityRelationTab compound create (ADR-0078)", () => {
     await user.type(await screen.findByLabelText("Name", { exact: true }), "Fresh cog");
     await user.click(screen.getByRole("button", { name: "Create" }));
 
-    // ...and the GENERIC route is what gets called — the second half.
+    //...and the GENERIC route is what gets called — the second half.
     await waitFor(() => expect(mockCreateEntity).toHaveBeenCalledTimes(1));
     expect((mockCreateEntity.mock.calls[0][0] as EntityConfig).path).toBe("/cogs");
     expect(mockCreateViaCompoundRoute).not.toHaveBeenCalled();
@@ -957,29 +957,29 @@ describe("EntityRelationTab compound create (ADR-0078)", () => {
   });
 });
 
-// --- TC-ADMIN-127: the three exported helpers, as pure functions ---------------------------
+// ---: the three exported helpers, as pure functions ---------------------------
 //
 // Unit-tested directly rather than through rendered modals, for the same reason
-// `pickerScopeParams`' own tests are: these three ARE the whole of ADR-0078's
+// `pickerScopeParams`' own tests are: these three ARE the whole of
 // derivation rule (which parent, from where, scoped how), and pinning each
 // branch through a render would cost several modals per clause and prove less.
 
-describe("scopeArmsOf (ADR-0078)", () => {
+describe("scopeArmsOf ", () => {
   const base = { resource: "x", path: "/xs", methods: [], fields: [] } as unknown as EntityConfig;
 
   it("a string scopeField yields one arm", () => {
-    expect(scopeArmsOf({ ...base, scopeField: "project_id" } as EntityConfig)).toEqual(["project_id"]);
+    expect(scopeArmsOf({...base, scopeField: "project_id" } as EntityConfig)).toEqual(["project_id"]);
   });
 
   it("a branching pair yields both arms", () => {
     /**
      * The case a strict `scopeField === "project_id"` silently answers *no* to,
-     * which is why this exists at all — `TestExecution`'s own pair since
-     * ADR-0078 is what makes `TestCase` -> "Defects (linked)" scopeable.
+     * which is why this exists at all — `Run`'s own pair since
+     * is what makes `Item` -> "Issues (linked)" scopeable.
      */
     expect(
-      scopeArmsOf({ ...base, scopeField: ["test_cycle_id", "test_case_id"] } as EntityConfig),
-    ).toEqual(["test_cycle_id", "test_case_id"]);
+      scopeArmsOf({...base, scopeField: ["round_id", "item_id"] } as EntityConfig),
+    ).toEqual(["round_id", "item_id"]);
   });
 
   it("an unscoped entity yields no arms", () => {
@@ -987,7 +987,7 @@ describe("scopeArmsOf (ADR-0078)", () => {
   });
 });
 
-describe("compoundParentField (ADR-0078)", () => {
+describe("compoundParentField ", () => {
   function action(pathTemplate: string): CompoundCreateAction {
     return {
       farField: "far_id",
@@ -1002,11 +1002,11 @@ describe("compoundParentField (ADR-0078)", () => {
   }
 
   it("exactly one placeholder yields its name", () => {
-    expect(compoundParentField(action("/requirements/{requirement_id}/test-conditions"))).toBe(
-      "requirement_id",
+    expect(compoundParentField(action("/specs/{spec_id}/criterions"))).toBe(
+      "spec_id",
     );
-    expect(compoundParentField(action("/executions/{test_execution_id}/defects"))).toBe(
-      "test_execution_id",
+    expect(compoundParentField(action("/executions/{run_id}/issues"))).toBe(
+      "run_id",
     );
   });
 
@@ -1017,7 +1017,7 @@ describe("compoundParentField (ADR-0078)", () => {
      * tab that renders fine otherwise. `createLinkMode` reads `null` here and
      * resolves to `null` itself.
      */
-    expect(compoundParentField(action("/test-conditions"))).toBeNull();
+    expect(compoundParentField(action("/criterions"))).toBeNull();
   });
 
   it("two placeholders yields null rather than guessing which is the parent", () => {
@@ -1025,37 +1025,37 @@ describe("compoundParentField (ADR-0078)", () => {
   });
 });
 
-describe("compoundParentScopeParams (ADR-0078)", () => {
+describe("compoundParentScopeParams ", () => {
   const base = { resource: "x", path: "/xs", methods: [], fields: [] } as unknown as EntityConfig;
   const relation: EntityRelation = {
     kind: "many-to-many",
-    entity: "test-case-defect-links",
-    scopeField: "test_case_id",
-    label: "Defects (linked)",
-    targetEntity: "defects",
-    targetField: "defect_id",
+    entity: "item-issue-links",
+    scopeField: "item_id",
+    label: "Issues (linked)",
+    targetEntity: "issues",
+    targetField: "issue_id",
   };
 
   it("the new clause: a parent scopeable by THIS tab's own scope column is scoped by the record being viewed", () => {
     /**
-     * The clause that makes `TestCase` -> "Defects (linked)" correct rather than
-     * merely present: `POST /executions/{id}/defects` files the defect against
-     * `execution.test_case_id`, so an unnarrowed execution picker would let the
+     * The clause that makes `Item` -> "Issues (linked)" correct rather than
+     * merely present: `POST /executions/{id}/issues` files the issue against
+     * `execution.item_id`, so an unnarrowed execution picker would let the
      * user create a row that lands on a different test case and never appears in
      * the tab they created it from. Asserted against the branching pair, since
      * that is the live shape and a single-string comparison would miss it.
      */
     const parentConfig = {
       ...base,
-      scopeField: ["test_cycle_id", "test_case_id"],
+      scopeField: ["round_id", "item_id"],
     } as EntityConfig;
     expect(compoundParentScopeParams(parentConfig, relation, "tc-1", "p-1")).toEqual({
-      test_case_id: "tc-1",
+      item_id: "tc-1",
     });
   });
 
   it("falls through to pickerScopeParams: a project-scoped parent takes project_id from the route", () => {
-    const parentConfig = { ...base, scopeField: "project_id" } as EntityConfig;
+    const parentConfig = {...base, scopeField: "project_id" } as EntityConfig;
     expect(compoundParentScopeParams(parentConfig, relation, "tc-1", "p-1")).toEqual({
       project_id: "p-1",
     });
@@ -1069,8 +1069,8 @@ describe("compoundParentScopeParams (ADR-0078)", () => {
      */
     const parentConfig = {
       ...base,
-      scopeField: "requirement_id",
-      scopeSelector: { refEntity: "requirement", paramName: "requirement_id" },
+      scopeField: "spec_id",
+      scopeSelector: { refEntity: "spec", paramName: "spec_id" },
     } as EntityConfig;
     expect(compoundParentScopeParams(parentConfig, relation, "tc-1", "p-1")).toBeNull();
   });

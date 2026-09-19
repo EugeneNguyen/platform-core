@@ -1,10 +1,10 @@
 /**
- * AUTH-1 login API call.
+ * login API call.
  *
  * Source: API Document §2 (`POST /auth/login` request/response contract).
  *
  * `credentials: "include"` is required so the browser accepts the httpOnly
- * `refresh_token` cookie the backend sets on success (ADR-0003) — the
+ * `refresh_token` cookie the backend sets on success — the
  * refresh token itself is never present in the JSON body, so there is
  * nothing here for the frontend to read or store for it.
  */
@@ -51,7 +51,7 @@ export async function login(email: string, password: string): Promise<LoginRespo
 }
 
 /**
- * RBAC-1 bootstrap signup request body (`POST /auth/signup`, ADR-0016).
+ * bootstrap signup request body.
  */
 export interface SignupPayload {
   name: string;
@@ -62,10 +62,10 @@ export interface SignupPayload {
 }
 
 /**
- * RBAC-1 bootstrap signup call.
+ * bootstrap signup call.
  *
  * Source: API Document §2 (`POST /auth/signup` request/response contract),
- * ADR-0016 (organization bootstrap & creation flow).
+ * (organization bootstrap & creation flow).
  *
  * Public — no bearer token required or sent. `credentials: "include"` is
  * required for the same reason `login()` needs it: the backend sets the
@@ -96,7 +96,7 @@ export interface RefreshResponse {
 }
 
 /**
- * AUTH-2 silent refresh call.
+ * silent refresh call.
  *
  * Source: API Document §2 (`POST /auth/refresh` request/response contract).
  *
@@ -127,7 +127,7 @@ export interface MeResponse {
 }
 
 /**
- * AUTH-2 identity check.
+ * identity check.
  *
  * Source: API Document §2 (`GET /auth/me` request/response contract).
  *
@@ -144,7 +144,7 @@ export interface MeOrgsResponse {
 }
 
 /**
- * SHELL-6 organization-switcher org list (`GET /auth/me/orgs`, ADR-0036).
+ * organization-switcher org list.
  *
  * Source: API Document §2. Returns the caller's `active`-membership
  * Organizations only (`suspended`/`invited` never appear) in the same
@@ -153,7 +153,7 @@ export interface MeOrgsResponse {
  *
  * Called lazily, on each dropdown open, rather than once at login: it is
  * deliberately NOT wired into `AuthContext`'s login-time-only `orgs` field,
- * which is empty after a page reload (the AUTH-2 gap ADR-0035 deferred).
+ * which is empty after a page reload.
  * Every open is a fresh read — see `AppHeader.tsx`'s own docstring.
  *
  * Human-only: an `AIAgent` bearer credential gets `403 actor_forbidden`.
@@ -166,12 +166,12 @@ export async function getMyOrgs(): Promise<MeOrgsResponse> {
 }
 
 /**
- * AUTH-3 logout call.
+ * logout call.
  *
  * Source: API Document §2 (`POST /auth/logout` request/response contract).
  *
  * No request body; `credentials: "include"` so the httpOnly `refresh_token`
- * cookie is sent for the backend to revoke (ADR-0014). Response is
+ * cookie is sent for the backend to revoke. Response is
  * `204 No Content` — `apiFetch<void>` resolves with `undefined`.
  *
  * `skipAuthRetry` is deliberately left unset (unlike `login`/`refresh`): if
@@ -180,7 +180,7 @@ export async function getMyOrgs(): Promise<MeOrgsResponse> {
  * still ends at the same session's (rotated) refresh token being revoked,
  * and if the refresh itself fails, the interceptor's own failure path
  * already clears the token store and redirects, which is what logout wants
- * anyway. See AUTH-3 scope plan §3 for the full edge-case reasoning.
+ * anyway. See scope plan §3 for the full edge-case reasoning.
  */
 export async function logout(): Promise<void> {
   await apiFetch<void>("/api/v1/auth/logout", {

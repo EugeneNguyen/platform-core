@@ -1,15 +1,15 @@
 """RBAC permission-check dependencies and actor resolution.
 
-AUTH-2 (Task 1) implemented `get_current_actor` for the human-JWT path only.
-AUTH-4 (ADR-0015) extends it with a second bearer scheme — an `AIAgent`
+ (Task 1) implemented `get_current_actor` for the human-JWT path only.
+  extends it with a second bearer scheme — an `AIAgent`
 API-key branch — and implements `has_permission`/`require_permission`: the
 generic `RoleAssignment` -> `Role` -> `RolePermission` -> `Permission`
 resolution plumbing any org-scoped route needs, seeded via test fixtures
-directly (RBAC-1..5's own business flows — org bootstrap, invites, seeded
-system roles — are still unbuilt and out of scope here; see ADR-0015).
+directly (..5's own business flows — org bootstrap, invites, seeded
+system roles — are still unbuilt and out of scope here; ).
 
-`require_human_actor` stays untouched/stubbed — RBAC-5's job, unrelated to
-this story. AUTH-4's own human-only gate on the agent-issuance/revocation
+`require_human_actor` stays untouched/stubbed — job, unrelated to
+this story. own human-only gate on the agent-issuance/revocation
 routes (`app/api/routes/agents.py`) is a separate, hardcoded inline check,
 matching the same "not just relying on RoleAssignment contents" posture
 `require_human_actor`'s docstring describes for Approval.
@@ -42,8 +42,8 @@ _bearer_scheme = HTTPBearer(auto_error=False)
 # (missing header, malformed/expired JWT, well-formed JWT whose `sub`
 # resolves to no `User`, unrecognized/revoked/wrong AIAgent key) —
 # deliberately not distinguished, same no-enumeration-leak posture
-# ADR-0011/AUTH-1's login route takes for invalid_credentials, extended to
-# the agent-key path by ADR-0015 ("no distinct error code, same
+# / login route takes for invalid_credentials, extended to
+# the agent-key path ("no distinct error code, same
 # no-enumeration posture"). `GET /auth/me` reuses this shape as-is since it
 # depends on `get_current_actor` directly.
 _INVALID_TOKEN_ERROR = {
@@ -52,7 +52,7 @@ _INVALID_TOKEN_ERROR = {
     "field_errors": None,
 }
 
-# Fixed literal prefix every AIAgent API key starts with (ADR-0015). Lets
+# Fixed literal prefix every AIAgent API key starts with. Lets
 # `get_current_actor` cheaply branch on bearer-token *shape* via a plain
 # `startswith` check before attempting anything JWT-specific, instead of
 # the more expensive/ambiguous "try to decode as JWT, fall back to key
@@ -70,11 +70,11 @@ _PERMISSION_DENIED_ERROR = {
     "field_errors": None,
 }
 
-# RBAC-2 / ADR-0017: distinct from `_PERMISSION_DENIED_ERROR` above — this
+# /: distinct from `_PERMISSION_DENIED_ERROR` above — this
 # fires when a `User` actor's `OrgMembership` in the path's `org_id` exists
 # but isn't `active` (i.e. `suspended`), BEFORE the `RoleAssignment` check
 # even runs, independent of whatever that (suspended) member's still-recorded
-# `RoleAssignment` rows would otherwise grant. TC-RBAC-035 requires these two
+# `RoleAssignment` rows would otherwise grant. requires these two
 # 403s never be conflated.
 _MEMBERSHIP_INACTIVE_ERROR = {
     "code": "membership_inactive",
@@ -124,7 +124,7 @@ def _membership_inactive() -> HTTPException:
 def _actor_requires_active_membership_check(actor: User | AIAgent) -> bool:
     """Whether `require_permission`'s suspended-member gate applies to `actor`.
 
-    True only for a `User` actor (ADR-0017 Decision, "keyed off actor type").
+    True only for a `User` actor.
     An `AIAgent` can never own an `OrgMembership` row at all —
     `OrgMembership.user_id` FKs `user.actor_id` only, and an `AIAgent`'s own
     org relationship is transitive via `acting_on_behalf_of_user_id`, checked
@@ -132,7 +132,7 @@ def _actor_requires_active_membership_check(actor: User | AIAgent) -> bool:
     `_org_membership_exists` pattern) — so this gate is a structural no-op
     for it, not merely "usually passes". A blanket `OrgMembership` join keyed
     on the checked actor's own id would 403 every `AIAgent` permission check
-    unconditionally; ADR-0017 explicitly rejects that shape.
+    unconditionally; explicitly rejects that shape.
 
     Factored out as its own pure function (no DB access) so this branching
     decision has a unit-testable seam independent of
@@ -151,7 +151,7 @@ async def _has_active_membership(actor_id: str, org_id: str) -> bool:
     `_actor_requires_active_membership_check`) — opens its own short-lived
     session via `AsyncSessionLocal`, same rationale as `has_permission`
     above (not a DB-mockable seam; covered by integration tests, e.g.
-    TC-RBAC-006/031/035, not unit tests).
+    /031/035, not unit tests).
     """
     actor_uuid = uuid.UUID(str(actor_id))
     org_uuid = uuid.UUID(str(org_id))
@@ -175,14 +175,14 @@ async def _actor_has_any_role_assignment_in_org(actor_id: uuid.UUID, org_id: str
     """Does `actor_id` hold ANY `RoleAssignment` row at all in `org_id` — any
     role, any project scope, regardless of what permission is being checked?
 
-    ADR-0083's fallback gate: an `AIAgent` only inherits its
+     fallback gate: an `AIAgent` only inherits its
     `acting_on_behalf_of_user_id`'s grants when this returns `False` for the
     agent itself. This is deliberately an *existence* check, not a per-check
     match — an agent holding a real but narrower grant (e.g. project-A-only)
     must stay confined to it and never fall through to the human's broader
     access just because *this specific* check (a different project, a
     different code) doesn't happen to match that narrower row. Confirmed by
-    TC-RBAC-011 (`test_aiagent_grantee_resolves_identically_to_human_grantee`):
+     (`test_aiagent_grantee_resolves_identically_to_human_grantee`):
     a per-query union broke that test's own "isolated from the human, project
     B still 403s" assertion the moment the agent held any row at all.
     """
@@ -217,7 +217,7 @@ async def _resolve_agent_actor(raw_key: str, db: AsyncSession) -> AIAgent:
     Narrows via `key_prefix` first (extracted from the presented raw key,
     not trusted from anywhere else), then argon2-verifies the full raw key
     against each narrowed candidate's `key_hash` in turn — `key_prefix` is
-    NOT assumed unique (ADR-0015 edge case: two independently generated
+    NOT assumed unique ( edge case: two independently generated
     8-char prefixes colliding is astronomically unlikely but not
     impossible), so this iterates rather than `.first()`-and-trusts.
     `revoked_at IS NULL` is enforced in the `WHERE` clause itself, not
@@ -225,11 +225,11 @@ async def _resolve_agent_actor(raw_key: str, db: AsyncSession) -> AIAgent:
     a never-existed one — same posture as the human 401 path's "can't tell
     'no such user' from 'wrong password'".
 
-    On a match, stamps `last_used_at = now()` and commits (ADR-0015: updated
+    On a match, stamps `last_used_at = now()` and commits (: updated
     on every successful agent-bearer authentication, not just at issuance).
     Raises the shared `_unauthorized()` 401 if no candidate's key matches.
     """
-    key_prefix = raw_key[len(_AGENT_KEY_LITERAL_PREFIX) :][:_AGENT_KEY_PREFIX_LENGTH]
+    key_prefix = raw_key[len(_AGENT_KEY_LITERAL_PREFIX):][:_AGENT_KEY_PREFIX_LENGTH]
 
     result = await db.execute(
         select(AIAgent).where(AIAgent.key_prefix == key_prefix, AIAgent.revoked_at.is_(None))
@@ -252,9 +252,9 @@ async def get_current_actor(
     """Resolve the bearer credential to the calling `User` or `AIAgent`.
 
     Branches on credential *shape* before attempting to interpret it
-    (ADR-0015): a `pcore_agent_`-prefixed credential is resolved as an AIAgent
+    : a `pcore_agent_`-prefixed credential is resolved as an AIAgent
     API key (`_resolve_agent_actor`); anything else is attempted as a human
-    JWT access token, the AUTH-2 behavior, unchanged.
+    JWT access token, the behavior, unchanged.
 
     401s (all via the shared `_unauthorized()` shape, no distinct codes
     between the two credential kinds — no-enumeration posture) on:
@@ -307,22 +307,22 @@ async def has_permission(actor: "User | AIAgent", org_id: str, code: str, projec
     this function usable outside a request lifecycle as well (e.g. a future
     batch/background job checking permissions).
 
-    `project_id=None` (the default, and the only path AUTH-4's own routes
+    `project_id=None` (the default, and the only path own routes
     exercise) resolves org-wide grants only: `RoleAssignment.project_id IS
     NULL`. Passing a `project_id` ADDITIONALLY matches project-scoped
     grants for that exact `project_id` — i.e. either an org-wide grant OR a
     grant scoped to this specific project satisfies the check, per
-    ADR-0021 ("an actor holding the permission org-wide still passes,
+     ("an actor holding the permission org-wide still passes,
     exactly as before, but so does an actor holding it only project-scoped
     to this specific project_id"). Implemented as an `OR`, not a replace: a
     plain `project_id == given` filter (excluding `NULL` rows) would make a
     project-scoped check *narrower* than the org-wide-only default instead
     of a superset of it, silently breaking every existing org-wide grant
-    the moment a caller passes `project_id` — RBAC-3/ADR-0021 is the first
+    the moment a caller passes `project_id` — / is the first
     story to actually pass one through from a real route
     (`GET`/`PATCH /projects/{id}`).
 
-    **ADR-0083 (AIAgent permission inheritance, bootstrap-fallback only):**
+    ** (AIAgent permission inheritance, bootstrap-fallback only):**
     takes the actor object, not a bare id. An `AIAgent` inherits its
     `acting_on_behalf_of_user_id`'s grants ONLY when the agent holds NO
     `RoleAssignment` of its own anywhere in `org_id` at all
@@ -331,7 +331,7 @@ async def has_permission(actor: "User | AIAgent", org_id: str, code: str, projec
     org (even a narrower one that doesn't cover the specific `code`/
     `project_id` being checked right now) stays confined to its own rows and
     never falls through to the human's broader access — confirmed by
-    TC-RBAC-011, which a naive always-union design broke (an agent scoped to
+    , which a naive always-union design broke (an agent scoped to
     one project must still 403 on another, regardless of what its
     behalf-user separately holds org-wide). The fallback itself additionally
     requires the behalf-user to currently hold an *active* `OrgMembership`
@@ -339,7 +339,7 @@ async def has_permission(actor: "User | AIAgent", org_id: str, code: str, projec
     `require_permission`'s own suspended-member gate already uses for a
     `User` actor directly) — a suspended human's grant-less agent must not
     inherit anything. A `User` actor is unaffected: exactly one id is ever
-    checked, identical to the pre-ADR-0083 behavior.
+    checked, identical to the pre- behavior.
     """
     actor_ids = [actor.actor_id]
     if (
@@ -380,7 +380,7 @@ async def has_permission(actor: "User | AIAgent", org_id: str, code: str, projec
 async def has_permission_in_any_org(actor: "User | AIAgent", code: str) -> bool:
     """Check whether `actor` holds permission `code` org-wide in ANY org they belong to.
 
-    RBAC-1 / ADR-0016: `POST /orgs` (minting a *second* org) has no target
+     /: `POST /orgs` (minting a *second* org) has no target
     `org_id` in its path yet — the org doesn't exist until the call
     succeeds — so `has_permission`'s path-scoped `org_id` filter doesn't fit.
     This is a bespoke sibling, not a modification of `has_permission`: same
@@ -390,12 +390,12 @@ async def has_permission_in_any_org(actor: "User | AIAgent", code: str) -> bool:
 
     Still filters `RoleAssignment.project_id IS NULL` — org-wide grants
     only, same default `has_permission` uses. A project-scoped-only grant
-    (`project_id` non-null) must NOT satisfy this gate (TC-RBAC-023):
+    (`project_id` non-null) must NOT satisfy this gate:
     creating an org is inherently an org-wide action, not a project-scoped
     one, so a permission held only within one project says nothing about
     whether the actor may create a brand-new organization.
 
-    **ADR-0083:** for an `AIAgent` actor, falls back to its
+    **:** for an `AIAgent` actor, falls back to its
     `acting_on_behalf_of_user_id`'s own `RoleAssignment` rows — but, mirroring
     `has_permission`'s own bootstrap-only posture, ONLY when the agent holds
     NO `RoleAssignment` of its own anywhere (`_actor_has_any_role_assignment_anywhere`),
@@ -403,7 +403,7 @@ async def has_permission_in_any_org(actor: "User | AIAgent", code: str) -> bool:
     here, unlike `has_permission`: this function has no single `org_id` to
     check membership against (that's the whole reason it exists), and a
     `User` actor's own call through this same function has never required
-    one either — adding an asymmetric requirement for the `AIAgent` branch
+    one either — adding an asymmetric spec for the `AIAgent` branch
     alone would check something this function's `User` path was never gated
     on.
     """
@@ -442,12 +442,12 @@ def require_permission(code: str) -> Callable[..., Any]:
     request's own resolved path parameters (`request.path_params["org_id"]`)
     rather than a dependency-declared function parameter — `require_permission`
     is a bare dependency factory used across different route shapes, all of
-    which are `/orgs/{org_id}/...`-rooted (ADR-0015's 404-vs-403 boundary
+    which are `/orgs/{org_id}/...`-rooted ( 404-vs-403 boundary
     applies to exactly this shape of route); reading it off `request` avoids
     every call site having to redeclare `org_id: uuid.UUID` as its own path
     parameter just to satisfy this dependency. `project_id` is read the same
     way, defaulting to `None` (org-wide check) when the route has no
-    `{project_id}` path segment — AUTH-4's own routes never do.
+    `{project_id}` path segment — own routes never do.
 
     NOTE: the 404-vs-403 boundary itself (no `OrgMembership` at all -> 404,
     membership-but-no-permission -> 403) is NOT enforced here — that check
@@ -457,14 +457,14 @@ def require_permission(code: str) -> Callable[..., Any]:
     the caller hold this specific permission". This dependency only ever
     403s; it never 404s.
 
-    RBAC-2 / ADR-0017: for a `User` actor with a target `org_id`, this now
+     /: for a `User` actor with a target `org_id`, this now
     ALSO requires an *active*-status `OrgMembership` before the
     `RoleAssignment` check runs — a `suspended` member's still-recorded
     `RoleAssignment` rows must never satisfy a permission check.
     `403 membership_inactive`, distinct from this function's own
     `403 permission_denied`. `AIAgent` actors are exempt entirely (see
     `_actor_requires_active_membership_check`) — this closes the exact gap
-    RBAC-2's AC3 names, and since every current and future org-scoped route
+     AC3 names, and since every current and future org-scoped route
     depends on this same function, the enforcement is automatic, not
     per-route-author-remembered.
     """
@@ -476,7 +476,7 @@ def require_permission(code: str) -> Callable[..., Any]:
         org_id = request.path_params.get("org_id")
         project_id = request.path_params.get("project_id")
 
-        # RBAC-2 / ADR-0017: suspended-member gate, checked BEFORE the
+        # /: suspended-member gate, checked BEFORE the
         # RoleAssignment check below — a suspended member's still-recorded
         # RoleAssignment rows must never satisfy a permission check. Only
         # applies to a User actor with a target org_id in the path (every
@@ -507,7 +507,7 @@ def require_permission(code: str) -> Callable[..., Any]:
 def require_human_actor() -> Callable[..., Any]:
     """Build a FastAPI dependency that 403s unless the current actor is a `User`.
 
-    Used to structurally enforce ADR-0004's human-only Approval rule: a
+    Used to structurally enforce human-only Approval rule: a
     hardcoded rejection of any `AIAgent` actor at the Approval-creation
     endpoint, independent of `RoleAssignment`/`RolePermission` contents.
     """

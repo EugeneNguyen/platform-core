@@ -3,22 +3,22 @@ import { describe, expect, it } from "vitest";
 import { BrandLogo } from "./brand-logo";
 
 /**
- * BRAND-1 ([ADR-0048](../../../../docs/adr/0048-brand-1-logo-brand-system.md)).
- * Covers TC-DS-023, TC-DS-024 and the `BrandLogo` half of TC-DS-029.
+ * ().
+ * Covers, and the `BrandLogo` half of.
  *
- * These assertions replace the pre-BRAND-1 ones that checked for the accessible
+ * These assertions replace the pre- ones that checked for the accessible
  * name `"Admin LTE"` — the hardcoded `<b>Admin</b>LTE` wordmark this story
  * exists to remove. That is the change under test, not collateral damage: the
  * old expectations asserted the bug.
  *
  * Which asset a variant renders is asserted through the `src` URL rather than
  * through visible text, because the wordmark lives *inside* `logo-full.svg` (as
- * SVG `<text>`), not in the DOM. Vite resolves the `import ... from "*.svg"` to
+ * SVG `<text>`), not in the DOM. Vite resolves the `import... from "*.svg"` to
  * a URL whose basename is the filename, which is what these match on.
  */
-describe("BrandLogo (BRAND-1)", () => {
-  // TC-DS-023
-  it("TC-DS-023: renders no 'AdminLTE' text, and renders the full mark + wordmark lockup instead", () => {
+describe("BrandLogo ", () => {
+  //
+  it(": renders no 'AdminLTE' text, and renders the full mark + wordmark lockup instead", () => {
     render(<BrandLogo href="/dashboard" />);
 
     // Negative half: the regression this story fixes. A partial fix (new mark
@@ -39,8 +39,8 @@ describe("BrandLogo (BRAND-1)", () => {
     expect(screen.getByTestId("brand-logo")).toHaveAttribute("data-brand-logo-size", "full");
   });
 
-  // TC-DS-024
-  it("TC-DS-024: size='small' renders the mark only, with no wordmark", () => {
+  //
+  it(": size='small' renders the mark only, with no wordmark", () => {
     render(<BrandLogo href="/dashboard" size="small" />);
 
     const mark = screen.getByTestId("brand-logo-mark");
@@ -54,9 +54,9 @@ describe("BrandLogo (BRAND-1)", () => {
     expect(screen.queryByText(/nexa/i)).toBeNull();
   });
 
-  // TC-DS-029 (BrandLogo mounts: full + small)
+  // (BrandLogo mounts: full + small)
   it.each([["full"], ["small"]] as const)(
-    "TC-DS-029: size='%s' exposes an accessible link named 'platform-core home'",
+    ": size='%s' exposes an accessible link named 'platform-core home'",
     (size) => {
       render(<BrandLogo href="/dashboard" size={size} />);
 

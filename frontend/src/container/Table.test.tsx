@@ -3,14 +3,14 @@ import { describe, expect, it, vi } from "vitest";
 import Table from "./Table";
 
 /**
- * DS-2 ([ADR-0041](../../../docs/adr/0041-ds-2-table-container-shared-pagination.md)),
- * Test Design §34 / TC-DS-009..018. These tests exercise the shared
+ * (),
+ * Test Design §34 /..018. These tests exercise the shared
  * container directly with a small fixture row shape — `EntityTable`'s and
  * `OrgHome`'s own test files cover the *migrated screens'* regressions
- * (TC-DS-015/016), not the container's own contract, which is what this
+ *, not the container's own contract, which is what this
  * file is for.
  *
- * ADR-0042 (CoreUI -> AdminLTE v4): the fixture `columns`/`renderRow` below
+ * (CoreUI -> AdminLTE v4): the fixture `columns`/`renderRow` below
  * are raw `<tr>`/`<th scope="col">`/`<td>` now, not
  * `<CTableRow>`/`<CTableHeaderCell>`/`<CTableDataCell>` — that is the
  * container's new caller contract, not a test-only convenience. Every
@@ -40,8 +40,8 @@ function renderRow(row: Row) {
 }
 
 describe("Table container", () => {
-  // TC-DS-009 (superseded): pagination now renders even on a single page —
-  // Previous/Next are just disabled — see this file's own TC-DS-009 note.
+  // (superseded): pagination now renders even on a single page —
+  // Previous/Next are just disabled — see this file's own note.
   it("renders the header slot, all rows, and a (disabled) pagination row when everything fits on one page", () => {
     render(
       <Table
@@ -67,7 +67,7 @@ describe("Table container", () => {
     expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
   });
 
-  // TC-DS-010 (server mode: page-boundary navigation)
+  // (server mode: page-boundary navigation)
   it("server mode: first page disables Previous, middle page enables both, last page disables Next", () => {
     const onPageChange = vi.fn();
     const { rerender } = render(
@@ -128,7 +128,7 @@ describe("Table container", () => {
     expect(screen.getByText("Previous").closest("li")).not.toHaveClass("disabled");
     expect(screen.getByText("Next").closest("li")).toHaveClass("disabled");
 
-    // "3" is the currently-active page. Pre-ADR-0042 that was a hard
+    // "3" is the currently-active page. Pre- that was a hard
     // constraint (CoreUI's `CPaginationItem` rendered the active item as a
     // <span> and dropped its onClick); post-migration it is a real <button>
     // that would fire. Clicking a *non-active* page is still the right way to
@@ -139,7 +139,7 @@ describe("Table container", () => {
     expect(onPageChange).toHaveBeenCalledWith(2);
   });
 
-  // TC-DS-010 (client mode: page-boundary navigation, exact row sets)
+  // (client mode: page-boundary navigation, exact row sets)
   it("client mode: renders the correct row slice per page and none from the other page", () => {
     render(
       <Table
@@ -165,7 +165,7 @@ describe("Table container", () => {
     expect(screen.queryByText("Row 1")).not.toBeInTheDocument();
   });
 
-  // TC-DS-011 (server mode)
+  // (server mode)
   it("server mode: changing page size fires onPageSizeChange AND onPageChange(1)", () => {
     const onPageChange = vi.fn();
     const onPageSizeChange = vi.fn();
@@ -191,7 +191,7 @@ describe("Table container", () => {
     expect(onPageChange).toHaveBeenCalledWith(1);
   });
 
-  // TC-DS-011 (client mode)
+  // (client mode)
   it("client mode: changing page size resets to page 1 and re-slices with the new size", () => {
     render(
       <Table
@@ -216,7 +216,7 @@ describe("Table container", () => {
     expect(screen.queryByText("Row 26")).not.toBeInTheDocument();
   });
 
-  // TC-DS-012 (frontend side: the selector itself only ever offers the 4 canonical options)
+  // (frontend side: the selector itself only ever offers the 4 canonical options)
   it("page-size selector offers exactly 10/25/50/100, nothing else", () => {
     render(
       <Table
@@ -235,7 +235,7 @@ describe("Table container", () => {
     expect(values).toEqual(["10", "25", "50", "100"]);
   });
 
-  // TC-DS-014 (superseded): pagination still renders (disabled) for an empty
+  // (superseded): pagination still renders (disabled) for an empty
   // items array; the caller still owns the empty-state message/row content.
   it("renders no rows for an empty items array — caller owns the empty-state message", () => {
     render(
@@ -410,7 +410,7 @@ describe("Table container", () => {
       />,
     );
 
-    const actions = container.querySelector(".card-header > .card-actions");
+    const actions = container.querySelector(".card-header >.card-actions");
     expect(actions).not.toBeNull();
     const button = actions!.querySelector("button");
     expect(button).not.toBeNull();
@@ -440,7 +440,7 @@ describe("Table container", () => {
     expect(table!.className).not.toContain("card-table");
   });
 
-  // TC-DS-018
+  //
   it("does not persist a page-size change — unmount and remount returns to defaultPageSize", () => {
     const { unmount } = render(
       <Table

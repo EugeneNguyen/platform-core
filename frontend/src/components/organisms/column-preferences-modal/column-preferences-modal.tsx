@@ -1,13 +1,13 @@
 /**
- * `ColumnPreferencesModal` organism (ADR-0071 / FR-ADMIN-4) — the "Columns"
+ * `ColumnPreferencesModal` organism — the "Columns"
  * dialog behind `EntityTable`'s own header button. Lists every column the
- * entity's served schema exposes (ADR-0053's `GET /entities/{resource}/schema`,
+ * entity's served schema exposes ( `GET /entities/{resource}/schema`,
  * filtered to `showInTable !== false` — the exact same source the table's
  * columns come from, so the modal can never list a column the table won't
  * render or vice versa), with a checkbox to show/hide each and Up/Down
  * buttons to reorder.
  *
- * `organisms/` tier per ADR-0043: it composes the `Modal` molecule, the
+ * `organisms/` tier per: it composes the `Modal` molecule, the
  * `LabeledCheckbox` molecule, and the `Button`/`Icon` atoms — no new raw
  * `.modal`/`.btn`/`.form-check` markup is hand-rolled here (root `CLAUDE.md`'s
  * mandatory reuse check; the `Modal` molecule already carries this repo's
@@ -15,7 +15,7 @@
  * by design, `.modal-body`/`.modal-footer` supplied by the caller).
  *
  * **Up/Down buttons, not drag-and-drop.** No drag library is a frontend
- * dependency today and this story deliberately declines to add one (ADR-0071
+ * dependency today and this story deliberately declines to add one (
  * Alternatives) — a new runtime dependency is its own decision. Up/Down is
  * also strictly more accessible: each control is a real `<button>` with a
  * real accessible name, reachable by keyboard with no pointer gestures.
@@ -29,11 +29,11 @@
  * **Two independent reasons a checkbox is disabled**, both surfaced with a
  * `title` so the user isn't left guessing:
  * 1. `row.locked` — a config-level lock (`lockedFieldNames`): the
- *    `detailLinkField` of an entity with a `detailPath` carries the only
- *    navigation into that entity's detail workspace.
+ * `detailLinkField` of an entity with a `detailPath` carries the only
+ * navigation into that entity's detail workspace.
  * 2. It is the *last remaining visible* column — hiding it would leave a
- *    table with nothing but an Actions column. This one is per-render, not
- *    per-config, so it lives here rather than in `lib/columnPreferences.ts`.
+ * table with nothing but an Actions column. This one is per-render, not
+ * per-config, so it lives here rather than in `lib/columnPreferences.ts`.
  */
 import { useEffect, useState } from "react";
 import {
@@ -49,7 +49,7 @@ import { Modal } from "../../molecules/modal";
 
 export interface ColumnPreferencesModalProps {
   visible: boolean;
-  /** Entity label for the dialog title, e.g. "Requirements". */
+  /** Entity label for the dialog title, e.g. "Specs". */
   entityLabel?: string;
   /**
    * The current merged rows (`toPreferenceRows`) — full ordered field list
@@ -88,7 +88,7 @@ export function ColumnPreferencesModal({
   const visibleCount = draft.filter((row) => row.visible).length;
 
   function toggle(index: number) {
-    setDraft((prev) => prev.map((row, i) => (i === index ? { ...row, visible: !row.visible } : row)));
+    setDraft((prev) => prev.map((row, i) => (i === index ? {...row, visible: !row.visible }: row)));
   }
 
   function move(index: number, direction: "up" | "down") {
@@ -98,7 +98,7 @@ export function ColumnPreferencesModal({
   return (
     <Modal
       visible={visible}
-      title={<>Columns{entityLabel ? <span className="text-body-secondary"> — {entityLabel}</span> : null}</>}
+      title={<>Columns{entityLabel ? <span className="text-body-secondary"> — {entityLabel}</span>: null}</>}
       onClose={onClose}
     >
       <Modal.Body>

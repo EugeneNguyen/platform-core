@@ -1,5 +1,5 @@
 /**
- * `components/organisms/` (ADR-0043, superseding ADR-0023's `components/crud/`
+ * `components/organisms/` (, superseding `components/crud/`
  * location). UI Design Document §2/§3: a table with
  * one column per `fields[]` entry (`showInTable !== false`), a filter row
  * for `filterFields`, a `?q=` search box when `searchFields` is non-empty,
@@ -9,13 +9,13 @@
  * allows it (§5 — absent, not disabled, either way: a `methods` gap is a
  * structural read-only entity, a permission gap is per-row).
  *
- * **ADR-0042 (CoreUI -> AdminLTE v4):** the markup is raw Bootstrap 5 now.
+ * ** (CoreUI -> AdminLTE v4):** the markup is raw Bootstrap 5 now.
  * `CTable*` -> `<tr>`/`<th scope="col">`/`<td>` (which is also the shape
- * `container/Table.tsx`'s `columns`/`renderRow` props take since ADR-0042),
+ * `container/Table.tsx`'s `columns`/`renderRow` props take since ),
  * `CBadge` -> `<span class="badge bg-*">` (**`bg-*`, not Bootstrap 5.3's
  * newer `text-bg-*`** — `bg-*` is what `CBadge` actually rendered and what
  * the rest of the codebase's badge assertions check; see the root
- * `CLAUDE.md`'s ADR-0042 gotcha list), `CButton` -> `<button
+ * `CLAUDE.md`'s gotcha list), `CButton` -> `<button
  * class="btn btn-outline-* btn-sm">`, `CFormInput` -> `<input
  * class="form-control">`, `CAlert` -> `<div class="alert alert-danger"
  * role="alert">`, `CSpinner` -> `<div class="spinner-border">`. The
@@ -27,61 +27,61 @@
  *
  * FK cells resolve via a batched, deduped lookup (one `getEntity` per
  * *distinct* id across the current page, not one per row) — §3's own "not
- * one request per row" requirement.
+ * one request per row" spec.
  *
- * **DS-2 (ADR-0041):** the table markup, `CPagination` block, and the new
+ * **:** the table markup, `CPagination` block, and the new
  * "Rows per page" selector all live in `container/Table.tsx` now — this
  * component keeps its `EntityConfig`-driven column/cell/actions system and
  * its search/filter row (both of which the container has no opinion on) and
  * delegates the rest. The external prop contract is unchanged except for one
  * added optional `onPageSizeChange`, so all 24 generic-admin entity list
- * screens' existing assertions pass unmodified (TC-DS-016). ADR-0041
+ * screens' existing assertions pass unmodified.
  * explicitly declines to merge `EntityConfig`-driven columns with the
  * container's generic render-prop API — they stay two call conventions over
  * one shared pagination implementation.
  *
- * **ADR-0053 (backend-driven entity schema):** two things this component used
+ * ** (backend-driven entity schema):** two things this component used
  * to own itself now arrive with the config.
  *
  * 1. FK label resolution reads its ref-entity configs from
- *    `useEntitySchemas([...])` — called **once, at the top**, over every
- *    distinct `refEntity` on the config — instead of the old per-field
- *    `entityConfigByKey[field.refEntity]` registry lookup (that map no longer
- *    exists). A hook can't be called per-field inside the effect/`renderCell`
- *    callback, which is exactly the shape `useEntitySchemas` (the batch
- *    sibling of `useEntitySchema`) exists for.
+ * `useEntitySchemas([...])` — called **once, at the top**, over every
+ * distinct `refEntity` on the config — instead of the old per-field
+ * `entityConfigByKey[field.refEntity]` registry lookup (that map no longer
+ * exists). A hook can't be called per-field inside the effect/`renderCell`
+ * callback, which is exactly the shape `useEntitySchemas` (the batch
+ * sibling of `useEntitySchema`) exists for.
  * 2. Enum badge colours come from `field.badgeColors` (backend-served, already
- *    filtered to that field's own `values`), replacing the module-level
- *    `ENUM_BADGE_COLORS` constant this file used to carry. The plain-grey
- *    `"secondary"` fallback stays — an enum with no semantic colouring at all
- *    (`EntryExitCriteria.type`, `TestLog.event_type`) is served with no
- *    `badgeColors` key at all and must keep rendering exactly as before.
+ * filtered to that field's own `values`), replacing the module-level
+ * `ENUM_BADGE_COLORS` constant this file used to carry. The plain-grey
+ * `"secondary"` fallback stays — an enum with no semantic colouring at all
+ * (`EntryExitCriteria.type`, `TestLog.event_type`) is served with no
+ * `badgeColors` key at all and must keep rendering exactly as before.
  *
- * **ADR-0053 (sort):** a `field.sortable !== false` column header renders as a
+ * ** (sort):** a `field.sortable !== false` column header renders as a
  * button (not a bare `<th>`) whenever the caller passes `onSortChange` — this
  * component owns only the click affordance and the current-sort glyph
  * (`fa-sort`/`fa-sort-up`/`fa-sort-down`); the sort *state* (which field, which
  * direction) and the resulting `?sort=` query param are `EntityListPage`'s,
  * same split as `page`/`pageSize`.
  *
- * **[ADR-0073](../../../../../docs/adr/0073-generic-entity-detail-page.md):**
+ * **:**
  * two changes, both additive.
  *
  * 1. **`onRowClick`** — an optional callback making each `<tr>` a clickable,
- *    keyboard-reachable navigation affordance. Same split as sort/pagination:
- *    this component owns the affordance (cursor, `tabIndex`, Enter/Space
- *    parity, and the Actions cell's `stopPropagation` so Edit/Delete stay
- *    independent), `EntityListPage` owns *where* the click goes. Omitting the
- *    prop reproduces the pre-ADR-0073 `<tr>` byte-for-byte.
+ * keyboard-reachable navigation affordance. Same split as sort/pagination:
+ * this component owns the affordance (cursor, `tabIndex`, Enter/Space
+ * parity, and the Actions cell's `stopPropagation` so Edit/Delete stay
+ * independent), `EntityListPage` owns *where* the click goes. Omitting the
+ * prop reproduces the pre- `<tr>` byte-for-byte.
  * 2. **Cell rendering and fk-label resolution moved out**, to
- *    `components/molecules/entity-field-value` and
- *    `pages/admin/useFkLabels` respectively, so `EntityDetailPage` renders
- *    the identical value formatting without a second copy. A pure reuse
- *    extraction — no rendered-output change, no new decision of its own (see
- *    `frontend/CLAUDE.md`'s "this is a reuse check, not a new ADR" rule; the
- *    ADR exists for the detail *page*, not for this move).
+ * `components/molecules/entity-field-value` and
+ * `pages/admin/useFkLabels` respectively, so `EntityDetailPage` renders
+ * the identical value formatting without a second copy. A pure reuse
+ * extraction — no rendered-output change, no new decision of its own (see
+ * `frontend/CLAUDE.md`'s "this is a reuse check, not a new ADR" rule; the
+ * ADR exists for the detail *page*, not for this move).
  *
- * **ADR-0071 (COLPREF-1, column visibility + order):** the rendered column
+ * ** (COLPREF-1, column visibility + order):** the rendered column
  * list is no longer `config.fields.filter(showInTable !== false)` directly —
  * it is that set merged with a per-entity `localStorage` preference
  * (`lib/columnPreferences.ts`), editable through the new "Columns" header
@@ -132,7 +132,7 @@ export interface EntityTableProps {
    */
   title?: ReactNode;
   /**
-   * Rendered in `.card-header .card-tools`, alongside the search box (if
+   * Rendered in `.card-header.card-tools`, alongside the search box (if
    * any) — `EntityListPage`'s permission-gated "New" button lives here now,
    * not owned by this component (it has no create-permission/modal-state
    * concerns of its own).
@@ -145,14 +145,14 @@ export interface EntityTableProps {
   pageSize: number;
   onPageChange: (page: number) => void;
   /**
-   * DS-2: fired when the user picks a different page size in the shared
+   *: fired when the user picks a different page size in the shared
    * container's "Rows per page" selector. Optional so the 9 existing
    * `EntityTable.test.tsx` cases (and any other caller) keep compiling
    * unchanged — `EntityListPage` is the one caller that passes it.
    */
   onPageSizeChange?: (pageSize: number) => void;
   /**
-   * ADR-0053 (sort). `sortField`/`sortDir` describe the list's current sort
+   * (sort). `sortField`/`sortDir` describe the list's current sort
    * (owned by `EntityListPage`, same posture as `page`/`pageSize`);
    * `onSortChange`, if given, makes every `field.sortable !== false` column
    * header a clickable sort toggle. Optional so the existing
@@ -165,7 +165,7 @@ export interface EntityTableProps {
   loading?: boolean;
   loadError?: string | null;
   /**
-   * ADR-0072 (filters). The list's currently-applied exact-match filters —
+   * (filters). The list's currently-applied exact-match filters —
    * owned by `EntityListPage`, same posture as `page`/`pageSize`/`sort`/
    * `search`, and for the same reason: each of these maps to a backend query
    * parameter, so it belongs to whoever owns the list query. (Contrast column
@@ -191,8 +191,8 @@ export interface EntityTableProps {
   onEdit?: (row: EntityRow) => void;
   onDelete?: (row: EntityRow) => void;
   /**
-   * [ADR-0077](../../../../../docs/adr/0077-relationship-tab-unlink-action.md):
-   * a per-row **Remove** action, for a table whose rows are ADR-0005 link rows
+   *:
+   * a per-row **Remove** action, for a table whose rows are link rows
    * rather than records — `EntityRelationTab`'s many-to-many tab is the one
    * caller.
    *
@@ -201,15 +201,15 @@ export interface EntityTableProps {
    * one of them:
    *
    * - `onDelete` is gated on `config.methods.includes("delete")` — "the
-   *   generic factory serves `DELETE /{resource}/{id}`". For a link entity
-   *   that is **false and must stay false**: a link row has no addressable id
-   *   of its own on the generic surface, and flipping the flag to reuse the
-   *   existing button would make every *other* consumer of that config (the
-   *   entity's own list page included) offer a row delete that `405`s.
+   * generic factory serves `DELETE /{resource}/{id}`". For a link entity
+   * that is **false and must stay false**: a link row has no addressable id
+   * of its own on the generic surface, and flipping the flag to reuse the
+   * existing button would make every *other* consumer of that config (the
+   * entity's own list page included) offer a row delete that `405`s.
    * - `onUnlink` is gated on the prop's presence alone. Whether the capability
-   *   exists is `config.linkDelete`, and whether this actor may use it is that
-   *   declaration's own permission — both questions the caller has already
-   *   answered before it passes the handler, neither of them derivable here.
+   * exists is `config.linkDelete`, and whether this actor may use it is that
+   * declaration's own permission — both questions the caller has already
+   * answered before it passes the handler, neither of them derivable here.
    *
    * It also renders with `aria-label="Remove"`, not "Delete", which is the
    * accurate word: the far record survives, only the assertion that the two
@@ -217,20 +217,20 @@ export interface EntityTableProps {
    */
   onUnlink?: (row: EntityRow) => void;
   /**
-   * ADR-0073: clicking anywhere on a row that isn't an action control fires
+   *: clicking anywhere on a row that isn't an action control fires
    * this. Optional — omit it and every `<tr>` renders exactly as it did
    * before (no `cursor: pointer`, no `tabIndex`, no handlers), so the 9
    * pre-existing `entity-table.test.tsx` fixtures and every non-admin caller
    * are unaffected. `EntityListPage` is the one caller that passes it.
    *
    * The trailing Actions cell stops propagation, so Edit/Delete keep working
-   * as their own independent affordances (TC-ADMIN-061) — that is the one
+   * as their own independent affordances — that is the one
    * piece of "don't navigate" knowledge this component owns; everything
    * about *where* a row click goes is the caller's.
    */
   onRowClick?: (row: EntityRow) => void;
   /**
-   * ADR-0074 (Amendment): render the `.card-body` sections **without** the
+   * (Amendment): render the `.card-body` sections **without** the
    * surrounding `.card`/`.card-header`, for a caller that already owns a card
    * — `EntityDetailPage`'s relationship tab pane, which lives inside one card
    * whose header is the tab strip itself (Tabler's documented "tabs in the
@@ -238,7 +238,7 @@ export interface EntityTableProps {
    * card's body would paint a second border/shadow around the table and
    * repeat the tab's label as a card title.
    *
-   * **ADR-0092:** `bare` still skips `Card`/`Card.Header`/`Card.Title` (so
+   * **:** `bare` still skips `Card`/`Card.Header`/`Card.Title` (so
    * `title` itself is never rendered in this mode — a `bare` caller has
    * nowhere to put one), but the Columns/Filter/search controls now render in
    * a plain toolbar row above the table regardless of `bare`, since none of
@@ -280,7 +280,7 @@ function EntityTable({
   onRowClick,
   bare = false,
 }: EntityTableProps) {
-  // ADR-0071. `preferencesResource` tracks which entity `preferences` was
+  //. `preferencesResource` tracks which entity `preferences` was
   // loaded for: this component is remounted-or-not across admin routes at
   // React's discretion, so a `config.resource` change has to re-read storage.
   // Adjusting state during render (rather than in an effect) is React's own
@@ -309,7 +309,7 @@ function EntityTable({
     [defaultFields, preferences, lockedFields],
   );
 
-  // ADR-0072: only the modal's *open/closed* flag lives here. The filters
+  //: only the modal's *open/closed* flag lives here. The filters
   // themselves are `EntityListPage`'s — see the `filters` prop's own comment.
   const [showFilterModal, setShowFilterModal] = useState(false);
 
@@ -325,7 +325,7 @@ function EntityTable({
     setShowColumnPreferences(false);
   }
 
-  // ADR-0077 adds the third disjunct. `onUnlink` carries **no**
+  // adds the third disjunct. `onUnlink` carries **no**
   // `config.methods` conjunct on purpose — see that prop's own doc comment:
   // the capability it renders is declared by `config.linkDelete`, which is
   // precisely the thing `methods` does not and must not describe.
@@ -333,7 +333,7 @@ function EntityTable({
     ((config.methods.includes("update") || config.methods.includes("delete")) && (onEdit || onDelete)) ||
     Boolean(onUnlink);
 
-  // ADR-0053 (batching) / ADR-0073 (extracted to a shared hook so
+  // (batching) / (extracted to a shared hook so
   // `EntityDetailPage` reuses it): one `getEntity` per *distinct* fk id per fk
   // column across the current page, not one per row (§3). `config.fields` (not
   // `tableFields`) is the schema-fetch list, preserving this component's
@@ -345,7 +345,7 @@ function EntityTable({
   }
 
   /**
-   * ADR-0073: a row is only interactive when the caller actually wired
+   *: a row is only interactive when the caller actually wired
    * `onRowClick`. Keyboard parity matters — a bare `onClick` on a `<tr>` is
    * mouse-only, so Enter/Space on a focused row fire the same navigation
    * (`role`/accessible-name computation is untouched: `tabIndex` changes
@@ -368,7 +368,7 @@ function EntityTable({
     : () => ({});
 
   const showSearch = Boolean(onSearchChange && config.searchFields && config.searchFields.length > 0);
-  // ADR-0072. Suppressed for an entity whose served schema exposes no
+  //. Suppressed for an entity whose served schema exposes no
   // filterable field at all — exactly the same posture `showSearch` above
   // already takes for an entity with no `searchFields`: don't render an
   // affordance the backend will silently ignore.
@@ -391,12 +391,12 @@ function EntityTable({
         </Card.Body>
       )}
 
-      <Card.Body className={showTable ? "p-0" : undefined}>
+      <Card.Body className={showTable ? "p-0": undefined}>
         {loading ? (
         <Spinner wrapperClassName="py-4" />
-      ) : rows.length === 0 ? (
+      ): rows.length === 0 ? (
         <p className="text-body-secondary mb-0">No records found.</p>
-      ) : (
+      ): (
         <Table<EntityRow>
           mode="server"
           items={rows}
@@ -417,7 +417,7 @@ function EntityTable({
                   <th
                     scope="col"
                     key={field.name}
-                    aria-sort={isActive ? (sortDir === "desc" ? "descending" : "ascending") : undefined}
+                    aria-sort={isActive ? (sortDir === "desc" ? "descending": "ascending"): undefined}
                   >
                     {isSortable ? (
                       <Button
@@ -428,11 +428,11 @@ function EntityTable({
                       >
                         {field.label}
                         <Icon
-                          name={isActive ? (sortDir === "desc" ? "sort-down" : "sort-up") : "sort"}
-                          className={`ms-1 ${isActive ? "" : "text-body-tertiary"}`}
+                          name={isActive ? (sortDir === "desc" ? "sort-down": "sort-up"): "sort"}
+                          className={`ms-1 ${isActive ? "": "text-body-tertiary"}`}
                         />
                       </Button>
-                    ) : (
+                    ): (
                       field.label
                     )}
                   </th>
@@ -449,7 +449,7 @@ function EntityTable({
               {showActionsColumn && (
                 <td
                   /**
-                   * ADR-0073: the row's own click handler must not fire when
+                   *: the row's own click handler must not fire when
                    * the user meant "Edit"/"Delete". One `stopPropagation` on
                    * the containing cell covers every current and future
                    * action control in it, rather than one per button.
@@ -481,7 +481,7 @@ function EntityTable({
                       </Button>
                     )}
                     {/*
-                      ADR-0077. Same visual/a11y shape as the Delete button
+                      . Same visual/a11y shape as the Delete button
                       above — `btn-outline-danger`, the `trash` glyph, an
                       `aria-label` carrying the accessible name because the
                       button is icon-only — but a different word, because the
@@ -513,7 +513,7 @@ function EntityTable({
   );
 
   /**
-   * ADR-0092: the Columns/Filter/search controls themselves — extracted so
+   *: the Columns/Filter/search controls themselves — extracted so
    * both render branches below share one copy. Previously these lived only
    * inside the non-`bare` `Card.Header`, so a `bare` mount (`EntityRelationTab`)
    * got none of them, even though nothing about Columns/Filter/search is
@@ -547,16 +547,16 @@ function EntityTable({
       {showFilter && (
         <Button
           outline
-          color={filterCount > 0 ? "primary" : "secondary"}
+          color={filterCount > 0 ? "primary": "secondary"}
           size="sm"
           aria-label="Filter"
-          title={filterCount > 0 ? `Filter (${filterCount} active)` : "Filter"}
+          title={filterCount > 0 ? `Filter (${filterCount} active)`: "Filter"}
           onClick={() => setShowFilterModal(true)}
           data-testid="entity-table-filter"
         >
           <Icon name="filter" />
           {/*
-            ADR-0072: the active-filter count is load-bearing, not
+            : the active-filter count is load-bearing, not
             decoration. Filters are deliberately NOT persisted, and this
             badge is the mitigation for the reason why — an active filter
             is invisible in a way a hidden column is not, so without a
@@ -577,7 +577,7 @@ function EntityTable({
     <>
       <ColumnPreferencesModal
         visible={showColumnPreferences}
-        entityLabel={typeof title === "string" ? title : undefined}
+        entityLabel={typeof title === "string" ? title: undefined}
         rows={preferenceRows}
         onClose={() => setShowColumnPreferences(false)}
         onApply={handleApplyColumnPreferences}
@@ -586,7 +586,7 @@ function EntityTable({
       {showFilter && (
         <FilterModal
           visible={showFilterModal}
-          entityLabel={typeof title === "string" ? title : undefined}
+          entityLabel={typeof title === "string" ? title: undefined}
           config={config}
           filters={appliedFilters}
           onClose={() => setShowFilterModal(false)}
@@ -599,7 +599,7 @@ function EntityTable({
     </>
   );
 
-  // ADR-0074 (Amendment) / ADR-0092: the caller already owns the card — see
+  // (Amendment) /: the caller already owns the card — see
   // `bare`'s own docstring — so this branch still skips `Card`/`Card.Header`/
   // `Card.Title` entirely. It no longer skips Columns/Filter/search though:
   // those controls aren't actually `Card`-shaped (see `toolbarControls`'s own

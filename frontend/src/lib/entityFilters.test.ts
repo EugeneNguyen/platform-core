@@ -1,11 +1,11 @@
 /**
- * ADR-0072 (ENTITY-FILTER-1) — unit tests for the pure draft-condition model
+ * (ENTITY-FILTER-1) — unit tests for the pure draft-condition model
  * behind `EntityTable`'s Filter modal. No React, no DOM: every rule here is
  * exercised as a plain function, same split `columnPreferences.test.ts` uses
  * for the sibling column-visibility feature.
  *
- * Covers TC-ADMIN-053 (add/remove), TC-ADMIN-054 (AND-combination and the
- * one-condition-per-field rule) and TC-ADMIN-056 (a `text` field is not
+ * Covers (add/remove), (AND-combination and the
+ * one-condition-per-field rule) and (a `text` field is not
  * offered, and a stale stored field is dropped rather than rendered).
  */
 import { describe, expect, it } from "vitest";
@@ -30,7 +30,7 @@ const FIELDS: FieldConfig[] = [
 ];
 
 /**
- * `filterFields` is the backend-derived list (ADR-0072) — `description` is
+ * `filterFields` is the backend-derived list — `description` is
  * absent from it because it is a `text` field, which the derivation excludes.
  */
 const CONFIG: EntityConfig = {
@@ -46,23 +46,23 @@ describe("filterableFields", () => {
     expect(filterableFields(CONFIG).map((f) => f.name)).toEqual(["title", "status", "is_active"]);
   });
 
-  it("excludes a `text` field even though it is a real, served column (TC-ADMIN-056)", () => {
+  it("excludes a `text` field even though it is a real, served column ", () => {
     expect(filterableFields(CONFIG).map((f) => f.name)).not.toContain("description");
   });
 
   it("yields an empty list when the schema serves no filterFields at all", () => {
-    expect(filterableFields({ ...CONFIG, filterFields: undefined })).toEqual([]);
-    expect(filterableFields({ ...CONFIG, filterFields: [] })).toEqual([]);
+    expect(filterableFields({...CONFIG, filterFields: undefined })).toEqual([]);
+    expect(filterableFields({...CONFIG, filterFields: [] })).toEqual([]);
   });
 
   it("ignores a filterFields entry the schema has no matching field for", () => {
-    const config = { ...CONFIG, filterFields: ["title", "gone_away"] };
+    const config = {...CONFIG, filterFields: ["title", "gone_away"] };
     expect(filterableFields(config).map((f) => f.name)).toEqual(["title"]);
   });
 });
 
 describe("addCondition / removeCondition", () => {
-  it("adds a row pre-assigned to the first unused field (TC-ADMIN-053)", () => {
+  it("adds a row pre-assigned to the first unused field ", () => {
     const fields = filterableFields(CONFIG);
     const one = addCondition(fields, []);
     expect(one).toEqual([{ field: "title", value: "" }]);
@@ -78,7 +78,7 @@ describe("addCondition / removeCondition", () => {
     expect(nextUnusedField(fields, full)).toBeUndefined();
   });
 
-  it("removes exactly the named row and leaves the rest in order (TC-ADMIN-053)", () => {
+  it("removes exactly the named row and leaves the rest in order ", () => {
     const draft = [
       { field: "title", value: "a" },
       { field: "status", value: "draft" },
@@ -97,7 +97,7 @@ describe("addCondition / removeCondition", () => {
   });
 });
 
-describe("availableFieldsFor (one condition per field, TC-ADMIN-054)", () => {
+describe("availableFieldsFor ", () => {
   it("hides a field another row already claims", () => {
     const fields = filterableFields(CONFIG);
     const draft = [
@@ -134,7 +134,7 @@ describe("updateCondition", () => {
   });
 });
 
-describe("filtersFromConditions (AND-combination on the wire, TC-ADMIN-054)", () => {
+describe("filtersFromConditions ", () => {
   it("serializes every complete condition into one query-param map", () => {
     expect(
       filtersFromConditions([
@@ -162,7 +162,7 @@ describe("conditionsFromFilters (re-seeding the draft on open)", () => {
     expect(filtersFromConditions(conditions)).toEqual({ title: "widget", status: "draft" });
   });
 
-  it("drops a stored filter naming a field the schema no longer serves as filterable (TC-ADMIN-056)", () => {
+  it("drops a stored filter naming a field the schema no longer serves as filterable ", () => {
     const fields = filterableFields(CONFIG);
     // `description` is a real field but not filterable; `gone_away` is neither.
     expect(conditionsFromFilters({ description: "x", gone_away: "y", title: "kept" }, fields)).toEqual([

@@ -16,8 +16,8 @@ import {
 } from "../../../lib/api/entityCrud";
 
 /**
- * ADR-0076 — the relationship tabs' two write actions (TC-ADMIN-090,
- * TC-ADMIN-091, TC-ADMIN-092).
+ * — the relationship tabs' two write actions (,
+ *, ).
  *
  * Deliberately a sibling of `EntityDetailPage.tabs.test.tsx` rather than an
  * addition to it: that file's claim is "the tab strip is driven by
@@ -28,16 +28,16 @@ import {
  * the component must hard-code no entity.
  *
  * - `widgets` — one one-to-many relation (`sprockets`) and one many-to-many
- *   (`widget-gizmo-links` → `gizmos`). The `Requirement`/`TestCase` shape.
+ * (`widget-gizmo-links` → `gizmos`). The `Spec`/`Item` shape.
  * - `sprockets` registers `create`; `widget-gizmo-links` declares a
- *   `linkCreate`. Both are what makes the corresponding action *possible*;
- *   `usePermissions` is what makes it *allowed*, and the two are asserted
- *   separately because conflating them is how a hide-don't-disable gate ends
- *   up only half-implemented.
+ * `linkCreate`. Both are what makes the corresponding action *possible*;
+ * `usePermissions` is what makes it *allowed*, and the two are asserted
+ * separately because conflating them is how a hide-don't-disable gate ends
+ * up only half-implemented.
  * - `gizmos` is scoped by `project_id`, so the picker resolves its own scope
- *   from the route (case 2 of ADR-0076 Decision §5). `pickerScopeParams`'
- *   other two cases are asserted directly at the bottom of this file — three
- *   rendered modals to pin one pure function would be a much worse trade.
+ * from the route. `pickerScopeParams`'
+ * other two cases are asserted directly at the bottom of this file — three
+ * rendered modals to pin one pure function would be a much worse trade.
  */
 const schemaState = vi.hoisted(() => ({ isLoading: false }));
 
@@ -99,10 +99,10 @@ vi.mock("../../../pages/admin/useEntitySchema", () => {
           targetField: "doodad_id",
         },
         /**
-         * ADR-0076 Amendment 1. A third many-to-many whose link entity DOES
+         * Amendment 1. A third many-to-many whose link entity DOES
          * declare a `linkCreate` but whose FAR entity registers no `create` —
          * the shape 3 of the 12 live link directions really have
-         * (`TestCondition` and `Defect` are authored only through bespoke
+         * (`Criterion` and `Issue` are authored only through bespoke
          * routes, while their junctions have perfectly good link routes). It
          * exists to isolate the compound action's **API-capability** gate from
          * its permission gate: on this tab "Link existing" must render and
@@ -146,8 +146,8 @@ vi.mock("../../../pages/admin/useEntitySchema", () => {
         permission: "widget_gizmo_link.create",
       },
       /**
-       * ADR-0077. A **different permission code** from `linkCreate`'s, which
-       * is the shape the four real ADR-0005 traceability links have
+       *. A **different permission code** from `linkCreate`'s, which
+       * is the shape the four real traceability links have
        * (`<link>.create` vs `<link>.delete`) — and the whole reason the two
        * actions are gated independently. A fixture reusing one code for both
        * would make every gating assertion below pass for the wrong reason.
@@ -190,8 +190,8 @@ vi.mock("../../../pages/admin/useEntitySchema", () => {
         permission: "widget_thing_link.create",
       },
       /**
-       * ADR-0077: deliberately **no** `linkDelete`, which makes this the
-       * pre-ADR-0077 shape — a junction that can be linked and not unlinked,
+       *: deliberately **no** `linkDelete`, which makes this the
+       * pre- shape — a junction that can be linked and not unlinked,
        * exactly what four of the six really were between the two ADRs. It is
        * what lets the unlink tests below isolate the *API-capability* half of
        * the gate: on this tab "Link existing" must render and Remove must not,
@@ -211,10 +211,10 @@ vi.mock("../../../pages/admin/useEntitySchema", () => {
     },
     /**
      * The far entity of the `widget-gizmo-links` tab. Registers `create` and
-     * carries a `project_id` scope field (ADR-0076 Amendment 1's shape: the
+     * carries a `project_id` scope field ( Amendment 1's shape: the
      * far entity of 9 of the 12 live link directions is `project_id`-scoped
-     * and factory-creatable, e.g. `TestCase`/`TestSuite`/`Requirement`), so
-     * the compound "Create new ..." action has a real schema to render a form
+     * and factory-creatable, e.g. `Item`/`Collection`/`Spec`), so
+     * the compound "Create new..." action has a real schema to render a form
      * from and a real scope to lock.
      */
     gizmos: {
@@ -243,14 +243,14 @@ vi.mock("../../../pages/admin/useEntitySchema", () => {
       relations: [],
     },
   };
-  const resolveEntityKey = (key: string) => (key.endsWith("s") ? key : `${key}s`);
+  const resolveEntityKey = (key: string) => (key.endsWith("s") ? key: `${key}s`);
   return {
     resolveEntityKey,
     useEntitySchema: (key?: string) => {
-      const resolved = key ? resolveEntityKey(key) : undefined;
+      const resolved = key ? resolveEntityKey(key): undefined;
       return {
-        config: schemaState.isLoading || !resolved ? undefined : configs[resolved],
-        label: resolved ? "Widgets" : undefined,
+        config: schemaState.isLoading || !resolved ? undefined: configs[resolved],
+        label: resolved ? "Widgets": undefined,
         isLoading: Boolean(resolved) && schemaState.isLoading,
         isError: false,
       };
@@ -276,14 +276,14 @@ vi.mock("../../../lib/api/entityCrud", async (importOriginal) => {
     listEntities: vi.fn(),
     createEntity: vi.fn(),
     createLinkRow: vi.fn(),
-    // ADR-0077
+    //
     deleteLinkRow: vi.fn(),
   };
 });
 
 vi.mock("../../../lib/api/client", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../../lib/api/client")>();
-  return { ...actual, apiFetch: vi.fn() };
+  return {...actual, apiFetch: vi.fn() };
 });
 
 const mockGetEntity = vi.mocked(getEntity);
@@ -304,7 +304,7 @@ const GIZMO_ROW = { id: "g-9", name: "Ninth gizmo" };
 function primeMocks(codes: string[], items: Record<string, unknown>[] = []) {
   mockApiFetch.mockResolvedValue({ codes: codes.map((code) => ({ code, project_id: null })) });
   mockGetEntity.mockImplementation(async (config: EntityConfig, id: string) =>
-    config.path === "/projects" ? { id, org_id: "org-1", name: "Project one" } : WIDGET_ROW,
+    config.path === "/projects" ? { id, org_id: "org-1", name: "Project one" }: WIDGET_ROW,
   );
   mockListEntities.mockImplementation(async (config: EntityConfig) =>
     config.path === "/gizmos"
@@ -317,7 +317,7 @@ function primeMocks(codes: string[], items: Record<string, unknown>[] = []) {
 }
 
 /**
- * ADR-0077: one already-linked row on the `widget-gizmo-links` tab, so the
+ *: one already-linked row on the `widget-gizmo-links` tab, so the
  * table has something to render a per-row Remove *in*. Its `gizmo_id` is the
  * far id the unlink route must be called with, and it is deliberately not
  * equal to its own `id` — a component reading the wrong one would otherwise
@@ -341,15 +341,15 @@ function renderPage(search: string) {
 const ONE_TO_MANY = "?tab=sprockets";
 const MANY_TO_MANY = "?tab=widget-gizmo-links";
 
-describe("EntityDetailPage relationship-tab write actions (ADR-0076)", () => {
+describe("EntityDetailPage relationship-tab write actions ", () => {
   afterEach(() => {
     vi.clearAllMocks();
     schemaState.isLoading = false;
   });
 
-  // --- TC-ADMIN-090: the one-to-many "New" action ------------------------------------------
+  // ---: the one-to-many "New" action ------------------------------------------
 
-  it("TC-ADMIN-090: a one-to-many tab renders a New button when the actor holds the child's create code", async () => {
+  it(": a one-to-many tab renders a New button when the actor holds the child's create code", async () => {
     primeMocks(["sprocket.create"]);
 
     renderPage(ONE_TO_MANY);
@@ -362,12 +362,12 @@ describe("EntityDetailPage relationship-tab write actions (ADR-0076)", () => {
     expect(screen.queryByTestId("entity-relation-link")).not.toBeInTheDocument();
   });
 
-  it("TC-ADMIN-097: while permissions are still loading, a placeholder renders instead of silently omitting the actions strip", async () => {
+  it(": while permissions are still loading, a placeholder renders instead of silently omitting the actions strip", async () => {
     /**
      * The bug this test pins (CTO-reported, 2026-09-15): `canCreateChild`
      * correctly fails closed while `permissions.isLoading` is true — but
      * nothing distinguished that from "permanently absent," so the whole
-     * strip vanished for exactly as long as `GET .../permissions/mine` took,
+     * strip vanished for exactly as long as `GET.../permissions/mine` took,
      * then popped in. Whether a user noticed depended on React Query cache
      * warmth, which is what made it look like "sometimes shows, sometimes
      * doesn't" rather than a deterministic bug. A held (never-in-this-test
@@ -376,7 +376,7 @@ describe("EntityDetailPage relationship-tab write actions (ADR-0076)", () => {
     let resolvePermissions!: (value: { codes: never[] }) => void;
     mockApiFetch.mockReturnValue(new Promise((resolve) => (resolvePermissions = resolve)));
     mockGetEntity.mockImplementation(async (config: EntityConfig, id: string) =>
-      config.path === "/projects" ? { id, org_id: "org-1", name: "Project one" } : WIDGET_ROW,
+      config.path === "/projects" ? { id, org_id: "org-1", name: "Project one" }: WIDGET_ROW,
     );
     mockListEntities.mockResolvedValue({ items: [], total: 0, page: 1, page_size: 25 });
 
@@ -392,7 +392,7 @@ describe("EntityDetailPage relationship-tab write actions (ADR-0076)", () => {
     await waitFor(() => expect(screen.queryByTestId("entity-relation-actions-loading")).not.toBeInTheDocument());
   });
 
-  it("TC-ADMIN-090: the New button is ABSENT, not disabled, without the create code", async () => {
+  it(": the New button is ABSENT, not disabled, without the create code", async () => {
     /**
      * UI Design Document §5's hide-don't-disable posture. Asserted as absence
      * specifically because a disabled button still advertises a capability the
@@ -412,7 +412,7 @@ describe("EntityDetailPage relationship-tab write actions (ADR-0076)", () => {
     expect(screen.queryByTestId("entity-relation-create")).not.toBeInTheDocument();
   });
 
-  it("TC-ADMIN-090: the create modal locks the scope field and submits it with the parent's id", async () => {
+  it(": the create modal locks the scope field and submits it with the parent's id", async () => {
     /**
      * The point of the whole action: the new row lands under the record being
      * viewed and the user cannot retarget it. Two separate claims — the field
@@ -438,22 +438,22 @@ describe("EntityDetailPage relationship-tab write actions (ADR-0076)", () => {
     expect(payload).toMatchObject({ name: "New sprocket", widget_id: "w-1" });
   });
 
-  // --- TC-ADMIN-091: the many-to-many "Link existing" action --------------------------------
+  // ---: the many-to-many "Link existing" action --------------------------------
 
-  it("TC-ADMIN-091: a many-to-many tab renders a Link button labelled by the FAR entity", async () => {
+  it(": a many-to-many tab renders a Link button labelled by the FAR entity", async () => {
     primeMocks(["widget_gizmo_link.create"]);
 
     renderPage(MANY_TO_MANY);
 
     const button = await screen.findByTestId("entity-relation-link");
-    // The tab is *about* the far entity (ADR-0074 §5) — `relation.label` minus
+    // The tab is *about* the far entity — `relation.label` minus
     // the `" (linked)"` suffix, never the link table's own name. Icon-only
     // button (CTO request, 2026-09-15) — accessible name, not text content.
     expect(button).toHaveAccessibleName(/link existing gizmos/i);
     expect(screen.queryByTestId("entity-relation-create")).not.toBeInTheDocument();
   });
 
-  it("TC-ADMIN-091: the Link button is absent without the code the backend declared", async () => {
+  it(": the Link button is absent without the code the backend declared", async () => {
     /**
      * `widget_gizmo_link.create` comes from the served
      * `linkCreate.permission`, not from a `${resource}.create` convention —
@@ -468,7 +468,7 @@ describe("EntityDetailPage relationship-tab write actions (ADR-0076)", () => {
     expect(screen.queryByTestId("entity-relation-link")).not.toBeInTheDocument();
   });
 
-  it("TC-ADMIN-091: picking a far row POSTs the declared route with both ids keyed by FK name", async () => {
+  it(": picking a far row POSTs the declared route with both ids keyed by FK name", async () => {
     const user = userEvent.setup();
     primeMocks(["widget_gizmo_link.create"]);
 
@@ -494,7 +494,7 @@ describe("EntityDetailPage relationship-tab write actions (ADR-0076)", () => {
     expect(values).toEqual({ widget_id: "w-1", gizmo_id: "g-9" });
   });
 
-  it("TC-ADMIN-091: the Link submit stays disabled until a far row is actually picked", async () => {
+  it(": the Link submit stays disabled until a far row is actually picked", async () => {
     const user = userEvent.setup();
     primeMocks(["widget_gizmo_link.create"]);
 
@@ -505,9 +505,9 @@ describe("EntityDetailPage relationship-tab write actions (ADR-0076)", () => {
     expect(mockCreateLinkRow).not.toHaveBeenCalled();
   });
 
-  // --- TC-ADMIN-092: the two gates are independent ------------------------------------------
+  // ---: the two gates are independent ------------------------------------------
 
-  it("TC-ADMIN-092: no link action renders for a link entity whose schema declares no linkCreate", async () => {
+  it(": no link action renders for a link entity whose schema declares no linkCreate", async () => {
     /**
      * The API-capability half of the gate, isolated. The actor holds a
      * plausible `widget_doodad_link.create` code and the tab still shows no
@@ -525,7 +525,7 @@ describe("EntityDetailPage relationship-tab write actions (ADR-0076)", () => {
     expect(screen.queryByTestId("entity-relation-create")).not.toBeInTheDocument();
   });
 
-  it("TC-ADMIN-092: a successful link refetches the tab's own list", async () => {
+  it(": a successful link refetches the tab's own list", async () => {
     /**
      * Without the invalidation the row is written and the table still shows
      * the pre-link result set, which reads exactly like the write having
@@ -554,9 +554,9 @@ describe("EntityDetailPage relationship-tab write actions (ADR-0076)", () => {
     });
   });
 
-  // --- TC-ADMIN-096: both n-n actions render, and the permission matrix ----------------------
+  // ---: both n-n actions render, and the permission matrix ----------------------
   //
-  // ADR-0076 Amendment 1. The original rule was "exactly one action per tab";
+  // Amendment 1. The original rule was "exactly one action per tab";
   // an n-n tab now carries two, so the claim under test changes shape: it is
   // no longer "which one" but "which subset", and the subset is a function of
   // two independent permissions. All four cells are asserted, because three of
@@ -565,7 +565,7 @@ describe("EntityDetailPage relationship-tab write actions (ADR-0076)", () => {
   const LINK_CODE = "widget_gizmo_link.create";
   const FAR_CREATE_CODE = "gizmo.create";
 
-  it("TC-ADMIN-096: both Link existing and Create new render when the actor holds both codes", async () => {
+  it(": both Link existing and Create new render when the actor holds both codes", async () => {
     primeMocks([LINK_CODE, FAR_CREATE_CODE]);
 
     renderPage(MANY_TO_MANY);
@@ -586,7 +586,7 @@ describe("EntityDetailPage relationship-tab write actions (ADR-0076)", () => {
     expect(strip).toContainElement(createLink);
   });
 
-  it("TC-ADMIN-096: only Link existing renders when only the link code is held", async () => {
+  it(": only Link existing renders when only the link code is held", async () => {
     primeMocks([LINK_CODE]);
 
     renderPage(MANY_TO_MANY);
@@ -595,7 +595,7 @@ describe("EntityDetailPage relationship-tab write actions (ADR-0076)", () => {
     expect(screen.queryByTestId("entity-relation-create-link")).not.toBeInTheDocument();
   });
 
-  it("TC-ADMIN-096: NEITHER action renders when only the far entity's create code is held", async () => {
+  it(": NEITHER action renders when only the far entity's create code is held", async () => {
     /**
      * The fail-closed cell, and the one worth stating explicitly because the
      * intuitive expectation is "Create new renders on its own". It must not:
@@ -616,7 +616,7 @@ describe("EntityDetailPage relationship-tab write actions (ADR-0076)", () => {
     expect(screen.queryByTestId("entity-relation-actions")).not.toBeInTheDocument();
   });
 
-  it("TC-ADMIN-096: neither action renders when neither code is held", async () => {
+  it(": neither action renders when neither code is held", async () => {
     primeMocks(["widget_gizmo_link.read", "gizmo.read"]);
 
     renderPage(MANY_TO_MANY);
@@ -627,7 +627,7 @@ describe("EntityDetailPage relationship-tab write actions (ADR-0076)", () => {
     expect(screen.queryByTestId("entity-relation-actions")).not.toBeInTheDocument();
   });
 
-  it("TC-ADMIN-096: Create new is absent when the FAR entity has no generic create route, even though the link route exists", async () => {
+  it(": Create new is absent when the FAR entity has no generic create route, even though the link route exists", async () => {
     /**
      * The **API-capability** half of this action's own gate, genuinely
      * isolated from the permission half — which needs a tab where everything
@@ -638,7 +638,7 @@ describe("EntityDetailPage relationship-tab write actions (ADR-0076)", () => {
      * fine) while "Create new" does not.
      *
      * This is the shape 3 of the 12 live link directions really have —
-     * `TestCondition` and `Defect` are authored only through bespoke routes,
+     * `Criterion` and `Issue` are authored only through bespoke routes,
      * while their junctions have perfectly good link routes — and it is the
      * cell the `widget-doodad-links` tab cannot test, because that one is
      * missing both halves at once and so proves nothing about which gate fired.
@@ -652,10 +652,10 @@ describe("EntityDetailPage relationship-tab write actions (ADR-0076)", () => {
     expect(screen.queryByTestId("entity-relation-create-link")).not.toBeInTheDocument();
   });
 
-  it("TC-ADMIN-096: neither n-n action renders when the link entity declares no linkCreate at all", async () => {
+  it(": neither n-n action renders when the link entity declares no linkCreate at all", async () => {
     /**
      * The other end of the same conjunction, and the pre-amendment tab shape
-     * TC-ADMIN-092 already pins for "Link existing": with no declared route,
+     * already pins for "Link existing": with no declared route,
      * the compound action has nothing to finish with either, so a plausible
      * `doodad.create` in hand changes nothing.
      */
@@ -668,9 +668,9 @@ describe("EntityDetailPage relationship-tab write actions (ADR-0076)", () => {
     expect(screen.queryByTestId("entity-relation-link")).not.toBeInTheDocument();
   });
 
-  // --- TC-ADMIN-097: the compound create-then-link success path ------------------------------
+  // ---: the compound create-then-link success path ------------------------------
 
-  it("TC-ADMIN-097: Create new runs the FAR entity's create, then links the new id, then refetches", async () => {
+  it(": Create new runs the FAR entity's create, then links the new id, then refetches", async () => {
     /**
      * Four separate claims, because each can regress without the others
      * noticing: the form is backed by the **far** entity's schema (not the
@@ -719,20 +719,20 @@ describe("EntityDetailPage relationship-tab write actions (ADR-0076)", () => {
     expect(screen.queryByTestId("entity-relation-create-link-error")).not.toBeInTheDocument();
   });
 
-  // --- TC-ADMIN-098: created, but not linked -------------------------------------------------
+  // ---: created, but not linked -------------------------------------------------
 
-  it("TC-ADMIN-098: when the link half fails, the created row is named back and the modal closes", async () => {
+  it(": when the link half fails, the created row is named back and the modal closes", async () => {
     /**
      * The partial state that has no transaction to prevent it. Asserted on
      * four things the user needs and one they must not get:
      *
      * - the created row's **label** and its **id** (so it can be found again
-     *   by eye or by paste),
+     * by eye or by paste),
      * - the API's own **reason** verbatim, not a generic failure string,
-     * - the **recovery** ("Link existing ..."), which now needs no form at all,
+     * - the **recovery** ("Link existing..."), which now needs no form at all,
      * - and the modal is **gone**, so pressing Create again cannot mint a
-     *   second row for one intent. `mockCreateEntity` is asserted to have run
-     *   exactly once for the same reason.
+     * second row for one intent. `mockCreateEntity` is asserted to have run
+     * exactly once for the same reason.
      */
     const user = userEvent.setup();
     primeMocks([LINK_CODE, FAR_CREATE_CODE]);
@@ -758,7 +758,7 @@ describe("EntityDetailPage relationship-tab write actions (ADR-0076)", () => {
     expect(mockCreateEntity).toHaveBeenCalledTimes(1);
   });
 
-  it("TC-ADMIN-098: an ordinary create failure keeps the form open and never links", async () => {
+  it(": an ordinary create failure keeps the form open and never links", async () => {
     /**
      * The opposite handling, and the reason the two failures need separate
      * paths at all: nothing was written, so the form must stay open with the
@@ -781,7 +781,7 @@ describe("EntityDetailPage relationship-tab write actions (ADR-0076)", () => {
     expect(screen.queryByTestId("entity-relation-create-link-error")).not.toBeInTheDocument();
   });
 
-  // --- ADR-0077: the per-row "Remove" action ------------------------------------------------
+  // ---: the per-row "Remove" action ------------------------------------------------
   //
   // Kept in this file rather than a sibling because the harness above — four
   // synthetic relations, a fake permission endpoint, a project-scoped route
@@ -790,7 +790,7 @@ describe("EntityDetailPage relationship-tab write actions (ADR-0076)", () => {
   // The claim is the same *kind* as this file's ("which write action renders,
   // gated twice"), just for the third one.
 
-  it("TC-ADMIN-104: an n-n tab renders a per-row Remove when the actor holds the link-delete code", async () => {
+  it(": an n-n tab renders a per-row Remove when the actor holds the link-delete code", async () => {
     primeMocks(["widget_gizmo_link.delete"], [GIZMO_LINK_ROW]);
 
     renderPage(MANY_TO_MANY);
@@ -805,7 +805,7 @@ describe("EntityDetailPage relationship-tab write actions (ADR-0076)", () => {
     expect(screen.queryByTestId("entity-relation-create-link")).not.toBeInTheDocument();
   });
 
-  it("TC-ADMIN-104: the Remove action is absent when the actor holds the link-create code but not link-delete", async () => {
+  it(": the Remove action is absent when the actor holds the link-create code but not link-delete", async () => {
     /**
      * The gate's whole point. `widget_gizmo_link.create` and
      * `widget_gizmo_link.delete` are different codes (as the four real
@@ -823,11 +823,11 @@ describe("EntityDetailPage relationship-tab write actions (ADR-0076)", () => {
     expect(screen.queryByTestId("entity-table-unlink")).not.toBeInTheDocument();
   });
 
-  it("TC-ADMIN-104: the Remove action is absent when the junction declares no linkDelete, however permissioned the actor", async () => {
+  it(": the Remove action is absent when the junction declares no linkDelete, however permissioned the actor", async () => {
     /**
      * The API-capability half, isolated from the permission half.
      * `widget-thing-links` declares a `linkCreate` and no `linkDelete` — the
-     * pre-ADR-0077 shape four of the six junctions really had. The actor here
+     * pre- shape four of the six junctions really had. The actor here
      * is given *both* plausible codes, so nothing about permissions can
      * explain the absence.
      */
@@ -841,7 +841,7 @@ describe("EntityDetailPage relationship-tab write actions (ADR-0076)", () => {
     expect(screen.queryByTestId("entity-table-unlink")).not.toBeInTheDocument();
   });
 
-  it("TC-ADMIN-104: a one-to-many tab never renders Remove, even for a fully-permissioned actor", async () => {
+  it(": a one-to-many tab never renders Remove, even for a fully-permissioned actor", async () => {
     /**
      * A 1-n tab's rows are *records*, not link rows — removing one would mean
      * deleting the child, a different and much larger action. Asserted with
@@ -858,7 +858,7 @@ describe("EntityDetailPage relationship-tab write actions (ADR-0076)", () => {
     expect(screen.queryByTestId("entity-table-unlink")).not.toBeInTheDocument();
   });
 
-  it("TC-ADMIN-105: clicking Remove asks for confirmation and writes nothing until it is given", async () => {
+  it(": clicking Remove asks for confirmation and writes nothing until it is given", async () => {
     const user = userEvent.setup();
     primeMocks(["widget_gizmo_link.delete"], [GIZMO_LINK_ROW]);
 
@@ -870,7 +870,7 @@ describe("EntityDetailPage relationship-tab write actions (ADR-0076)", () => {
     // matters about the wording, since "Remove" alone reads as a delete.
     expect(await screen.findByTestId("entity-relation-unlink-submit")).toBeInTheDocument();
     expect(screen.getByText(/the record it points to is not deleted/i)).toBeInTheDocument();
-    // ...and nothing has been written. A Remove that deleted on the first
+    //...and nothing has been written. A Remove that deleted on the first
     // click and *then* showed a dialog would pass a test that only checked
     // the dialog appears.
     expect(mockDeleteLinkRow).not.toHaveBeenCalled();
@@ -883,7 +883,7 @@ describe("EntityDetailPage relationship-tab write actions (ADR-0076)", () => {
     expect(mockDeleteLinkRow).not.toHaveBeenCalled();
   });
 
-  it("TC-ADMIN-105: confirming calls the declared route with both ids and refetches the tab", async () => {
+  it(": confirming calls the declared route with both ids and refetches the tab", async () => {
     const user = userEvent.setup();
     primeMocks(["widget_gizmo_link.delete"], [GIZMO_LINK_ROW]);
 
@@ -915,9 +915,9 @@ describe("EntityDetailPage relationship-tab write actions (ADR-0076)", () => {
     );
   });
 
-  it("TC-ADMIN-106: a failed unlink keeps the confirm open and shows the API's own reason", async () => {
+  it(": a failed unlink keeps the confirm open and shows the API's own reason", async () => {
     /**
-     * The opposite handling from ADR-0076 Amendment 1's compound create, and
+     * The opposite handling from Amendment 1's compound create, and
      * deliberately so: nothing was written here, so leaving the dialog open
      * makes the confirm button a **retry** rather than a second write. The
      * API's own message is rendered verbatim because the two realistic
@@ -942,9 +942,9 @@ describe("EntityDetailPage relationship-tab write actions (ADR-0076)", () => {
   });
 });
 
-// --- TC-ADMIN-098: the "created, not linked" message and its label lookup, as pure functions ---
+// ---: the "created, not linked" message and its label lookup, as pure functions ---
 
-describe("createdNotLinkedMessage / farRowDisplay (ADR-0076 Amendment 1)", () => {
+describe("createdNotLinkedMessage / farRowDisplay ", () => {
   it("the message carries the label, the id, the reason and the recovery", () => {
     const message = createdNotLinkedMessage(
       "Freshly made gizmo",
@@ -972,14 +972,14 @@ describe("createdNotLinkedMessage / farRowDisplay (ADR-0076 Amendment 1)", () =>
      * `""` — which is why the id is reported alongside the label, not instead.
      */
     expect(farRowDisplay({ id: "g-1" }, "name")).toBe("g-1");
-    expect(farRowDisplay({ id: "g-1", name: "   " }, "name")).toBe("g-1");
+    expect(farRowDisplay({ id: "g-1", name: " " }, "name")).toBe("g-1");
     expect(farRowDisplay({ id: "g-1", name: "Ninth gizmo" }, undefined)).toBe("g-1");
   });
 });
 
-// --- TC-ADMIN-092: the picker's scoping rule, as a pure function -----------------------------
+// ---: the picker's scoping rule, as a pure function -----------------------------
 
-describe("pickerScopeParams (ADR-0076 Decision §5)", () => {
+describe("pickerScopeParams ", () => {
   const base = { resource: "x", path: "/xs", methods: [], fields: [] } as unknown as EntityConfig;
 
   it("case 1: an unscoped far entity searches with no params", () => {
@@ -987,20 +987,20 @@ describe("pickerScopeParams (ADR-0076 Decision §5)", () => {
   });
 
   it("case 2: a project-scoped far entity takes project_id from the route", () => {
-    const config = { ...base, scopeField: "project_id" } as EntityConfig;
+    const config = {...base, scopeField: "project_id" } as EntityConfig;
     expect(pickerScopeParams(config, "p-1")).toEqual({ project_id: "p-1" });
   });
 
   it("case 3: a differently-scoped far entity with a selector defers to the ScopeSelector step", () => {
     /**
      * `null` is the signal the caller renders `ScopeSelector` first — this is
-     * `TestCondition` (scoped by `requirement_id`) and `Defect` (by
-     * `test_execution_id`), the two live cases that are not `project_id`.
+     * `Criterion` (scoped by `spec_id`) and `Issue` (by
+     * `run_id`), the two live cases that are not `project_id`.
      */
     const config = {
       ...base,
-      scopeField: "requirement_id",
-      scopeSelector: { refEntity: "requirement", paramName: "requirement_id" },
+      scopeField: "spec_id",
+      scopeSelector: { refEntity: "spec", paramName: "spec_id" },
     } as EntityConfig;
     expect(pickerScopeParams(config, "p-1")).toBeNull();
   });
@@ -1026,7 +1026,7 @@ describe("pickerScopeParams (ADR-0076 Decision §5)", () => {
      * it at all — there is no such entity today, and a blank result set is a
      * better failure than a dead modal if one ever appears.
      */
-    const config = { ...base, scopeField: "requirement_id" } as EntityConfig;
+    const config = {...base, scopeField: "spec_id" } as EntityConfig;
     expect(pickerScopeParams(config, "p-1")).toEqual({});
   });
 });

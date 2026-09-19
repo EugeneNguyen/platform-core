@@ -1,35 +1,35 @@
 /**
- * Shared `Table` container (DS-2, [ADR-0041]): one table + pagination +
+ * Shared `Table` container: one table + pagination +
  * page-size-selector implementation, reused by every outermost table in the
  * app instead of the six divergent bespoke ones that existed before it.
  *
  * ## Location: why `container/`, not `components/`
  *
- * ADR-0023 originally drew two component-directory buckets (`shared/`,
- * `crud/`) on a composition-shape axis; ADR-0041 amended it to add a third,
- * orthogonal axis for this component. **ADR-0043 (2026-09-08) then replaced
+ * originally drew two component-directory buckets (`shared/`,
+ * `crud/`) on a composition-shape axis; amended it to add a third,
+ * orthogonal axis for this component. ** (2026-09-08) then replaced
  * the two original buckets with atomic-design tiers** (`atoms/`/`molecules/`/
  * `organisms/`/`templates/`, sized by composition complexity) — `container/`
  * is unaffected by that change, because the axis it answers was never about
  * composition complexity in the first place:
  *
  * - `components/<tier>/` — sized by **composition complexity** (how many
- *   smaller pieces a component is built from). `FormField`
- *   (`components/molecules/form-field/`) is a stateless composition
- *   primitive; `EntityTable`/`EntityForm`/`FkAutocomplete`
- *   (`components/organisms/`, `components/molecules/`) are generic-entity-
- *   shape-driven widgets coupled to `EntityConfig`/`FieldConfig`. `Table` is
- *   deliberately in neither: it owns `page`/`pageSize` state and the actions
- *   that mutate them, and every bespoke screen's table has a different row
- *   shape with no `EntityConfig` behind it — a component those screens can
- *   actually consume has to be config-shape-agnostic, which `EntityTable`
- *   structurally isn't.
- * - `container/` (this directory, new in DS-2) — sized by **state
- *   ownership**: components that own state and expose actions, consumed by
- *   many screens with no shared data shape between them. Independent of
- *   which atomic tier a component would otherwise sit at.
+ * smaller pieces a component is built from). `FormField`
+ * (`components/molecules/form-field/`) is a stateless composition
+ * primitive; `EntityTable`/`EntityForm`/`FkAutocomplete`
+ * (`components/organisms/`, `components/molecules/`) are generic-entity-
+ * shape-driven widgets coupled to `EntityConfig`/`FieldConfig`. `Table` is
+ * deliberately in neither: it owns `page`/`pageSize` state and the actions
+ * that mutate them, and every bespoke screen's table has a different row
+ * shape with no `EntityConfig` behind it — a component those screens can
+ * actually consume has to be config-shape-agnostic, which `EntityTable`
+ * structurally isn't.
+ * - `container/` — sized by **state
+ * ownership**: components that own state and expose actions, consumed by
+ * many screens with no shared data shape between them. Independent of
+ * which atomic tier a component would otherwise sit at.
  *
- * **[ADR-0057](../../../docs/adr/0057-admin-crud-pages-relocated-to-container.md)
+ * **
  * (2026-09-11)** relocated `EntityListPage`/`EntityFormPage` here too, as
  * `container/entity-crud/`. They don't fit the "many screens" half of the
  * axis above as cleanly as `Table` does — each has exactly one caller
@@ -40,68 +40,68 @@
  * one-off relocation, not a new standing rule.
  *
  * `EntityTable` still exists and still owns its `EntityConfig`-driven column
- * system; ADR-0041 explicitly declines to merge the two call conventions.
+ * system; explicitly declines to merge the two call conventions.
  * It simply delegates its pagination/page-size chrome here now.
  *
  * ## Two modes, one component
  *
  * - `mode="server"` — the caller passes the **current page's rows only**
- *   (`items`) plus `total`, `page`, `pageSize`, `onPageChange`,
- *   `onPageSizeChange`. This component never slices; it renders what it is
- *   given and fires callbacks. The caller's own `useQuery` re-fetches.
+ * (`items`) plus `total`, `page`, `pageSize`, `onPageChange`,
+ * `onPageSizeChange`. This component never slices; it renders what it is
+ * given and fires callbacks. The caller's own `useQuery` re-fetches.
  * - `mode="client"` — the caller passes the **full, already-filtered and
- *   already-sorted array**. This component computes `totalPages` and the
- *   current page's slice itself. Used only by `OrgHome`'s Project table,
- *   whose client-side search/sort is ADR-0039's own still-standing decision
- *   (this ADR replaces only the pagination chrome around it, not that call).
+ * already-sorted array**. This component computes `totalPages` and the
+ * current page's slice itself. Used only by `OrgHome`'s Project table,
+ * whose client-side search/sort is own still-standing decision
+ * (this ADR replaces only the pagination chrome around it, not that call).
  *
  * The component has **zero opinion on search/filter/sort**. Whatever produced
  * the rows lives in the caller and is passed through the `header` slot
  * verbatim (`OrgHome`'s search box + `SortableHeader` cells, `EntityTable`'s
  * `?q=` input and filter row).
  *
- * ## Behavior contracts (Test Design §34 / TC-DS-009..018)
+ * ## Behavior contracts
  *
  * - Changing the page size **always resets to page 1**, in both modes — a
- *   page number valid under a smaller size can be out of range under a
- *   larger one (TC-DS-011).
+ * page number valid under a smaller size can be out of range under a
+ * larger one.
  * - The pagination row (and the page-size selector with it) renders **only
- *   when there is more than one page's worth of data** — not a disabled
- *   single-page control. Matches `EntityTable`'s and `OrgHome`'s existing
- *   pre-migration behavior exactly, so no assertion about it changes
- *   (TC-DS-009, TC-DS-014).
+ * when there is more than one page's worth of data** — not a disabled
+ * single-page control. Matches `EntityTable`'s and `OrgHome`'s existing
+ * pre-migration behavior exactly, so no assertion about it changes
+ *.
  * - Page size is **component state only — never persisted**. Navigating away
- *   and back, or reloading, returns to the caller's `defaultPageSize`
- *   (TC-DS-018). Do not "improve" this into `localStorage`/a URL param
- *   without a new ADR; ADR-0041 decided it explicitly.
+ * and back, or reloading, returns to the caller's `defaultPageSize`
+ *. Do not "improve" this into `localStorage`/a URL param
+ * without a new ADR; decided it explicitly.
  * - Empty state is the **caller's**, not this component's: with zero rows the
- *   caller renders its own message (`"No projects yet."`,
- *   `"No records found."`, …) and this component renders nothing at all.
- *   Screens have meaningfully different empty-state copy and some
- *   distinguish "none exist" from "none match your search" (TC-DS-014).
+ * caller renders its own message (`"No projects yet."`,
+ * `"No records found."`, …) and this component renders nothing at all.
+ * Screens have meaningfully different empty-state copy and some
+ * distinguish "none exist" from "none match your search".
  * - This container is for **outermost, non-nested tables only**. Never wrap a
- *   list that renders inside another table row's expanded cell — those stay
- *   flat `<ul>/<li>` per `frontend/CLAUDE.md`'s ARIA-accessible-name rule
- *   (a `<table>` inside a `<td>` makes the outer row's computed name
- *   aggregate the inner rows' text, breaking `getByRole("row", {name})`
- *   strict-mode lookups). TC-DS-017 asserts this boundary still holds.
+ * list that renders inside another table row's expanded cell — those stay
+ * flat `<ul>/<li>` per `frontend/CLAUDE.md`'s ARIA-accessible-name rule
+ * (a `<table>` inside a `<td>` makes the outer row's computed name
+ * aggregate the inner rows' text, breaking `getByRole("row", {name})`
+ * strict-mode lookups). asserts this boundary still holds.
  *
- * ## Markup: raw Bootstrap 5 / AdminLTE (ADR-0042), was CoreUI (ADR-0012)
+ * ## Markup: raw Bootstrap 5 / AdminLTE, was CoreUI
  *
- * DS-2 originally shipped this container on `@coreui/react`
+ * originally shipped this container on `@coreui/react`
  * (`CTable`/`CPagination`/`CPaginationItem`/`CFormSelect`), with the
- * pagination block copied verbatim from `EntityTable`'s pre-DS-2
+ * pagination block copied verbatim from `EntityTable`'s pre-
  * implementation so the 24 generic-admin list screens' assertions passed
- * unmodified (TC-DS-016). ADR-0042 replaces CoreUI with AdminLTE v4, which
+ * unmodified. replaces CoreUI with AdminLTE v4, which
  * *is* Bootstrap 5 plus layout classes, so every one of those components maps
  * to the stock Bootstrap markup CoreUI was rendering anyway:
  * `<div class="table-responsive"><table class="table table-hover">`,
  * `<nav><ul class="pagination"><li class="page-item"><button class="page-link">`,
  * `<select class="form-select form-select-sm">`. The rendered class contract
  * (`page-item`/`active`/`disabled`, `columnheader`/`row`/`cell` roles, every
- * `data-testid`) is unchanged, so TC-DS-016 still holds.
+ * `data-testid`) is unchanged, so still holds.
  *
- * **Caller-visible consequence of ADR-0042:** `columns` and `renderRow` now
+ * **Caller-visible consequence of:** `columns` and `renderRow` now
  * receive **raw `<tr>`/`<th scope="col">`/`<td>` elements**, not
  * `<CTableRow>`/`<CTableHeaderCell>`/`<CTableDataCell>`. The prop *types*
  * (`ReactNode` / `(item: T) => ReactNode`) are unchanged — it is the JSX
@@ -118,27 +118,25 @@
  * Previous/Next buttons now carry a real `disabled` attribute rather than only
  * a `disabled` class.
  *
- * [ADR-0041]: docs/adr/0041-ds-2-table-container-shared-pagination.md
- * ADR-0042: the CoreUI -> AdminLTE v4 migration (`docs/adr/`).
  *
  * ## Tabler v1.5.1 table idioms (added 2026-09-11, cascade-favors-Tabler pass)
  *
  * Tabler's `.table`/`.card`/`.btn` tokens already win project-wide since
- * ADR-0054 moved the cascade; this container just opts into the Tabler-shaped
+ * moved the cascade; this container just opts into the Tabler-shaped
  * defaults so the rendered look matches the rest of Tabler without a caller-
  * side change:
  *
  * - `.table-vcenter` is the default (added unconditionally with `table-hover`),
- *   matching Tabler's polished vertical-centered look. Opt out via
- *   `tableProps.className` overriding, or accept it as the new normal.
+ * matching Tabler's polished vertical-centered look. Opt out via
+ * `tableProps.className` overriding, or accept it as the new normal.
  * - The default wrapper is `<div className="table-responsive">`; pass
- *   `responsive="md"` (or `"sm"`/`"lg"`/`"xl"`) to scope the horizontal scroll
- *   to below that breakpoint, or `responsive={false}` to drop the wrapper
- *   entirely when the caller has its own.
+ * `responsive="md"` (or `"sm"`/`"lg"`/`"xl"`) to scope the horizontal scroll
+ * to below that breakpoint, or `responsive={false}` to drop the wrapper
+ * entirely when the caller has its own.
  * - Pass `stickyHeader` to add `.sticky-top` to the `<thead>` for long tables
- *   where the header should stay visible while rows scroll past.
+ * where the header should stay visible while rows scroll past.
  * - Pass `caption` to render a real `<caption>` element (Tabler's a11y note
- *   says this is load-bearing for screen-reader announcement).
+ * says this is load-bearing for screen-reader announcement).
  *
  * ## Caller-side Tabler composition patterns (no new prop needed)
  *
@@ -147,27 +145,27 @@
  * belong on this outer container's API:
  *
  * - **Sortable headers** — render a `<button class="table-sort" data-sort="x">`
- *   inside a `<th scope="col">`, set `aria-sort="ascending|descending|none"`
- *   on the `<th>`. The button is keyboard-reachable; the actual sort logic
- *   lives in the caller's own state.
+ * inside a `<th scope="col">`, set `aria-sort="ascending|descending|none"`
+ * on the `<th>`. The button is keyboard-reachable; the actual sort logic
+ * lives in the caller's own state.
  * - **Selectable rows** — add `.table-selectable` to `tableProps.className`,
- *   render `.table-selectable-check` checkboxes, use `.on-checked`/`.on-
- *   unchecked` spans inside the row for state-dependent content. Pure CSS,
- *   no JS.
+ * render `.table-selectable-check` checkboxes, use `.on-checked`/`.on-
+ * unchecked` spans inside the row for state-dependent content. Pure CSS,
+ * no JS.
  * - **Mobile-stacked** — add `table-mobile-md` (or `-sm`/`-lg`/`-xl`) to
- *   `tableProps.className`, set `data-label="..."` on each `<td>`. The table
- *   collapses into a stacked list below that breakpoint.
+ * `tableProps.className`, set `data-label="..."` on each `<td>`. The table
+ * collapses into a stacked list below that breakpoint.
  * - **Truncated cells** — `<td className="td-truncate"><div className="text-
- *   truncate">long content</div></td>` keeps long values from stretching the
- *   column.
+ * truncate">long content</div></td>` keeps long values from stretching the
+ * column.
  * - **Contextual row variants** — `<tr className="table-primary|table-danger|
- *   ...">` on the caller's `renderRow` output.
+ *...">` on the caller's `renderRow` output.
  */
 import { ReactNode, useEffect, useState } from "react";
 import { Pagination, PAGE_SIZE_OPTIONS } from "../components/molecules/pagination";
 
 /**
- * The page-size options offered by every retrofitted screen (ADR-0041).
+ * The page-size options offered by every retrofitted screen.
  * Moved to `components/molecules/pagination` — the `Pagination` molecule's
  * natural home — and re-exported here so existing callers/tests importing
  * it from `container/Table` keep working unchanged.
@@ -194,18 +192,18 @@ export interface TableProps<T> {
   rowKey: (item: T) => string;
   /**
    * The `<thead>`'s contents: a `<tr>` of `<th scope="col">`s — the caller
-   * owns column definitions. Raw elements since ADR-0042 (was `<CTableRow>` /
+   * owns column definitions. Raw elements since (was `<CTableRow>` /
    * `<CTableHeaderCell>`); `scope="col"` is the caller's responsibility now.
    */
   columns: ReactNode;
   /**
    * One `<tr>` of `<td>`s per item — the caller owns cell rendering. Raw
-   * elements since ADR-0042 (was `<CTableRow>` / `<CTableDataCell>`).
+   * elements since (was `<CTableRow>` / `<CTableDataCell>`).
    */
   renderRow: (item: T) => ReactNode;
   /** Optional toolbar/search/title slot, rendered above the table. */
   header?: ReactNode;
-  /** Initial page size. Defaults to 25; `OrgHome` passes 10 to preserve ADR-0039's default. */
+  /** Initial page size. Defaults to 25; `OrgHome` passes 10 to preserve default. */
   defaultPageSize?: number;
   /**
    * Server mode: the controlled current page. Client mode: ignored (page is
@@ -218,7 +216,7 @@ export interface TableProps<T> {
   onPageChange?: (page: number) => void;
   /**
    * Server mode: fired when the user picks a different page size. Always
-   * accompanied by an `onPageChange(1)` call — see TC-DS-011.
+   * accompanied by an `onPageChange(1)` call —.
    */
   onPageSizeChange?: (pageSize: number) => void;
   /**
@@ -232,7 +230,7 @@ export interface TableProps<T> {
    * background refetch, where holding position is correct). This prop is the
    * minimal hook for that. `OrgHome` passes `${search}|${sortField}|
    * ${sortDir}`, exactly reproducing the `setPage(1)` calls its
-   * pre-DS-2 search `onChange`/`handleSort` made.
+   * pre- search `onChange`/`handleSort` made.
    *
    * Deliberately narrower than remounting via React's own `key`: a remount
    * would also reset the selected page size, which must survive a search
@@ -242,7 +240,7 @@ export interface TableProps<T> {
    */
   resetPageKey?: string;
   /**
-   * Props forwarded to the underlying `<table>` element. Since ADR-0042 this
+   * Props forwarded to the underlying `<table>` element. Since this
    * is a raw DOM element, so pass real HTML/React attributes — Bootstrap
    * modifier classes go through `className` (`"table-sm"`, `"align-middle"`,
    * `"table-striped"`), not CoreUI's old boolean props (`small`, `align`).
@@ -261,9 +259,9 @@ export interface TableProps<T> {
   stickyHeader?: boolean;
   /**
    * Controls the responsive wrapper:
-   *   - `"always"` (default) — `<div className="table-responsive">`, scrolls at every width
-   *   - `"sm" | "md" | "lg" | "xl"` — Tabler's `table-responsive-{bp}` variants, scroll only below that breakpoint
-   *   - `false` — no wrapper, caller's responsibility (e.g. nested inside an already-scrolling container)
+   * - `"always"` (default) — `<div className="table-responsive">`, scrolls at every width
+   * - `"sm" | "md" | "lg" | "xl"` — Tabler's `table-responsive-{bp}` variants, scroll only below that breakpoint
+   * - `false` — no wrapper, caller's responsibility (e.g. nested inside an already-scrolling container)
    */
   responsive?: "always" | "sm" | "md" | "lg" | "xl" | false;
   /**
@@ -277,7 +275,7 @@ export interface TableProps<T> {
    * Optional card-title. When set, the whole container enters **card mode**:
    * outer becomes `<div class="card">`, a `.card-header` is rendered with
    * this title (as `<h3 class="card-title">`) followed by the existing
-   * `header` slot (search box, toolbar, ...) and the optional `cardActions`
+   * `header` slot (search box, toolbar,...) and the optional `cardActions`
    * div, and the table itself gets `card-table` instead of `table-vcenter` —
    * Tabler's own "Table in a card" pattern (drops bottom margin, runs
    * edge-to-edge inside the card). The responsive wrapper is suppressed in
@@ -339,15 +337,15 @@ function Table<T>({
   const [clientPageSize, setClientPageSize] = useState(defaultPageSize);
 
   const isServer = mode === "server";
-  const effectivePageSize = isServer ? (controlledPageSize ?? defaultPageSize) : clientPageSize;
-  const effectiveTotal = isServer ? (total ?? 0) : items.length;
+  const effectivePageSize = isServer ? (controlledPageSize ?? defaultPageSize): clientPageSize;
+  const effectiveTotal = isServer ? (total ?? 0): items.length;
   const totalPages = Math.max(1, Math.ceil(effectiveTotal / effectivePageSize));
 
   // Clamp rather than trust: in client mode the caller's own filtering (a
   // search term narrowing 30 rows to 3) can shrink the array under a page
   // number that was valid a render ago. `OrgHome`'s pre-migration code did
   // exactly this same `Math.min(page, totalPages)` for the same reason.
-  const rawPage = isServer ? (controlledPage ?? 1) : clientPage;
+  const rawPage = isServer ? (controlledPage ?? 1): clientPage;
   const currentPage = Math.min(Math.max(rawPage, 1), totalPages);
 
   const visibleItems = isServer
@@ -382,7 +380,7 @@ function Table<T>({
   }
 
   function changePageSize(next: number) {
-    // TC-DS-011: page-size change ALWAYS resets to page 1, both modes. In
+    //: page-size change ALWAYS resets to page 1, both modes. In
     // server mode that means firing both callbacks, not just the size one —
     // the caller's query key carries `page` too, and re-fetching page 3 of a
     // freshly-coarsened pagination could be out of range or plain wrong.
@@ -396,7 +394,7 @@ function Table<T>({
   }
 
   // Renders unconditionally, including a single-page list — supersedes
-  // TC-DS-009/TC-DS-014's original "only past one page's worth of data"
+  // / original "only past one page's worth of data"
   // clause (both retired the same way; see the updated Test Design doc).
   // Previous/Next still disable correctly on one page via `Pagination`'s own
   // `currentPage`/`totalPages` comparison.
@@ -408,10 +406,10 @@ function Table<T>({
   // bottom margin, runs edge-to-edge inside the card border, manages its own
   // cell padding). Outside card mode the default is `table-vcenter table-hover`.
   const useCard = cardTitle !== undefined && cardTitle !== null;
-  const { className: extraTableClassName, ...restTableProps } = (tableProps ?? {}) as {
+  const { className: extraTableClassName,...restTableProps } = (tableProps ?? {}) as {
     className?: string;
   } & Record<string, unknown>;
-  const baseTableClasses = useCard ? ["table", "card-table"] : ["table", "table-vcenter", "table-hover"];
+  const baseTableClasses = useCard ? ["table", "card-table"]: ["table", "table-vcenter", "table-hover"];
   const tableClassName = [...baseTableClasses, extraTableClassName].filter(Boolean).join(" ");
 
   // `responsive` controls the horizontal-scroll wrapper. In card mode the
@@ -430,7 +428,7 @@ function Table<T>({
   const tableElement = (
     <table className={tableClassName} {...restTableProps}>
       {caption !== undefined && caption !== null && <caption>{caption}</caption>}
-      <thead className={stickyHeader ? "sticky-top" : undefined}>{columns}</thead>
+      <thead className={stickyHeader ? "sticky-top": undefined}>{columns}</thead>
       <tbody>
         {visibleItems.map((item) => (
           <TableRowSlot key={rowKey(item)}>{renderRow(item)}</TableRowSlot>
@@ -468,7 +466,7 @@ function Table<T>({
 
   const paginationSlot = footerClassName ? (
     <div className={footerClassName}>{paginationBlock}</div>
-  ) : (
+  ): (
     paginationBlock
   );
 
@@ -476,7 +474,7 @@ function Table<T>({
     return (
       <div className="card">
         {cardHeader}
-        {responsiveClassName ? <div className={responsiveClassName}>{tableElement}</div> : tableElement}
+        {responsiveClassName ? <div className={responsiveClassName}>{tableElement}</div>: tableElement}
         {paginationSlot}
       </div>
     );
@@ -486,8 +484,8 @@ function Table<T>({
     <div>
       {header}
 
-      {/* `responsive` on the old CTable = this wrapper (ADR-0042 spec §2.1). */}
-      {responsiveClassName ? <div className={responsiveClassName}>{tableElement}</div> : tableElement}
+      {/* `responsive` on the old CTable = this wrapper. */}
+      {responsiveClassName ? <div className={responsiveClassName}>{tableElement}</div>: tableElement}
 
       {paginationSlot}
     </div>

@@ -1,5 +1,5 @@
 /**
- * RBAC-3 RoleAssignment calls (ADR-0021) + the UI-slice role dropdown source.
+ * RoleAssignment calls + the UI-slice role dropdown source.
  *
  * Source: API Document §2 (`POST`/`GET /orgs/{org_id}/role-assignments`,
  * `GET /orgs/{org_id}/roles` contracts).
@@ -7,7 +7,7 @@
  * All three are bespoke and org-path-scoped, same `apiFetch` wrapper shape
  * as `organizations.ts`/`projects.ts` — no cookie involved in any of them.
  *
- * **DS-2/ADR-0041 (2026-09-07):** `listRoleAssignments` now returns the
+ * **(2026-09-07):** `listRoleAssignments` now returns the
  * standard `{items,total,page,page_size}` envelope (`page`/`page_size`
  * accepted, default 25, max 100), not a bare array — the one table-backing
  * list route in this codebase that had no pagination contract before this
@@ -48,7 +48,7 @@ export interface RoleSummary {
  * List every `RoleAssignment` (org-wide and project-scoped) in `orgId`.
  *
  * Rejects with an `ApiError`: `404` if the caller has no membership at all
- * in `orgId` (NFR-19), `403 permission_denied` if they're a member but lack
+ * in `orgId`, `403 permission_denied` if they're a member but lack
  * `role_assignment.read`.
  */
 export async function listRoleAssignments(
@@ -64,13 +64,13 @@ export async function listRoleAssignments(
   }
   const qs = query.toString();
   return apiFetch<RoleAssignmentListResponse>(
-    `/api/v1/orgs/${orgId}/role-assignments${qs ? `?${qs}` : ""}`,
+    `/api/v1/orgs/${orgId}/role-assignments${qs ? `?${qs}`: ""}`,
   );
 }
 
 /**
  * Grant a Role to an actor in `orgId` — org-wide when `project_id` is
- * omitted, scoped to that Project otherwise (ADR-0021).
+ * omitted, scoped to that Project otherwise.
  *
  * Rejects with an `ApiError`: `404`/`403` same boundary as
  * `listRoleAssignments`, gated on `role_assignment.create`; `422` on
@@ -89,7 +89,7 @@ export async function createRoleAssignment(
 }
 
 /**
- * List every `Role` usable in `orgId` — RBAC-4's 5 seeded system roles plus
+ * List every `Role` usable in `orgId` — 5 seeded system roles plus
  * any custom roles scoped to this org — for the role-assignment form's
  * dropdown. Exactly the set `createRoleAssignment`'s own `role_id`
  * validation accepts.

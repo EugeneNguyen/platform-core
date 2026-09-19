@@ -9,12 +9,12 @@ import { Icon, IconVariant } from "../../atoms/icon";
 
 export interface SocialAuthButtonProps {
   href: string;
-  /** Font Awesome name suffix, e.g. "facebook", "google" (ADR-0042). */
+  /** Font Awesome name suffix, e.g. "facebook", "google". */
   icon: string;
   /**
    * Font Awesome style for `icon`. Defaults to `"brands"` — every provider a
    * social-auth button can plausibly represent (Facebook, Google, GitHub,
-   * Apple, ...) is a third-party logo, and those glyphs live ONLY in Font
+   * Apple,...) is a third-party logo, and those glyphs live ONLY in Font
    * Awesome's `fa-brands` font; they do not exist in `fa-solid`, so the
    * atom's own `"solid"` default would render nothing here.
    */

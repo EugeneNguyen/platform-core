@@ -1,24 +1,24 @@
 /**
- * ADR-0073: batched, deduped FK-label resolution for any `EntityConfig`-driven
+ *: batched, deduped FK-label resolution for any `EntityConfig`-driven
  * surface — extracted verbatim out of `EntityTable`'s own body so
  * `EntityDetailPage` reuses it instead of shipping a second copy (the
  * component-reuse rule `frontend/CLAUDE.md` makes mandatory; this is a reuse
  * extraction, not a new architecture decision of its own).
  *
  * Resolves one `getEntity` call per **distinct** FK id per FK field across the
- * rows handed in — §3's own "not one request per row" requirement. The detail
+ * rows handed in — §3's own "not one request per row" spec. The detail
  * page passes a single-element `rows` array, so the same code trivially
  * degrades to "one request per distinct FK on this record."
  *
  * Two separate field lists, deliberately:
  *
  * - `labelFields` — the fields whose labels are actually wanted (`EntityTable`
- *   passes only its visible `showInTable !== false` columns; `EntityDetailPage`
- *   passes every field).
+ * passes only its visible `showInTable !== false` columns; `EntityDetailPage`
+ * passes every field).
  * - `schemaFields` — the fields whose `refEntity` schemas get fetched. Kept
- *   separate because `EntityTable` has always fetched schemas for **every**
- *   `refEntity` on the config, visible column or not, and narrowing that here
- *   would be a silent behavior change bundled into an unrelated extraction.
+ * separate because `EntityTable` has always fetched schemas for **every**
+ * `refEntity` on the config, visible column or not, and narrowing that here
+ * would be a silent behavior change bundled into an unrelated extraction.
  */
 import { useEffect, useMemo, useState } from "react";
 import { FieldConfig } from "../../entityConfigs/types";
@@ -56,17 +56,17 @@ export function useFkLabels(
     .join("|");
 
   /**
-   * [ADR-0074](../../../../docs/adr/0074-entity-detail-relationship-tabs.md)
+   *
    * — the same primitive-fingerprint trick, now for `rows` too, and for the
    * same reason applied one argument over. Keying the effect on the `rows`
    * **array identity** made it re-run on every render for any caller that
    * builds that array inline, and every run ends in `setFkLabels(next)` with
    * a fresh object — a self-sustaining fetch loop.
    *
-   * This is not hypothetical: `EntityDetailPage` passed `row ? [row] : []`,
+   * This is not hypothetical: `EntityDetailPage` passed `row ? [row]: []`,
    * a new array on every render, and measured **2913 `getEntity` calls in
    * 400ms** — an unbounded request storm against the backend, on a page that
-   * looked completely correct while doing it (see ADR-0073's own Amendment 1).
+   * looked completely correct while doing it.
    * The rendered output is identical whether the effect runs once or forever,
    * which is exactly why neither that story's unit tests nor its live manual
    * pass caught it.
@@ -93,7 +93,7 @@ export function useFkLabels(
     async function resolve() {
       const next: FkLabelMap = {};
       for (const field of fkFields) {
-        const refConfig = field.refEntity ? refConfigs[resolveEntityKey(field.refEntity)] : undefined;
+        const refConfig = field.refEntity ? refConfigs[resolveEntityKey(field.refEntity)]: undefined;
         if (!refConfig) {
           continue;
         }
@@ -104,8 +104,8 @@ export function useFkLabels(
           ids.map(async (id) => {
             try {
               const row = await getEntity<EntityRow>(refConfig, id);
-              const label = field.labelField ? row[field.labelField] : row.id;
-              return [id, label === null || label === undefined ? id : String(label)] as const;
+              const label = field.labelField ? row[field.labelField]: row.id;
+              return [id, label === null || label === undefined ? id: String(label)] as const;
             } catch {
               return [id, id] as const;
             }

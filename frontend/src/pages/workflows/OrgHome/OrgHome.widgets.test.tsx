@@ -6,17 +6,17 @@ import OrgHome from "./OrgHome";
 import { getActiveMemberTotal, getProjectsTotal } from "../../../lib/api/dashboard";
 
 /**
- * SHELL-3 (ADR-0020, FR-SHELL-3/NFR-27) dashboard stat-widget unit tests,
- * TC-SHELL-010 (real count)/TC-SHELL-011 (zero-state vs. error-state).
+ * dashboard stat-widget unit tests,
+ * (real count)/ (zero-state vs. error-state).
  *
  * `lib/api/dashboard.ts`'s two count functions are mocked directly (same
  * partial-mock pattern `OrgHome.test.tsx` already uses for
  * `createProject`/`updateProject`) — the widgets' own `widgetValue()`
  * loading/error/success branching is what's under test here, not the real
  * HTTP call (that's the E2E suite's job against a live, seeded backend,
- * TC-SHELL-010).
+ * ).
  *
- * **PROJ-4 (2026-09-09, ADR-0047):** `OrgHome` no longer calls `listProjects`
+ * **:** `OrgHome` no longer calls `listProjects`
  * at all (the Project list/table moved to `ProjectsPage.tsx`) — the mock
  * that used to stand in for it here is gone too, since there's nothing left
  * to mock.
@@ -52,7 +52,7 @@ describe("OrgHome dashboard stat widgets", () => {
     vi.clearAllMocks();
   });
 
-  it("TC-SHELL-010: shows the real resolved counts once both queries settle", async () => {
+  it(": shows the real resolved counts once both queries settle", async () => {
     mockGetProjectsTotal.mockResolvedValue(3);
     mockGetActiveMemberTotal.mockResolvedValue(5);
 
@@ -62,7 +62,7 @@ describe("OrgHome dashboard stat widgets", () => {
     expect(screen.getByTestId("widget-active-member-count")).toHaveTextContent("5");
   });
 
-  it("TC-SHELL-011: a real zero count renders \"0\", not the error/loading state", async () => {
+  it(": a real zero count renders \"0\", not the error/loading state", async () => {
     mockGetProjectsTotal.mockResolvedValue(0);
     mockGetActiveMemberTotal.mockResolvedValue(0);
 
@@ -73,7 +73,7 @@ describe("OrgHome dashboard stat widgets", () => {
     expect(screen.queryByText(/unable to load/i)).not.toBeInTheDocument();
   });
 
-  it("TC-SHELL-011: a failed fetch shows an explicit error state, never a false \"0\"", async () => {
+  it(": a failed fetch shows an explicit error state, never a false \"0\"", async () => {
     mockGetProjectsTotal.mockRejectedValue(new Error("404"));
     mockGetActiveMemberTotal.mockResolvedValue(2);
 
@@ -87,7 +87,7 @@ describe("OrgHome dashboard stat widgets", () => {
     expect(screen.getByTestId("widget-active-member-count")).toHaveTextContent("2");
   });
 
-  it("TC-SHELL-011: renders a distinct loading state before either query settles", () => {
+  it(": renders a distinct loading state before either query settles", () => {
     mockGetProjectsTotal.mockReturnValue(new Promise(() => {})); // never resolves
     mockGetActiveMemberTotal.mockReturnValue(new Promise(() => {}));
 

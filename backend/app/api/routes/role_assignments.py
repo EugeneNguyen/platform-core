@@ -1,17 +1,17 @@
-"""RBAC-3: `POST`/`GET /orgs/{org_id}/role-assignments` (ADR-0021).
+""": `POST`/`GET /orgs/{org_id}/role-assignments`.
 
 Source: API Document §2 (route table)/§3 (`POST`/`GET
-/orgs/{org_id}/role-assignments` contracts), ADR-0021 (role assignment
+/orgs/{org_id}/role-assignments` contracts), (role assignment
 creation flow — membership gate, body-validation posture, project-scoped
 enforcement fix), Database Document §3.3 (`RoleAssignment`).
 
 Both routes share the same gate order as `projects.py`'s `create_project`/
 `agents.py`'s `create_agent` (not interchangeable — 404 must fire ahead of a
-would-be 403, ADR-0015):
+would-be 403, ):
 1. 404-vs-403: any-status `OrgMembership` existence check on the path
    `org_id` — no membership at all (including a nonexistent `org_id`) ->
    `404`, so a non-member never learns whether the permission they lack
-   would otherwise have been granted (NFR-1). `require_permission` is
+   would otherwise have been granted. `require_permission` is
    deliberately NOT used as a route-level `Depends(...)` parameter for this
    reason — FastAPI resolves `Depends` parameters before the route body
    runs, which would let a `403` fire ahead of this `404` check.
@@ -22,14 +22,14 @@ would-be 403, ADR-0015):
 `POST` then runs body-field validation, all `422` (never `404` — the caller
 has already proved membership in `org_id` before any of these run, so a
 foreign-org id in the body is ordinary request validation, not an
-existence-hiding boundary; ADR-0021's Decision section):
+existence-hiding boundary; Decision section):
 - `role_id` must resolve to a `Role` usable in this org: `Role.org_id IS
   NULL` (a system template, usable everywhere) OR `Role.org_id == org_id`.
 - `actor_id` must resolve to an existing `Actor` row (`User` or `AIAgent`).
 - If the resolved actor is a `User`, that `User` must already hold an
   `OrgMembership` (any status — invited/active/suspended) in `org_id` — a
   `RoleAssignment` for a non-member `User` is an orphaned row, not a real
-  grant (ADR-0021). Skipped entirely for `AIAgent` actors, which never have
+  grant. Skipped entirely for `AIAgent` actors, which never have
   an `OrgMembership` row (same precedent `agents.py`/`organizations.py`
   already establish).
 - If `project_id` is given, it must resolve to a `Project` with
@@ -62,11 +62,11 @@ from app.schemas.rbac import (
 
 router = APIRouter()
 
-# NFR-6 offset pagination, added by DS-2/ADR-0041 — this was the last
+# offset pagination, added by / — this was the last
 # table-backing list route in the codebase with no pagination contract at all
 # (a bare `list[RoleAssignmentSummary]`). Default page size 25, ceiling 100 as
 # a plain literal at the `clamp_pagination` call site (no shared constant, per
-# ADR-0041's explicit direction).
+# explicit direction).
 _DEFAULT_PAGE_SIZE = 25
 
 
@@ -121,7 +121,7 @@ async def create_role_assignment(
     actor: User | AIAgent = Depends(get_current_actor),
     db: AsyncSession = Depends(get_db),
 ) -> RoleAssignmentSummary | JSONResponse:
-    """Grant a Role to an actor, org-wide or project-scoped (ADR-0021).
+    """Grant a Role to an actor, org-wide or project-scoped.
 
     See module docstring for the full order of operations and error posture.
     """
@@ -216,24 +216,24 @@ async def list_role_assignments(
     page: int = 1,
     page_size: int = _DEFAULT_PAGE_SIZE,
 ) -> RoleAssignmentListResponse | JSONResponse:
-    """List every `RoleAssignment` (org-wide and project-scoped) in `org_id` (ADR-0021).
+    """List every `RoleAssignment` (org-wide and project-scoped) in `org_id`.
 
     Same 404-vs-403 boundary as `create_role_assignment`, gated on
     `role_assignment.read`. No `project_id` filter query param in this
     story — every row for `org_id` is returned, org-wide and project-scoped
     both.
 
-    **DS-2/ADR-0041:** offset-paginated (`page`/`page_size`, default 25, max
+    **/:** offset-paginated (`page`/`page_size`, default 25, max
     100) and returning the standard `{items,total,page,page_size}` envelope
-    instead of RBAC-3's original bare array. This is a breaking response-shape
+    instead of original bare array. This is a breaking response-shape
     change — deliberate, and unconditional: the envelope is returned even when
-    no `page`/`page_size` params are supplied (TC-DS-013), so no caller can
+    no `page`/`page_size` params are supplied, so no caller can
     keep relying on the old array shape by simply omitting the params.
 
     Rows are ordered by `created_at` ascending, then `id` — an explicit,
     stable order is required for offset pagination to be meaningful at all
     (an unordered `SELECT` can return the same row on two different pages).
-    RBAC-3's original unordered query was fine only because it returned
+     original unordered query was fine only because it returned
     everything in one response.
     """
     # 1. 404-vs-403 boundary.

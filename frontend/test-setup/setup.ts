@@ -4,11 +4,11 @@ import "@testing-library/jest-dom/vitest";
 // as an object with none of the `Storage` interface's methods present
 // (verified directly: `typeof localStorage.getItem === "undefined"`, not a
 // missing-global or `this`-binding issue) — a real browser's `localStorage`
-// always has them. CoreUI's `useColorModes` hook (SHELL-4, ADR-0020) calls
+// always has them. CoreUI's `useColorModes` hook calls
 // `localStorage.getItem`/`.setItem` directly, which otherwise throws
 // "localStorage.getItem is not a function" in every test that mounts
 // `AppHeader` (i.e. most of the authenticated-shell test suite, not just
-// SHELL-4's own tests). A minimal in-memory `Storage` polyfill, installed
+// own tests). A minimal in-memory `Storage` polyfill, installed
 // globally here once, is the correct fix — not a per-test mock, since the
 // underlying gap is this environment's `localStorage` stub, not something
 // any individual component test should have to work around.
@@ -24,7 +24,7 @@ class InMemoryStorage implements Storage {
   }
 
   getItem(key: string) {
-    return this.store.has(key) ? this.store.get(key)! : null;
+    return this.store.has(key) ? this.store.get(key)!: null;
   }
 
   key(index: number) {

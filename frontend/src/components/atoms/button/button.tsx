@@ -1,30 +1,30 @@
 /**
  * `Button` atom — Bootstrap 5 buttons, as shipped inside AdminLTE v4's own
- * stylesheet (ADR-0042; originally modelled on CoreUI's Buttons page under
- * ADR-0012).
+ * stylesheet (; originally modelled on CoreUI's Buttons page under
+ * ).
  *
  * Raw HTML/JSX against the design system's Bootstrap-family classes (never a
  * component-library `CButton`/equivalent import) — the "hand-roll the markup,
- * keep the CSS" pattern ADR-0037 established for `AppSidebar`/`AppBreadcrumb`
- * and `FeaturedCard`, which ADR-0042 has since made the repo-wide rule. Class
+ * keep the CSS" pattern established for `AppSidebar`/`AppBreadcrumb`
+ * and `FeaturedCard`, which has since made the repo-wide rule. Class
  * names below were copied verbatim from the source doc page's own rendered
  * `docs-example` markup (fetched via `curl`, not a screenshot/WebFetch — see
  * this story's Decomposition-stage comment for why), not reconstructed from
  * memory.
  *
- * Two ADR-0042 notes:
+ * Two notes:
  * - The toggle hook is now `data-bs-toggle="button"` (was
- *   `data-coreui-toggle`), matching Bootstrap's own attribute namespace.
- *   Nothing in this app reads it — no Bootstrap JS is loaded (ADR-0042
- *   reimplements interactive behavior in React) — so it is markup-parity
- *   only; `aria-pressed` is what actually conveys the state.
+ * `data-coreui-toggle`), matching Bootstrap's own attribute namespace.
+ * Nothing in this app reads it — no Bootstrap JS is loaded (
+ * reimplements interactive behavior in React) — so it is markup-parity
+ * only; `aria-pressed` is what actually conveys the state.
  * - **`ghost` has no Bootstrap/AdminLTE equivalent.** `btn-ghost-*` was a
- *   CoreUI-only variant. The prop and its classes are kept (removing a public
- *   prop from a shared atom is a breaking API change, out of scope for a
- *   design-system swap, and `Button.test.tsx` asserts on `btn-ghost-info`),
- *   and `frontend/src/index.css` now carries a small compatibility rule set
- *   that reproduces the ghost look on top of Bootstrap's own `--bs-btn-*`
- *   variables so it still tracks the active light/dark theme.
+ * CoreUI-only variant. The prop and its classes are kept (removing a public
+ * prop from a shared atom is a breaking API change, out of scope for a
+ * design-system swap, and `Button.test.tsx` asserts on `btn-ghost-info`),
+ * and `frontend/src/index.css` now carries a small compatibility rule set
+ * that reproduces the ghost look on top of Bootstrap's own `--bs-btn-*`
+ * variables so it still tracks the active light/dark theme.
  *
  * `atoms/` is a new tier in this repo (previously only flat `shared/`/`crud/`
  * dirs existed) — first component built against it, per this story's
@@ -186,14 +186,14 @@ export function Button({
     onClick?.(event);
   }
 
-  const colorClass = outline ? OUTLINE_COLOR_CLASS[color] : ghost ? GHOST_COLOR_CLASS[color] : COLOR_CLASS[color];
+  const colorClass = outline ? OUTLINE_COLOR_CLASS[color]: ghost ? GHOST_COLOR_CLASS[color]: COLOR_CLASS[color];
   const classNames = [
     "btn",
     colorClass,
     SIZE_CLASS[size],
     SHAPE_CLASS[shape],
-    active || isPressed ? "active" : "",
-    isAnchorDisabled ? "disabled" : "",
+    active || isPressed ? "active": "",
+    isAnchorDisabled ? "disabled": "",
     className,
   ]
     .filter(Boolean)
@@ -206,9 +206,9 @@ export function Button({
         role="button"
         className={classNames}
         aria-disabled={isAnchorDisabled || undefined}
-        tabIndex={isAnchorDisabled ? -1 : undefined}
-        aria-pressed={toggle ? isPressed : undefined}
-        data-bs-toggle={toggle ? "button" : undefined}
+        tabIndex={isAnchorDisabled ? -1: undefined}
+        aria-pressed={toggle ? isPressed: undefined}
+        data-bs-toggle={toggle ? "button": undefined}
         onClick={handleClick}
         {...passthroughAttrs}
       >
@@ -235,8 +235,8 @@ export function Button({
       type={type}
       className={classNames}
       disabled={disabled}
-      aria-pressed={toggle ? isPressed : undefined}
-      data-bs-toggle={toggle ? "button" : undefined}
+      aria-pressed={toggle ? isPressed: undefined}
+      data-bs-toggle={toggle ? "button": undefined}
       onClick={handleClick}
       {...passthroughAttrs}
     >

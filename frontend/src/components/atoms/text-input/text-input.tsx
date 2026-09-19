@@ -4,7 +4,7 @@
  * comment on TNX-0056, item #3.
  *
  * `forwardRef` so callers can bind it via React Hook Form's `register()`
- * spread (ADR-0009), same convention as `shared/FormField.tsx`.
+ * spread, same convention as `shared/FormField.tsx`.
  */
 import { forwardRef, InputHTMLAttributes } from "react";
 
@@ -24,10 +24,10 @@ export interface TextInputProps extends Omit<InputHTMLAttributes<HTMLInputElemen
 }
 
 export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function TextInput(
-  { invalid = false, size = "sm", className, ...rest },
+  { invalid = false, size = "sm", className,...rest },
   ref,
 ) {
-  const classNames = ["form-control", SIZE_CLASS[size], invalid ? "is-invalid" : "", className]
+  const classNames = ["form-control", SIZE_CLASS[size], invalid ? "is-invalid": "", className]
     .filter(Boolean)
     .join(" ");
 

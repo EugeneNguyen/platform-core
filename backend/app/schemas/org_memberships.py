@@ -1,6 +1,6 @@
-"""Pydantic v2 schemas for the RBAC-2 `/orgs/{org_id}/members*` / `/invites/{token}/accept` routes.
+"""Pydantic v2 schemas for the `/orgs/{org_id}/members*` / `/invites/{token}/accept` routes.
 
-Source: API Document §2 (route contracts), ADR-0017 (invite & manage org
+Source: API Document §2 (route contracts), (invite & manage org
 members). `status` fields use a plain `Literal` of the 3
 `OrgMembership.status` string values rather than importing
 `app.models.tenancy.OrgMembershipStatus` directly — matching this package's
@@ -44,11 +44,11 @@ class MemberSummary(BaseModel):
 class MemberListResponse(BaseModel):
     """Response of `GET /orgs/{org_id}/members`.
 
-    Offset-paginated per NFR-6 (page size 25 default) — the API Document's
+    Offset-paginated (page size 25 default) — the API Document's
     own §2 entry for this route says only "paginated list of {...}" without
     spelling out an envelope shape (the generic CRUD factory referenced
     elsewhere in that document, which would otherwise set precedent for one,
-    doesn't exist in code yet); this envelope follows NFR-6's own
+    doesn't exist in code yet); this envelope follows own
     offset-pagination framing rather than returning a bare unpaginated array.
     """
 
@@ -61,7 +61,7 @@ class MemberListResponse(BaseModel):
 class InviteMemberResponse(BaseModel):
     """Response of `POST /orgs/{org_id}/members/invite`.
 
-    `invite_link` is non-null only for the "new email" branch (ADR-0017) —
+    `invite_link` is non-null only for the "new email" branch —
     it embeds the raw, one-time invite token, shown exactly once, same
     one-time-secret posture `POST /orgs/{org_id}/agents`'s `api_key` takes.
     `null` for the "existing email" branch, which creates no `Invite` row at
@@ -87,14 +87,14 @@ class PatchMembershipRequest(BaseModel):
     (a nonsense string is FastAPI's own 422) — the "only `active <->
     suspended` is a legal transition through this route, `invited` is never
     a legal value here at all" business rule is enforced in the route body
-    (ADR-0017), matching this route's own bespoke-route-validated framing
+    , matching this route's own bespoke-route-validated framing
     rather than a bare field-level `PATCH`.
     """
 
     status: MembershipStatus
 
 
-# --- API-1 generic-CRUD factory additions (ADR-0022) --------------------------------------------
+# --- API-1 generic-CRUD factory additions --------------------------------------------
 #
 # `OrgMembershipSummary`/`OrgMembershipListResponse`/`UpdateOrgMembershipRequest`
 # back the factory's `GET /org-memberships` (list), `GET`/`PATCH`/
@@ -105,7 +105,7 @@ class PatchMembershipRequest(BaseModel):
 # `OrgMembershipSummary` is deliberately NOT `MemberSummary`: `MemberSummary`
 # joins in `User.email` (a bespoke-route convenience with no equivalent in
 # the factory's generic, attribute-only `_to_summary` mapping,
-# `app/api/crud_factory.py`) which the SHELL-3 dashboard-widget caller this
+# `app/api/crud_factory.py`) which the dashboard-widget caller this
 # story unblocks doesn't need anyway (it only reads the list envelope's
 # `total`, per `frontend/src/lib/api/dashboard.ts`).
 class OrgMembershipSummary(BaseModel):
@@ -126,17 +126,15 @@ class OrgMembershipListResponse(BaseModel):
 class UpdateOrgMembershipRequest(BaseModel):
     """Body of the factory's `PATCH /org-memberships/{id}`.
 
-    **Known overlap, flagged explicitly (see this story's final report):**
+    **Known overlap, flagged explicitly:**
     unlike `PatchMembershipRequest` above (the bespoke
     `/orgs/{org_id}/members/{membership_id}` route), this generic route has
     no equivalent to `_is_legal_patch_transition`'s guard — any caller
     holding `org_membership.update` can set `status` to any of the 3 values
     directly through this route, including jumping straight to `active`
-    without ever going through the invite/accept flow. The plan explicitly
-    asks for this route to be added (`docs/superpowers/plans/
-    2026-09-05-admin-2-generic-crud-factory-plan.md`); the factory has no
+    without ever going through the invite/accept flow. The factory has no
     per-entity business-rule hook to reuse the bespoke route's transition
-    guard, so this is implemented as asked rather than silently dropped, with
+    guard, so this is implemented as-is rather than silently dropped, with
     the gap named here for a follow-up decision.
     """
 

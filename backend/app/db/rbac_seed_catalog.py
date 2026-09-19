@@ -17,7 +17,7 @@ idempotent backfill migration, same shape as `0002_seed_rbac_system_roles.py`).
 
 from __future__ import annotations
 
-STANDARD_ACTIONS: tuple[str, ...] = ("create", "read", "update", "delete")
+STANDARD_ACTIONS: tuple[str,...] = ("create", "read", "update", "delete")
 
 # The 5 resources this platform's own routes gate on. `organization` and
 # `project` get full CRUD; `org_membership`/`role`/`role_assignment` also
@@ -27,7 +27,7 @@ STANDARD_ACTIONS: tuple[str, ...] = ("create", "read", "update", "delete")
 # generic. `ai_agent` gets full CRUD codes too, even though only `.create`/
 # `.update` are actually checked today (`app/api/routes/agents.py`) — the
 # unused codes are harmless and save a future story its own migration.
-CRUD_RESOURCES: tuple[str, ...] = (
+CRUD_RESOURCES: tuple[str,...] = (
     "organization",
     "org_membership",
     "role",
@@ -37,12 +37,12 @@ CRUD_RESOURCES: tuple[str, ...] = (
 )
 
 # Resources with no generic CRUD surface at all — read-only.
-READ_ONLY_RESOURCES: tuple[str, ...] = ("permission",)
+READ_ONLY_RESOURCES: tuple[str,...] = ("permission",)
 
-ALL_RESOURCES: tuple[str, ...] = CRUD_RESOURCES + READ_ONLY_RESOURCES
+ALL_RESOURCES: tuple[str,...] = CRUD_RESOURCES + READ_ONLY_RESOURCES
 
 # The 3 seeded system roles (org_id=NULL, is_system_role=True).
-SYSTEM_ROLE_NAMES: tuple[str, ...] = ("org_admin", "project_owner", "member")
+SYSTEM_ROLE_NAMES: tuple[str,...] = ("org_admin", "project_owner", "member")
 
 
 def _code(resource: str, action: str) -> str:

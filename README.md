@@ -52,7 +52,7 @@ written from scratch as a toy scaffold. Ships:
 ## Running it
 
 ```
-cp .env.example .env
+cp.env.example.env
 docker compose --profile dev up --build
 ```
 
@@ -66,7 +66,7 @@ Backend only, no Docker:
 
 ```
 cd backend
-python3 -m venv .venv && source .venv/bin/activate
+python3 -m venv.venv && source.venv/bin/activate
 pip install -e ".[dev]"
 export DATABASE_URL=postgresql+asyncpg://platform_core:platform_core_dev_password@localhost:5432/platform_core
 alembic upgrade head
@@ -102,7 +102,7 @@ Two common shapes, pick per project:
   a plain `git submodule update` away, at the cost of coupling your app's
   import paths to this repo's internal structure.
 
-Either way: `cd platform-core && git pull && cd .. && git add platform-core &&
+Either way: `cd platform-core && git pull && cd.. && git add platform-core &&
 git commit` to pull in updates.
 
 ### Extending it

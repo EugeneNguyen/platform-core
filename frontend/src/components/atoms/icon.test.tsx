@@ -23,7 +23,7 @@ describe("Icon", () => {
     expect(container.querySelector("i")).toHaveAttribute("aria-hidden", "true");
   });
 
-  // Brand glyphs (Facebook, Google, ...) live ONLY in Font Awesome's
+  // Brand glyphs (Facebook, Google,...) live ONLY in Font Awesome's
   // `fa-brands` font — they do not exist in `fa-solid`, so a brand icon
   // rendered with the default variant silently shows nothing. This asserts
   // the variant actually reaches the class list rather than being dropped.

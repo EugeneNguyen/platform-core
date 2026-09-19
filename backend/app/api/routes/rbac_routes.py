@@ -1,4 +1,4 @@
-"""ADMIN-2: generic-CRUD factory routes for the RBAC cluster (ADR-0022).
+""": generic-CRUD factory routes for the RBAC cluster.
 
 Named `rbac_routes.py`, not `rbac.py`, to avoid colliding with
 `app/core/rbac.py` (the permission-check module), per the plan.
@@ -8,10 +8,10 @@ the seeded catalog, no create/update/delete permission codes exist for it
 at all, `app/db/rbac_seed_catalog.py`'s `READ_ONLY_RESOURCES`).
 
 **`RoleAssignment` registers only `get`/`update`/`delete`, deliberately no
-`create`/`list` — merge-time decision, RBAC-3 x ADMIN-2 (both stories landed
+`create`/`list` — merge-time decision, x (both stories landed
 independently and would otherwise offer two ways to create the same row
-type).** RBAC-3's bespoke `POST`/`GET /orgs/{org_id}/role-assignments`
-(`app/api/routes/role_assignments.py`, [ADR-0021](../../../docs/adr/0021-role-assignment-creation-flow.md))
+type).** bespoke `POST`/`GET /orgs/{org_id}/role-assignments`
+(`app/api/routes/role_assignments.py`, )
 already enforces membership/role-scope/project-org validation this factory's
 generic `create` doesn't replicate (see that module's own docstring) — a
 second, less-validated `POST /role-assignments` would be a real correctness
@@ -19,7 +19,7 @@ gap, not just redundant. Same posture this codebase already takes for
 `Project`/`Organization`: the factory fills in only the methods a bespoke
 route doesn't already cover.
 
-`Role.org_id` is nullable (system-role templates, ADR-0022 Q3):
+`Role.org_id` is nullable:
 `resolve_org_id` returns the row's own `org_id` directly
 (`chain_resolver([])`); `global_read_fallback=True` makes `GET` on a
 `org_id IS NULL` row fall back to `has_permission_in_any_org` (readable, the
@@ -76,7 +76,7 @@ async def get_my_permissions(
     actor: User | AIAgent = Depends(get_current_actor),
     db: AsyncSession = Depends(get_db),
 ) -> MyPermissionsResponse | JSONResponse:
-    """ADR-0025: the calling actor's own resolved permission codes in `org_id`.
+    """: the calling actor's own resolved permission codes in `org_id`.
 
     Same any-status-`OrgMembership` 404-vs-403 boundary as every other
     org-scoped route (`roles.py`'s `list_roles`) — no membership in `org_id`
@@ -84,7 +84,7 @@ async def get_my_permissions(
     permission is required beyond membership itself**: this route only ever
     reports the caller's own grants, so an actor with zero grants still gets
     `200` with an empty `codes` list, never a `403` (there is nothing further
-    to gate — see ADR-0025's own Decision section).
+    to gate — own Decision section).
 
     One query, `RoleAssignment` -> `Role` -> `RolePermission` ->
     `Permission.code`, reusing `has_permission`'s own join shape (`app/core/
@@ -119,9 +119,9 @@ _ROLE_CONFIG = CrudEntityConfig(
     scope_field="org_id",
     resolve_org_id=chain_resolver([]),
     global_read_fallback=True,
-    # ADR-0070. `name` is the only free-text column (`is_system_role` is bool).
+    #. `name` is the only free-text column (`is_system_role` is bool).
     search_fields=("name",),
-    # ADR-0053. `org_id` is a real FK the admin surface autocompletes against
+    #. `org_id` is a real FK the admin surface autocompletes against
     # (`Organization.name`) even though this entity's scope value normally
     # comes straight from the `:orgId` route param; `is_system_role` is
     # summary-only (absent from both write schemas) so it derives `readOnly`
@@ -140,14 +140,14 @@ _PERMISSION_CONFIG = CrudEntityConfig(
     update_schema=NoSchema,
     summary_schema=PermissionSummary,
     scope_field=None,
-    resolve_org_id=chain_resolver([]),  # never called — is_global_catalog handles get/list gating
+    resolve_org_id=chain_resolver([]), # never called — is_global_catalog handles get/list gating
     is_global_catalog=True,
     methods=frozenset({"list", "get"}),
-    # ADR-0070. All three columns are free-text (`code` is the dotted
+    #. All three columns are free-text (`code` is the dotted
     # `resource.action` string, not an enum) and all three are what an admin
     # scanning the permission catalog actually searches by.
     search_fields=("code", "resource", "action"),
-    # ADR-0053
+    #
     label="Permissions",
 )
 
@@ -160,9 +160,9 @@ _ROLE_ASSIGNMENT_CONFIG = CrudEntityConfig(
     scope_field="org_id",
     resolve_org_id=chain_resolver([]),
     methods=frozenset({"list", "get", "update", "delete"}),
-    # ADR-0053, revised: `list` now generic. The original reasoning here
+    #, revised: `list` now generic. The original reasoning here
     # (bespoke `GET /orgs/{org_id}/role-assignments` returns a bare array,
-    # can't back the generic admin surface) is stale — DS-2/ADR-0041 changed
+    # can't back the generic admin surface) is stale — / changed
     # that bespoke route to the standard `{items,total,page,page_size}`
     # envelope. Even so, this does NOT reuse the bespoke route via
     # `full_methods` (the `_PROJECT_FACTORY_CONFIG` pattern) — that route is
@@ -178,7 +178,7 @@ _ROLE_ASSIGNMENT_CONFIG = CrudEntityConfig(
     #
     # `actor_id`/`org_id` stay plain read-only strings (the raw id), NOT
     # `fk` — `User`/`AIAgent` are structurally excluded from this surface
-    # (ADR-0025), so there's no ref entity to autocomplete against.
+    #, so there's no ref entity to autocomplete against.
     label="Role assignments",
     field_order=("actor_id", "org_id", "project_id", "role_id", "created_at"),
     field_meta={

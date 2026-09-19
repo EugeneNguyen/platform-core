@@ -1,5 +1,5 @@
 /**
- * ADR-0073: one `EntityConfig`-driven field-value renderer, shared by
+ *: one `EntityConfig`-driven field-value renderer, shared by
  * `EntityTable`'s table cells and `EntityDetailPage`'s field list.
  *
  * Extracted verbatim from `EntityTable`'s own private `renderCell`/
@@ -14,7 +14,7 @@
  * extraction — same `badge bg-*` classes (**`bg-*`, not Bootstrap 5.3's newer
  * `text-bg-*`**, per this repo's own AdminLTE convention and the existing badge
  * assertions), same `—` em-dash empty placeholder, same `<Link>` for a
- * `detailPath`/`detailLinkField` pair (ADR-0060). `EntityTable`'s own tests
+ * `detailPath`/`detailLinkField` pair. `EntityTable`'s own tests
  * pass unmodified across the move.
  */
 import { ReactNode } from "react";
@@ -24,7 +24,7 @@ import { EntityRow } from "../../../lib/api/entityCrud";
 import type { FkLabelMap } from "../../../pages/admin/useFkLabels";
 
 /**
- * ADR-0060: `config.detailPath`'s own `:id` placeholder, filled from the
+ *: `config.detailPath`'s own `:id` placeholder, filled from the
  * row's own id — deliberately narrower than `lib/api/entityCrud.ts`'s
  * `interpolate()` (route-context params like `:orgId`), since a detail link
  * only ever needs the row's own id, never ambient route context.
@@ -61,10 +61,10 @@ export interface EntityFieldValueProps {
   fkLabels: FkLabelMap;
   config: EntityConfig;
   /**
-   * ADR-0073: `EntityDetailPage` passes `false` — the whole row is already the
+   *: `EntityDetailPage` passes `false` — the whole row is already the
    * thing `detailPath` would navigate to, so re-rendering the name as a link to
    * the page you are already looking at is noise. `EntityTable` leaves it
-   * `true` (the default), preserving ADR-0060's row-name link exactly.
+   * `true` (the default), preserving row-name link exactly.
    */
   linkDetailField?: boolean;
 }
@@ -80,21 +80,21 @@ export function renderEntityFieldValue({
   const raw = row[field.name];
   switch (field.type) {
     case "fk": {
-      const id = typeof raw === "string" ? raw : undefined;
+      const id = typeof raw === "string" ? raw: undefined;
       if (!id) {
         return "—";
       }
       return fkLabels[field.name]?.[id] ?? id;
     }
     case "boolean":
-      return <span className={`badge bg-${raw ? "success" : "secondary"}`}>{raw ? "Yes" : "No"}</span>;
+      return <span className={`badge bg-${raw ? "success": "secondary"}`}>{raw ? "Yes": "No"}</span>;
     case "date":
       return formatDate(raw);
     case "enum": {
       if (raw === null || raw === undefined || raw === "") {
         return "—";
       }
-      // ADR-0053: backend-served, per-field. Anything the backend didn't
+      //: backend-served, per-field. Anything the backend didn't
       // colour — including every value of an enum served with no
       // `badgeColors` at all — stays a plain grey badge, exactly as the old
       // module-level constant's own default did.
@@ -103,7 +103,7 @@ export function renderEntityFieldValue({
     }
     default: {
       const text = displayValue(raw);
-      // ADR-0060: restores ProjectsPage's "click a project's name to open
+      //: restores ProjectsPage's "click a project's name to open
       // it" navigation, generically — see EntityConfig.detailPath's own
       // doc comment. Only fires for the one designated field, and only
       // when the row actually has an id to link to (never on "—").

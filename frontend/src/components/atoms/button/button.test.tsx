@@ -58,7 +58,7 @@ describe("Button", () => {
     expect(link).toHaveAttribute("href", "/somewhere");
   });
 
-  it("marks a disabled anchor with the .disabled class + aria-disabled + tabindex, not a native disabled attribute", () => {
+  it("marks a disabled anchor with the.disabled class + aria-disabled + tabindex, not a native disabled attribute", () => {
     render(
       <Button as="a" href="/somewhere" disabled>
         Go

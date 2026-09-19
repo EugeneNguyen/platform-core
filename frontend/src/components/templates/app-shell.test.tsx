@@ -31,7 +31,7 @@ function renderShell() {
     logout: vi.fn(),
   });
 
-  // SHELL-9 (ADR-0050): `AppShell` mounts `AppSidebar`/`AppBreadcrumb`, both of
+  //: `AppShell` mounts `AppSidebar`/`AppBreadcrumb`, both of
   // which now call `useResolvedOrgId()` -> `useQuery`, so this tree needs a
   // `QueryClientProvider` exactly like the real app's `main.tsx` supplies. This
   // route is org-scoped, so the hook short-circuits without ever fetching — the
@@ -63,15 +63,15 @@ describe("AppShell", () => {
     expect(screen.getByText("page content")).toBeInTheDocument();
   });
 
-  // ADR-0054: Tabler's `.page` layout has no CSS-grid named areas the way
+  //: Tabler's `.page` layout has no CSS-grid named areas the way
   // AdminLTE's `.app-wrapper` did — this asserts the DOM order/nesting the
   // Tabler "Sidebar layout" doc requires instead: the vertical navbar and
   // `.page-wrapper` are direct children of `.page` (aside first), and
   // header/main/footer are, in order, direct children of `.page-wrapper`.
-  it("renders aside + page-wrapper as direct children of .page, in the Tabler-required order", () => {
+  it("renders aside + page-wrapper as direct children of.page, in the Tabler-required order", () => {
     const { container } = renderShell();
 
-    const page = container.querySelector(":scope > .page") ?? container.querySelector(".page");
+    const page = container.querySelector(":scope >.page") ?? container.querySelector(".page");
     expect(page).not.toBeNull();
 
     const children = Array.from(page!.children);
@@ -91,10 +91,10 @@ describe("AppShell", () => {
     expect(main.querySelector(".app-content")).not.toBeNull();
   });
 
-  // ADR-0054: no CSS-grid off-canvas sidebar and no `.sidebar-overlay` scrim
+  //: no CSS-grid off-canvas sidebar and no `.sidebar-overlay` scrim
   // — Tabler's vertical navbar collapses its own `.navbar-collapse` in
   // normal flow, so there's nothing to click outside of to dismiss.
-  it("renders no .sidebar-overlay (retired with the AdminLTE grid shell)", () => {
+  it("renders no.sidebar-overlay (retired with the AdminLTE grid shell)", () => {
     const { container } = renderShell();
 
     expect(container.querySelector(".sidebar-overlay")).toBeNull();
@@ -114,7 +114,7 @@ describe("AppShell", () => {
     expect(sidebarMenu).not.toHaveClass("show");
   });
 
-  // ADR-0054: unlike AdminLTE's body-level classes (which leaked across
+  //: unlike AdminLTE's body-level classes (which leaked across
   // unmount and had to be manually cleaned up in a `useEffect`), Tabler's
   // shell writes nothing to `document.body` at all — `mobileOpen` is plain
   // component state, so there is nothing to leak.

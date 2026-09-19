@@ -1,16 +1,16 @@
 /**
  * Thin typed fetch wrapper.
  *
- * API base URL resolution (per ADR-0010, single-port Docker Compose topology):
+ * API base URL resolution:
  * - If `VITE_API_BASE_URL` is set (local non-compose dev), requests go to that
- *   origin, e.g. `http://localhost:8000/api/health`.
+ * origin, e.g. `http://localhost:8000/api/health`.
  * - Otherwise (docker-compose dev/prod profiles), requests are same-origin —
- *   nginx routes `/api/*` to the backend — so the base URL is `''` and the
- *   request path itself (e.g. `/api/health`) is used as-is.
+ * nginx routes `/api/*` to the backend — so the base URL is `''` and the
+ * request path itself (e.g. `/api/health`) is used as-is.
  */
 import { clearAccessToken, getAccessToken, setAccessToken } from "../auth/tokenStore";
 // `refresh()` is imported from `./auth`, which itself imports `apiFetch` from
-// this module — a real circular import. This is intentional (AUTH-2 plan,
+// this module — a real circular import. This is intentional ( plan,
 // Task 3) and safe: both sides are function declarations only used inside
 // other functions' bodies, never evaluated at module-init time, so the cycle
 // resolves fine under ESM/Vite's live-binding semantics.
@@ -49,12 +49,12 @@ export interface ApiFetchOptions extends RequestInit {
 /**
  * In-flight refresh promise, shared by every concurrent caller so a burst of
  * simultaneous refresh needs triggers exactly one `POST /auth/refresh` call,
- * not one per caller (AUTH-2 plan, Task 3).
+ * not one per caller.
  *
  * Exported (not just used internally by the 401 interceptor below) so that
  * `AuthContext`'s boot-time silent refresh (Task 4) can share this exact
  * same in-flight-promise memoization instead of calling `refresh()`
- * (`lib/api/auth.ts`) raw. Refresh tokens are single-use (ADR-0013) — two
+ * (`lib/api/auth.ts`) raw. Refresh tokens are single-use — two
  * concurrent callers presenting the same cookie means one gets a fresh
  * token and the other gets a spurious 401, which is reachable in practice
  * (React StrictMode double-invoking the boot effect in dev; two tabs
@@ -109,12 +109,12 @@ export async function apiFetch<T>(path: string, init?: ApiFetchOptions): Promise
       ...init,
       headers: {
         "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` }: {}),
         ...init?.headers,
       },
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Network request failed";
+    const message = error instanceof Error ? error.message: "Network request failed";
     throw new ApiError(message, 0);
   }
 
@@ -145,13 +145,13 @@ export async function apiFetch<T>(path: string, init?: ApiFetchOptions): Promise
         window.location.assign("/login");
         throw error;
       }
-      return apiFetch<T>(path, { ...init, skipAuthRetry: true });
+      return apiFetch<T>(path, {...init, skipAuthRetry: true });
     }
 
     throw error;
   }
 
-  // AUTH-3: `204 No Content` (e.g. `POST /auth/logout`) has no body at all —
+  //: `204 No Content` (e.g. `POST /auth/logout`) has no body at all —
   // calling `response.json()` unconditionally on it throws trying to parse
   // an empty string as JSON. Resolve with `undefined` instead; callers that
   // expect no payload type this as `apiFetch<void>`.
@@ -164,7 +164,7 @@ export async function apiFetch<T>(path: string, init?: ApiFetchOptions): Promise
 
 // Fix round 2, Finding 3: dev-build-only test hook. No mounted production
 // page currently makes an authenticated call (`GET /auth/me` is wired up but
-// nothing renders it yet — see AUTH-2 plan/AuthContext's own documented
+// nothing renders it yet — plan/AuthContext's own documented
 // scope), so there is no natural in-app trigger E2E can drive to exercise
 // `apiFetch`'s real 401 -> refresh -> retry interceptor chain end to end
 // against a real backend. Rather than fabricate one, expose `apiFetch`

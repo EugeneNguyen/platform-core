@@ -5,14 +5,14 @@ import logoFullSource from "./logo-full.svg?raw";
 import logoMarkSource from "./logo-mark.svg?raw";
 
 /**
- * BRAND-1 ([ADR-0048](../../../docs/adr/0048-brand-1-logo-brand-system.md)).
- * Covers TC-DS-025 (SVG sources are `currentColor`-only) and TC-DS-028
+ * ().
+ * Covers (SVG sources are `currentColor`-only) and
  * (`index.html` declares the SVG favicon link).
  *
  * These are deliberately **static source assertions**. Per Test Design §39
  * that is their exact, limited scope: they prove the *asset* is theme-agnostic,
  * NOT that the *rendered* colour tracks `data-bs-theme` at any mount point.
- * That second claim is a live-browser one (the Test Plan's own BRAND-1 risk
+ * That second claim is a live-browser one (the Test Plan's own risk
  * row) and is covered in `e2e/tests/brand1-logo-system.spec.ts` — which is
  * where the live run found that an `<img src="*.svg">` mount does NOT in fact
  * inherit the page's colour, something this file cannot see.
@@ -21,7 +21,7 @@ import logoMarkSource from "./logo-mark.svg?raw";
  * suite needs no `@types/node`, which this project does not install.
  *
  * `public/favicon.svg` is intentionally exempt from the currentColor rule:
- * browser chrome has no app theme to inherit, so ADR-0048 Decision §5 gives it
+ * browser chrome has no app theme to inherit, so Decision §5 gives it
  * its own fixed two-tone palette. The last test asserts that exemption holds,
  * rather than leaving it untested.
  */
@@ -54,8 +54,8 @@ const NAMED_COLOURS = [
   "yellow",
 ];
 
-describe("BRAND-1 brand assets", () => {
-  describe.each(THEME_AWARE_ASSETS)("TC-DS-025: %s", (_name, source) => {
+describe(" brand assets", () => {
+  describe.each(THEME_AWARE_ASSETS)(": %s", (_name, source) => {
     it("sets every fill to currentColor", () => {
       const fills = [...source.matchAll(/fill="([^"]*)"/g)].map((m) => m[1]);
 
@@ -86,13 +86,13 @@ describe("BRAND-1 brand assets", () => {
     });
   });
 
-  // TC-DS-028
-  it("TC-DS-028: index.html declares the SVG favicon link", () => {
+  //
+  it(": index.html declares the SVG favicon link", () => {
     expect(indexHtmlSource).toMatch(/<link\s+rel="icon"\s+type="image\/svg\+xml"\s+href="\/favicon\.svg"\s*\/?>/);
   });
 
-  it("ships the favicon asset that link points at, with its own fixed palette (ADR-0048 §5)", () => {
-    // The deliberate inverse of TC-DS-025: browser chrome has no `data-bs-theme`
+  it("ships the favicon asset that link points at, with its own fixed palette ", () => {
+    // The deliberate inverse of: browser chrome has no `data-bs-theme`
     // to inherit, so this asset must NOT be currentColor-driven. Asserted on the
     // `fill` ATTRIBUTES rather than the raw text — the file's own comment
     // explains why it avoids currentColor, and a naive text match would trip

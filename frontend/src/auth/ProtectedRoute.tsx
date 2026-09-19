@@ -1,5 +1,5 @@
 /**
- * AUTH-2 route guard.
+ * route guard.
  *
  * While `AuthContext`'s boot-time silent refresh is still in flight
  * (`isInitializing === true`), renders a loading spinner instead of
@@ -14,13 +14,13 @@
  * 401-interceptor redirect, which uses a hard `window.location.assign`
  * (full page reload). Do not conflate the two mechanisms.
  *
- * DASH-1 (ADR-0035) extracted the `isInitializing` spinner into the shared
+ * extracted the `isInitializing` spinner into the shared
  * `components/AuthLoadingSpinner` — the new root guard (`RootRedirect.tsx`)
  * needs the same indicator for the same reason, and its UI Design Document
  * asks for reuse over a second copy of the markup. Behavior here is unchanged.
  *
- * AUTH-3 originally rendered a bare `<AppHeader />` above `children`; SHELL-1
- * (ADR-0018) replaces that with `<AppShell>{children}</AppShell>`, which
+ * originally rendered a bare `<AppHeader />` above `children`;
+ * replaces that with `<AppShell>{children}</AppShell>`, which
  * wraps `children` in the persistent sidebar+navbar shell instead (still
  * mounting `AppHeader`, now alongside `AppSidebar`) so every protected page
  * gets a working way back to org home for free without wiring its own.

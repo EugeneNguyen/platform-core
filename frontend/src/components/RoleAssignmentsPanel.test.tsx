@@ -111,7 +111,7 @@ describe("RoleAssignmentsPanel", () => {
   });
 
   it("submits an org-wide grant (project_id omitted) and adds it to the list", async () => {
-    // DS-2/ADR-0041: the panel now re-fetches (server mode) rather than
+    // /: the panel now re-fetches (server mode) rather than
     // locally appending on create, so `total`/pagination stay correct — the
     // 2nd `listRoleAssignments` call (the post-create refetch) needs its own
     // mock returning the newly-created row.

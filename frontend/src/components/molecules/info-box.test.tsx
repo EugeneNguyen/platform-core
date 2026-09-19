@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { InfoBox, infoBoxIconColorClassName } from "./info-box";
 
 /**
- * DS-3 ([ADR-0045](docs/adr/0045-ds-3-infobox-widget-consolidation.md)) unit
+ * () unit
  * tests for the shared `InfoBox`. Replaces the deleted
  * `WidgetStatsTile.test.tsx` — every equivalence class that file covered
  * (icon-supplied vs. icon-omitted, testId forwarding, color application,
@@ -12,21 +12,21 @@ import { InfoBox, infoBoxIconColorClassName } from "./info-box";
  * story (Test Design §36).
  *
  * Covers, at this layer:
- *   - **TC-DS-019** — the `.info-box` DOM shape itself, asserted against literal
- *     class strings, and the absence of either retired shape.
- *   - **TC-DS-021** — icon supplied renders a populated `.info-box-icon`; icon
- *     omitted renders *no such element at all*, not an empty one.
- *   - **TC-DS-022** — the component is agnostic to sentinel convention: both
- *     `OrgHome`'s "Loading…"/"Unable to load" strings and `TestCycleDetail`'s
- *     `"—"` render identically as plain `ReactNode`, with no special-casing.
+ * - **** — the `.info-box` DOM shape itself, asserted against literal
+ * class strings, and the absence of either retired shape.
+ * - **** — icon supplied renders a populated `.info-box-icon`; icon
+ * omitted renders *no such element at all*, not an empty one.
+ * - **** — the component is agnostic to sentinel convention: both
+ * `OrgHome`'s "Loading…"/"Unable to load" strings and `RoundDetail`'s
+ * `"—"` render identically as plain `ReactNode`, with no special-casing.
  *
- * TC-DS-020 (existing testids/counts survive the migration) is asserted at the
+ * (existing testids/counts survive the migration) is asserted at the
  * *call sites*, not here — see `OrgHome.widgets.test.tsx` and
- * `TestCycleDetail.test.tsx`, whose own assertions were deliberately left
- * unmodified, which is the actual claim TC-DS-020 makes.
+ * `RoundDetail.test.tsx`, whose own assertions were deliberately left
+ * unmodified, which is the actual claim makes.
  */
 describe("InfoBox", () => {
-  it("TC-DS-019: renders AdminLTE's own Info Box DOM shape", () => {
+  it(": renders AdminLTE's own Info Box DOM shape", () => {
     const { container } = render(
       <InfoBox color="primary" text="Projects" number={42} icon="fa-solid fa-folder" />,
     );
@@ -46,7 +46,7 @@ describe("InfoBox", () => {
     expect(root?.querySelector(":scope > .info-box-icon")).not.toBeNull();
   });
 
-  it("TC-DS-019: renders neither retired tile's shape", () => {
+  it(": renders neither retired tile's shape", () => {
     const { container } = render(
       <InfoBox color="primary" text="Projects" number={42} icon="fa-solid fa-folder" />,
     );
@@ -59,7 +59,7 @@ describe("InfoBox", () => {
     expect(container.querySelector(".h-100")).toBeNull();
   });
 
-  it("TC-DS-021: renders a populated .info-box-icon when `icon` is supplied", () => {
+  it(": renders a populated.info-box-icon when `icon` is supplied", () => {
     const { container } = render(
       <InfoBox color="warning" text="Blocked" number={7} icon="fa-solid fa-gear" />,
     );
@@ -73,13 +73,13 @@ describe("InfoBox", () => {
     expect(iconBlock).toHaveClass("shadow-sm");
     // Font Awesome `<i>`, carrying the caller's own class string verbatim — the
     // demo uses Bootstrap Icons here, which this repo deliberately does not
-    // (ADR-0042: exactly one icon library).
+    //.
     const glyph = iconBlock?.querySelector("i");
     expect(glyph).toHaveClass("fa-solid", "fa-gear");
     expect(glyph).toHaveAttribute("aria-hidden", "true");
   });
 
-  it("TC-DS-021: renders NO .info-box-icon element at all when `icon` is omitted", () => {
+  it(": renders NO.info-box-icon element at all when `icon` is omitted", () => {
     const { container } = render(<InfoBox color="secondary" text="Skipped" number={0} />);
 
     // Not "an empty one" — the element must be absent entirely, which is what
@@ -93,10 +93,10 @@ describe("InfoBox", () => {
     expect(container.querySelector(".info-box-content .info-box-number")?.textContent).toBe("0");
   });
 
-  it("TC-DS-021: an omitted icon leaves `.info-box` with exactly one child", () => {
+  it(": an omitted icon leaves `.info-box` with exactly one child", () => {
     const { container } = render(<InfoBox color="success" text="Pass" number={3} />);
 
-    // Guards specifically against a `{icon && ...}` style falsy-render leaving a
+    // Guards specifically against a `{icon &&...}` style falsy-render leaving a
     // stray text node / empty element behind.
     expect(container.firstElementChild?.children).toHaveLength(1);
     expect(container.firstElementChild?.firstElementChild).toHaveClass("info-box-content");
@@ -131,16 +131,16 @@ describe("InfoBox", () => {
     expect(container.querySelector(".info-box-text")).not.toHaveClass("text-danger");
   });
 
-  it("forwards `testId` to the .info-box root", () => {
+  it("forwards `testId` to the.info-box root", () => {
     render(<InfoBox color="primary" text="Projects" number={42} testId="widget-project-count" />);
 
     const root = screen.getByTestId("widget-project-count");
     expect(root).toHaveClass("info-box");
   });
 
-  it("forwards `numberTestId` to the .info-box-number element, not the root", () => {
-    // This is what keeps `TestCycleDetail`'s four `-count` testids resolving to
-    // the same logical element they did pre-migration (TC-DS-020) — and why
+  it("forwards `numberTestId` to the.info-box-number element, not the root", () => {
+    // This is what keeps `RoundDetail`'s four `-count` testids resolving to
+    // the same logical element they did pre-migration — and why
     // their existing `.textContent === "12"`-style assertions still hold, since
     // the number element wraps nothing but the value.
     render(
@@ -166,8 +166,8 @@ describe("InfoBox", () => {
     expect(container.querySelector(".info-box-number")).not.toHaveAttribute("data-testid");
   });
 
-  it("TC-DS-022: renders TestCycleDetail's `null` → \"—\" sentinel verbatim", () => {
-    // The caller owns the ternary (DS-3 moved it out of the deleted `StatTile`);
+  it(": renders RoundDetail's `null` → \"—\" sentinel verbatim", () => {
+    // The caller owns the ternary;
     // the component just renders whatever node it's handed.
     render(
       <InfoBox
@@ -181,7 +181,7 @@ describe("InfoBox", () => {
     expect(screen.getByTestId("dashboard-tile-skipped-count").textContent).toBe("—");
   });
 
-  it("TC-DS-022: renders OrgHome's loading/error/count tri-state through the same prop", () => {
+  it(": renders OrgHome's loading/error/count tri-state through the same prop", () => {
     const { rerender } = render(
       <InfoBox color="primary" text="Projects" number="Loading…" testId="w" />,
     );
@@ -215,7 +215,7 @@ describe("InfoBox", () => {
     expect(screen.getByTestId("custom-number")).toBeInTheDocument();
   });
 
-  it("appends a caller-supplied className alongside the base .info-box class", () => {
+  it("appends a caller-supplied className alongside the base.info-box class", () => {
     const { container } = render(
       <InfoBox color="primary" text="Projects" number={42} className="mb-0" />,
     );
@@ -228,7 +228,7 @@ describe("InfoBox", () => {
   it("renders no grid-column wrapper of its own — the column is caller-owned", () => {
     // Deliberate contract choice (UI Design Document §2): matches the retired
     // `WidgetStatsTile`, NOT the retired `StatTile`, which wrapped itself in
-    // `col-6 col-md-3 mb-3`. `TestCycleDetail`'s call sites now supply that div.
+    // `col-6 col-md-3 mb-3`. `RoundDetail`'s call sites now supply that div.
     const { container } = render(<InfoBox color="primary" text="Projects" number={42} />);
 
     expect(container.firstElementChild).toHaveClass("info-box");

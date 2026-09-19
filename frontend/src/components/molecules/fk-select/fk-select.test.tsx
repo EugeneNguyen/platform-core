@@ -13,7 +13,7 @@ import { listEntities } from "../../../lib/api/entityCrud";
 const { schemaState, LEVEL_SCHEMA } = vi.hoisted(() => ({
   schemaState: { isLoading: false },
   LEVEL_SCHEMA: {
-    resource: "test_level",
+    resource: "tier",
     path: "/test-levels",
     methods: ["list", "get"],
     fields: [{ name: "name", label: "Name", type: "string" }],
@@ -22,7 +22,7 @@ const { schemaState, LEVEL_SCHEMA } = vi.hoisted(() => ({
 
 vi.mock("../../../pages/admin/useEntitySchema", () => ({
   useEntitySchema: (key: string) => ({
-    config: key === "test-level" && !schemaState.isLoading ? LEVEL_SCHEMA : undefined,
+    config: key === "test-level" && !schemaState.isLoading ? LEVEL_SCHEMA: undefined,
     label: undefined,
     isLoading: schemaState.isLoading,
     isError: false,
@@ -31,7 +31,7 @@ vi.mock("../../../pages/admin/useEntitySchema", () => ({
 
 vi.mock("../../../lib/api/entityCrud", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../../lib/api/entityCrud")>();
-  return { ...actual, listEntities: vi.fn() };
+  return {...actual, listEntities: vi.fn() };
 });
 
 const mockListEntities = vi.mocked(listEntities);
@@ -59,7 +59,7 @@ describe("FkSelect", () => {
 
     await waitFor(() => expect(mockListEntities).toHaveBeenCalledTimes(1));
     expect(mockListEntities).toHaveBeenCalledWith(
-      expect.objectContaining({ resource: "test_level" }),
+      expect.objectContaining({ resource: "tier" }),
       {},
       expect.objectContaining({ pageSize: 100 }),
     );

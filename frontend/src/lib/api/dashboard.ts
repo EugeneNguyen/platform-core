@@ -1,5 +1,5 @@
 /**
- * SHELL-3 (ADR-0020, FR-SHELL-3/NFR-27) dashboard stat-widget counts.
+ * dashboard stat-widget counts.
  *
  * Thin wrappers over the generic-CRUD list endpoints' pagination envelope
  * (API Document §1's `{items, total, page, page_size}` shape — the same
@@ -7,10 +7,10 @@
  * bespoke `GET /orgs/{org_id}/members` route). `page_size=1` on both calls:
  * only `total` is read, `items` is discarded — requesting the smallest
  * legal page keeps the response cheap without a dedicated count-only
- * endpoint (no new API route, per ADR-0020).
+ * endpoint.
  *
  * `GET /projects` and `GET /org-memberships` are the generic-CRUD factory
- * routes documented in API Document §3 (ADR-0022) — both entities are
+ * routes documented in API Document §3 — both entities are
  * scoped by `org_id`, required as an explicit query param on `list` (no
  * implicit "caller's own org" inference, same posture every other
  * factory-served entity's list route takes), so both functions below take

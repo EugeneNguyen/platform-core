@@ -7,12 +7,12 @@ import { useResolvedOrgId } from "./useResolvedOrgId";
 import { getProject } from "../lib/api/projects";
 
 /**
- * SHELL-9 (ADR-0050) — `useResolvedOrgId()`'s own unit coverage, plus
- * TC-SHELL-034 (fetch dedup).
+ * — `useResolvedOrgId()`'s own unit coverage, plus
+ * (fetch dedup).
  *
  * ## Why this file stubs `globalThis.fetch` rather than mocking `getProject`
  *
- * TC-SHELL-034's Expected-result cell is explicit: "Exactly 1 call, not 3
+ * Expected-result cell is explicit: "Exactly 1 call, not 3
  * (sidebar + breadcrumb + page) — **counted via network inspection**, not
  * inferred from correct rendering", and test-design §39 names "a Vitest
  * fetch-mock call-count assertion" as the sanctioned technique at this layer.
@@ -97,19 +97,19 @@ function renderProbe(initialEntry: string) {
 }
 
 describe("useResolvedOrgId", () => {
-  it("returns the :orgId route param directly, issuing no fetch at all, on an org-scoped route", () => {
+  it("returns the:orgId route param directly, issuing no fetch at all, on an org-scoped route", () => {
     renderProbe("/orgs/org-1");
 
     expect(screen.getByTestId("probe-org-id")).toHaveTextContent("org-1");
     expect(screen.getByTestId("probe-project-id")).toHaveTextContent("(undefined)");
     expect(screen.getByTestId("probe-project-name")).toHaveTextContent("(undefined)");
-    // ADR-0050 Decision §1: "return it directly, no fetch" — the hook must cost
+    // Decision §1: "return it directly, no fetch" — the hook must cost
     // nothing beyond the `useParams` read it replaced on these routes.
     expect(screen.getByTestId("probe-status")).toHaveTextContent("success");
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("returns undefined with no fetch when neither param is present (/dashboard, route corrected 2026-09-13 from the retired /orgs/pick, ADR-0063/DASH-3)", () => {
+  it("returns undefined with no fetch when neither param is present ", () => {
     renderProbe("/dashboard");
 
     expect(screen.getByTestId("probe-org-id")).toHaveTextContent("(undefined)");
@@ -132,7 +132,7 @@ describe("useResolvedOrgId", () => {
     expect(screen.getByTestId("probe-org-id")).toHaveTextContent(PROJECT_ORG_ID);
     expect(screen.getByTestId("probe-project-id")).toHaveTextContent(PROJECT_ID);
     // The ProjectSummary itself is returned so `AppBreadcrumb` needn't refetch
-    // the same row for its name segment (ADR-0050 Decision §1).
+    // the same row for its name segment.
     expect(screen.getByTestId("probe-project-name")).toHaveTextContent(PROJECT_NAME);
     expect(projectFetchCalls()).toHaveLength(1);
   });
@@ -150,7 +150,7 @@ describe("useResolvedOrgId", () => {
   });
 
   // ------------------------------------------------------------------
-  // TC-SHELL-034 — fetch dedup.
+  // — fetch dedup.
   // ------------------------------------------------------------------
 
   /**
@@ -159,10 +159,10 @@ describe("useResolvedOrgId", () => {
    * key" — the TC's own literal precondition.
    *
    * Worth stating plainly rather than leaving implicit: **no shipped page
-   * component does this today.** `ProjectDetail.tsx` loads releases/requirements
+   * component does this today.** `ProjectDetail.tsx` loads releases/specs
    * via `useState`/`useEffect` and never fetches its own `Project` row at all,
-   * and `TestCycleDetail.tsx` calls `getProject` from a plain async handler, not
-   * through react-query. (ADR-0050's Consequences section asserts "`ProjectDetail`
+   * and `RoundDetail.tsx` calls `getProject` from a plain async handler, not
+   * through react-query. ( Consequences section asserts "`ProjectDetail`
    * already does, for its own header" — that is inaccurate against the current
    * source; noted, not silently absorbed.) The TC's third consumer therefore has
    * to be constructed here. That is not a weakening of the test: the property
@@ -178,7 +178,7 @@ describe("useResolvedOrgId", () => {
     return <div data-testid="page-project-name">{data?.name ?? "(loading)"}</div>;
   }
 
-  it("TC-SHELL-034: sidebar + breadcrumb + the page's own query collapse to exactly one GET /projects/{id}", async () => {
+  it(": sidebar + breadcrumb + the page's own query collapse to exactly one GET /projects/{id}", async () => {
     fetchMock.mockResolvedValue(jsonResponse(200, PROJECT_BODY));
 
     render(
@@ -208,7 +208,7 @@ describe("useResolvedOrgId", () => {
     await waitFor(() => {
       expect(screen.getByTestId("page-project-name")).toHaveTextContent(PROJECT_NAME);
     });
-    // SHELL-10 (ADR-0050): on a project-scoped route the sidebar now renders
+    //: on a project-scoped route the sidebar now renders
     // the project-mode nav, so the org nav's `sidebar-nav-projects` item is no
     // longer present here. The equivalent proof that the sidebar's own
     // `useResolvedOrgId()` really resolved `org_id` (rather than silently

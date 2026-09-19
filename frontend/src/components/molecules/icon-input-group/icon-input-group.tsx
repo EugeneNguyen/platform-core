@@ -6,7 +6,7 @@
  * item #8.
  *
  * `forwardRef` to the underlying `<input>` so callers can bind it via React
- * Hook Form's `register()` spread (ADR-0009) — same convention as
+ * Hook Form's `register()` spread — same convention as
  * `shared/FormField.tsx`.
  *
  * `error` was added during the Wire-up stage: the source AdminLTE markup has
@@ -28,7 +28,7 @@ export interface IconInputGroupProps
   id: string;
   /** Visually-hidden `<label>` text — still required for accessible name. */
   label: string;
-  /** Font Awesome name suffix shown in the `.input-group-text` slot, e.g. "envelope" (ADR-0042). */
+  /** Font Awesome name suffix shown in the `.input-group-text` slot, e.g. "envelope". */
   icon: string;
   /** Validation message (e.g. Zod's `errors.email?.message`) — also sets `invalid`. */
   error?: string;
@@ -37,9 +37,9 @@ export interface IconInputGroupProps
 }
 
 export const IconInputGroup = forwardRef<HTMLInputElement, IconInputGroupProps>(
-  function IconInputGroup({ id, label, icon, error, className, ...rest }, ref) {
+  function IconInputGroup({ id, label, icon, error, className,...rest }, ref) {
     const invalid = Boolean(error);
-    const wrapperClassNames = ["input-group", "mb-3", invalid ? "has-validation" : "", className]
+    const wrapperClassNames = ["input-group", "mb-3", invalid ? "has-validation": "", className]
       .filter(Boolean)
       .join(" ");
 

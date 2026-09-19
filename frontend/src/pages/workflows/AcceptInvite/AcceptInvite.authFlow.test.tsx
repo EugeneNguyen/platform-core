@@ -7,14 +7,14 @@ import { AuthProvider } from "../../../auth/AuthContext";
 import { clearAccessToken, getAccessToken } from "../../../lib/auth/tokenStore";
 
 /**
- * RBAC-2: the accept-invite success path, exercised against the REAL
+ *: the accept-invite success path, exercised against the REAL
  * `AuthContext.acceptInvite()` -> `lib/api/members.acceptInvite()` ->
  * `apiFetch()` chain with a stubbed `fetch`, mirroring
  * `Signup.authFlow.test.tsx`'s own convention exactly (see that file's
  * docstring for why this needs to be its own file, not a second `describe`
  * block in `AcceptInvite.test.tsx` — Vitest's `vi.mock` hoisting).
  *
- * Since DASH-3 (ADR-0063), `AcceptInvite.tsx`'s effect always targets
+ * Since, `AcceptInvite.tsx`'s effect always targets
  * `/dashboard` first, not the org directly — a real `Dashboard` is mounted
  * here too, and the fetch stub also answers its `GET /auth/me/orgs` call.
  */

@@ -3,12 +3,12 @@ import { describe, expect, it } from "vitest";
 import AppFooter from "./app-footer";
 
 /**
- * SHELL-2 (ADR-0020) footer unit test, TC-SHELL-009. Static content,
+ * footer unit test,. Static content,
  * no per-route branching to partition — a single smoke-level render check
  * is the full coverage this component needs.
  */
 describe("AppFooter", () => {
-  it("TC-SHELL-009: renders", () => {
+  it(": renders", () => {
     render(<AppFooter />);
 
     expect(screen.getByText("platform-core")).toBeInTheDocument();

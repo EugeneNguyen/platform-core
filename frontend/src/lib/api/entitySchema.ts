@@ -1,5 +1,5 @@
 /**
- * ADR-0053: `GET /api/v1/entities/{resource}/schema` — the runtime
+ *: `GET /api/v1/entities/{resource}/schema` — the runtime
  * counterpart to the backend's `crud_factory.derive_entity_schema`.
  *
  * Response shape matches `entityConfigs/types.ts`'s `EntityConfig`/
@@ -45,36 +45,36 @@ export interface EntitySchemaResponse {
   label: string;
   methods: ("list" | "get" | "create" | "update" | "delete")[];
   scopeField: string | [string, string] | null;
-  /** Single option, or an array for a branching scope (`RiskItem`). */
+  /** Single option, or an array for a branching scope (`RiskNote`). */
   scopeSelector: ScopeSelectorOption | ScopeSelectorOption[] | null;
   scopeResolution: ScopeResolution | null;
   searchFields: string[];
   filterFields: string[];
   fields: BackendFieldConfig[];
   /**
-   * ADR-0074: this entity's *inbound* relationships — see
+   *: this entity's *inbound* relationships — see
    * `entityConfigs/types.ts`'s `EntityRelation`. Optional on this type
-   * (not on the wire) so a response captured before ADR-0074 — every
+   * (not on the wire) so a response captured before — every
    * hand-written Vitest fixture in this repo, of which there are many —
    * still type-checks; `toEntityConfig` normalizes the absent case to `[]`.
    */
   relations?: EntityRelation[];
   /**
-   * ADR-0076: this entity's bespoke link-create route, or `null` for the 25
+   *: this entity's bespoke link-create route, or `null` for the 25
    * entities that are not link tables. Optional on this type for the same
    * fixture-compatibility reason as `relations` above; `toEntityConfig` drops
    * both the `null` and the absent case.
    */
   linkCreate?: LinkCreateAction | null;
   /**
-   * ADR-0077: this entity's bespoke link-*delete* route, or `null` for the 25
+   *: this entity's bespoke link-*delete* route, or `null` for the 25
    * entities that are not link tables. Optional on this type for the same
    * fixture-compatibility reason as `linkCreate` above; `toEntityConfig` drops
    * both the `null` and the absent case.
    */
   linkDelete?: LinkDeleteAction | null;
   /**
-   * ADR-0078: per-*direction* compound-create actions for a junction whose far
+   *: per-*direction* compound-create actions for a junction whose far
    * entity has no generic `create` — `[]` for every entity that declares none,
    * which is most of them. Optional here for the same fixture-compatibility
    * reason as `relations`/`linkCreate` above; `toEntityConfig` normalizes the
@@ -83,7 +83,7 @@ export interface EntitySchemaResponse {
    */
   compoundCreates?: CompoundCreateAction[];
   /**
-   * ADR-0079: `compoundCreates`' one-to-many sibling — same shape, declared on
+   *: `compoundCreates`' one-to-many sibling — same shape, declared on
    * the CHILD entity's own config instead of a link entity's, matched by the
    * caller against `relation.scopeField` instead of `relation.targetField`.
    * Optional/normalized-to-`[]` for the identical fixture-compatibility

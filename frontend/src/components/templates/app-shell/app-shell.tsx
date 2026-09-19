@@ -1,24 +1,24 @@
 /**
- * SHELL-1 (ADR-0018) admin shell: composes `AppSidebar` + `AppHeader` +
- * `AppBreadcrumb` + `AppFooter` + page content, replacing AUTH-3's bare
+ * admin shell: composes `AppSidebar` + `AppHeader` +
+ * `AppBreadcrumb` + `AppFooter` + page content, replacing bare
  * `<AppHeader/>{children}` mount in `ProtectedRoute`.
  *
- * ## Tabler v1.5.1 (ADR-0054, Phase 2) — what replaced the AdminLTE composition
+ * ## Tabler v1.5.1 — what replaced the AdminLTE composition
  *
  * The whole shell is now Tabler's own `.page` flow layout (the CTO-supplied
  * "Sidebar layout" doc sample), not AdminLTE's `.app-wrapper` CSS grid:
  *
- *   <div class="page">
- *     <aside class="navbar navbar-vertical navbar-expand-lg">...</aside>  -- AppSidebar
- *     <div class="page-wrapper">
- *       <header class="navbar navbar-expand-md d-print-none">...</header>  -- AppHeader
- *       <main class="page-body">
- *         <div class="app-content-header">{AppBreadcrumb}</div>
- *         <div class="app-content flex-grow-1">{children}</div>
- *       </main>
- *       <footer class="footer footer-transparent d-print-none">...</footer>  -- AppFooter
- *     </div>
- *   </div>
+ * <div class="page">
+ * <aside class="navbar navbar-vertical navbar-expand-lg">...</aside> -- AppSidebar
+ * <div class="page-wrapper">
+ * <header class="navbar navbar-expand-md d-print-none">...</header> -- AppHeader
+ * <main class="page-body">
+ * <div class="app-content-header">{AppBreadcrumb}</div>
+ * <div class="app-content flex-grow-1">{children}</div>
+ * </main>
+ * <footer class="footer footer-transparent d-print-none">...</footer> -- AppFooter
+ * </div>
+ * </div>
  *
  * There is no named-grid-area coupling the way AdminLTE's `.app-wrapper`
  * had — `AppSidebar` and `.page-wrapper` are laid out by Tabler's own
@@ -33,7 +33,7 @@
  *
  * ## Sidebar state: one boolean, not AdminLTE's collapsed/open pair
  *
- * AdminLTE's `push-menu.ts` state machine (mirrored in this file pre-ADR-0054)
+ * AdminLTE's `push-menu.ts` state machine
  * needed two independent flags plus a `matchMedia` breakpoint listener
  * because its off-canvas sidebar could be independently collapsed (desktop)
  * or opened (mobile), and `sidebar-collapse`/`sidebar-open` were body-level
@@ -50,8 +50,8 @@
  * down in normal flow when open on mobile, it doesn't float over it, so
  * there's nothing to click outside of to dismiss).
  *
- * `sidebar-mini` (SHELL-7, ADR-0046) — the icon-only collapsed rail — has no
- * equivalent here. Retired per ADR-0054's explicit scope reduction; a future
+ * `sidebar-mini` — the icon-only collapsed rail — has no
+ * equivalent here. Retired explicit scope reduction; a future
  * story can reach for Tabler's own `navbar-folded-hover` + pin-button
  * pattern if that UX is wanted again.
  *
@@ -64,13 +64,13 @@
  * `{children}` in a container at this level would nest that wrapper inside
  * the container's padding, shrinking the painted area rather than just the
  * content. That wrapper's own `bg-body-secondary` class is dropped as of
- * ADR-0054 (2026-09-11): under Tabler's cascade it resolves to a visibly
+ * (2026-09-11): under Tabler's cascade it resolves to a visibly
  * different, darker gray than `body`'s own page-background token, painting
  * a mismatched seam. `body` already carries Tabler's correct background
  * globally, so the wrapper needs no color class of its own — a bare
  * `min-vh-100` (plus `py-4` where used) is enough.
  *
- * `flex-grow-1` on `.app-content` preserves DASH-2's content-fills-the-column
+ * `flex-grow-1` on `.app-content` preserves content-fills-the-column
  * behavior: `main.page-body` is `display: flex; flex-direction: column`
  * under Tabler's own CSS (same as AdminLTE's `.app-main` was), so
  * `flex-grow-1` gives the content area a *definite* height for pages that

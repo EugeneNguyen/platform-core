@@ -1,11 +1,11 @@
 /**
- * RBAC-1 bootstrap signup screen: name/email/password/org_name/org_slug form
+ * bootstrap signup screen: name/email/password/org_name/org_slug form
  * calling `useAuth().signup`. Built with raw Bootstrap 5 / AdminLTE markup
- * (ADR-0042, superseding the CoreUI build of ADR-0012), mirrors
+ *, mirrors
  * `Login.tsx`'s structure, including its use of the shared `FormField`
- * component (DS-1) for all 5 fields.
+ * component for all 5 fields.
  *
- * Form state is React Hook Form, validation schema is Zod (ADR-0009):
+ * Form state is React Hook Form, validation schema is Zod:
  * `signupSchema` requires non-empty `name`/`email`/`password`/`orgName`,
  * plus an `orgSlug` `^[a-z0-9-]+$` format check via `.regex()` — this used
  * to be a manual `handleSubmit` guard that set the page-level alert and
@@ -21,7 +21,7 @@
  * it. `Signup.test.tsx`'s "rejects a slug..." and "disables the submit
  * button..." cases assert synchronously immediately after
  * `fireEvent.click()` with no `await`/`waitFor` (pre-existing, must stay
- * unmodified per DS-1's AC3) — those assertions can only pass if validation
+ * unmodified AC3) — those assertions can only pass if validation
  * and the resulting `formState`/submitting-state updates happen
  * synchronously inside the click handler, the same way the original
  * `useState`-driven implementation did. So this file validates with a
@@ -34,7 +34,7 @@
  * `signup()` resolves `void` and updates `AuthContext` state asynchronously
  * (same as `login()`), so post-success navigation is driven by the same
  * `useEffect` pattern watching `orgContext` — once it resolves, navigation
- * always targets `/dashboard` (DASH-3/ADR-0063), which then auto-advances
+ * always targets `/dashboard`, which then auto-advances
  * onward for this route's own always-exactly-1-org case (a fresh signup
  * creates its own org). Reusing the exact same effect as `Login.tsx`
  * (rather than a hardcoded redirect) keeps the two screens' post-auth
@@ -96,7 +96,7 @@ function Signup() {
         org_slug: values.orgSlug,
       });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
+      setError(err instanceof ApiError ? err.message: "Something went wrong. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -170,7 +170,7 @@ function Signup() {
                   </div>
                   {error && <Alert color="danger">{error}</Alert>}
                   <Button type="submit" color="primary" className="w-100" disabled={submitting}>
-                    {submitting ? "Creating..." : "Create organization"}
+                    {submitting ? "Creating...": "Create organization"}
                   </Button>
                 </form>
                 <p className="mt-3 mb-0 text-body-secondary small">

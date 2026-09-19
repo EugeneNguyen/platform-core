@@ -1,12 +1,12 @@
 /**
- * `Icon` atom — Font Awesome Free (`fa-{variant} fa-{name}`), per ADR-0042.
+ * `Icon` atom — Font Awesome Free (`fa-{variant} fa-{name}`),.
  *
  * **This resolves the open question this file used to carry.** The original
  * version emitted Bootstrap Icons classes (`bi bi-<name>`) against a font that
  * was never loaded: its own docstring flagged that every glyph rendered blank,
  * and that fixing it needed an ADR rather than a silently-added CDN link,
  * because the then-current root `CLAUDE.md` mandated `@coreui/icons`/`CIcon`
- * ("no second icon library"). ADR-0042 replaces CoreUI with AdminLTE v4 and
+ * ("no second icon library"). replaces CoreUI with AdminLTE v4 and
  * adopts Font Awesome — AdminLTE's own icon convention — as the project's
  * single icon library. `@fortawesome/fontawesome-free/css/all.min.css` is now
  * imported in `main.tsx`, so these glyphs actually render.
@@ -37,7 +37,7 @@ export interface IconProps {
 }
 
 export function Icon({ name, variant = "solid", spaced = false, className }: IconProps) {
-  const classNames = [`fa-${variant}`, `fa-${name}`, spaced ? "me-2" : "", className]
+  const classNames = [`fa-${variant}`, `fa-${name}`, spaced ? "me-2": "", className]
     .filter(Boolean)
     .join(" ");
 

@@ -1,10 +1,10 @@
-"""RBAC-3 UI slice: `GET /orgs/{org_id}/roles` — populates the role-assignment
-dropdown (RBAC-3 scope plan addendum, per user direction to add this rather
+""" UI slice: `GET /orgs/{org_id}/roles` — populates the role-assignment
+dropdown ( scope plan addendum, per user direction to add this rather
 than a raw `role_id` text input).
 
 Same 404-vs-403 boundary + `require_permission` pattern as every other
 org-scoped route (`agents.py`, `projects.py`, `role_assignments.py`). Gated
-on `role.read` (already in RBAC-4's seeded catalog — `role` is one of the 23
+on `role.read` (already in seeded catalog — `role` is one of the 23
 standard-CRUD resources, Database Document §3.3). Returns exactly the set of
 `Role` rows `POST /orgs/{org_id}/role-assignments`'s own `role_id`
 validation accepts: system templates (`org_id IS NULL`) plus this org's

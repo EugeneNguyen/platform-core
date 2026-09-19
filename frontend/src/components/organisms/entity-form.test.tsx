@@ -4,12 +4,12 @@ import EntityForm from "./entity-form";
 import type { EntityConfig } from "../../entityConfigs/types";
 
 /**
- * ADR-0025: `EntityForm` is generic/config-driven — the field-type -> input
+ *: `EntityForm` is generic/config-driven — the field-type -> input
  * mapping (UI Design Document §3) is what's under test here, once, using a
  * fixture config exercising all 5 `FieldType`s, not a real entity config.
  */
 /**
- * ADR-0053: the fk field's `FkAutocomplete` resolves its ref-entity config
+ *: the fk field's `FkAutocomplete` resolves its ref-entity config
  * through `useEntitySchema` now, not the retired `entityConfigByKey` registry
  * map — so that's what this file mocks. Returning the config synchronously
  * keeps the "renders a search input for an fk field" assertion below testing

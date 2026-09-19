@@ -1,8 +1,8 @@
 /**
  * `Pagination` molecule — the page-size selector + `<nav><ul class="pagination">`
- * block, extracted out of `container/Table.tsx` (DS-2/ADR-0041) so it can be
+ * block, extracted out of `container/Table.tsx` so it can be
  * reused by any screen that owns its own paging state, not only `Table`'s two
- * modes. Raw Bootstrap 5 markup (ADR-0042); unchanged from what `Table.tsx`
+ * modes. Raw Bootstrap 5 markup; unchanged from what `Table.tsx`
  * rendered inline — every existing `data-testid`/role/class this repo's
  * tests already key off (`${testIdPrefix}-pagination`, `${testIdPrefix}-
  * page-size`, `page-item`/`active`/`disabled`, `aria-current="page"`) is
@@ -17,7 +17,7 @@
 import { Select } from "../../atoms/select";
 
 /**
- * The page-size options offered by every retrofitted screen (ADR-0041).
+ * The page-size options offered by every retrofitted screen.
  * Moved here from `container/Table.tsx`, which now re-exports it for
  * backward compatibility — this is its natural home once pagination itself
  * is a standalone component.
@@ -58,15 +58,15 @@ export function Pagination({
   const isPreviousDisabled = currentPage <= 1;
   const isNextDisabled = currentPage >= totalPages;
 
-  const rangeStart = !totalItems ? 0 : (currentPage - 1) * pageSize + 1;
-  const rangeEnd = !totalItems ? 0 : Math.min(currentPage * pageSize, totalItems);
+  const rangeStart = !totalItems ? 0: (currentPage - 1) * pageSize + 1;
+  const rangeEnd = !totalItems ? 0: Math.min(currentPage * pageSize, totalItems);
 
   return (
     <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
       <div className="d-flex align-items-center flex-wrap gap-3">
         {totalItems !== undefined && (
           <div className="text-body-secondary small" data-testid={`${testIdPrefix}-summary`}>
-            Showing {rangeStart} to {rangeEnd} of {totalItems} {totalItems === 1 ? "item" : "items"}
+            Showing {rangeStart} to {rangeEnd} of {totalItems} {totalItems === 1 ? "item": "items"}
           </div>
         )}
 
@@ -97,7 +97,7 @@ export function Pagination({
         className="overflow-x-auto"
       >
         <ul className="pagination flex-nowrap mb-0">
-          <li className={`page-item${isPreviousDisabled ? " disabled" : ""}`}>
+          <li className={`page-item${isPreviousDisabled ? " disabled": ""}`}>
             <button
               type="button"
               className="page-link"
@@ -108,18 +108,18 @@ export function Pagination({
             </button>
           </li>
           {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-            <li key={p} className={`page-item${p === currentPage ? " active" : ""}`}>
+            <li key={p} className={`page-item${p === currentPage ? " active": ""}`}>
               <button
                 type="button"
                 className="page-link"
-                aria-current={p === currentPage ? "page" : undefined}
+                aria-current={p === currentPage ? "page": undefined}
                 onClick={() => onPageChange(p)}
               >
                 {p}
               </button>
             </li>
           ))}
-          <li className={`page-item${isNextDisabled ? " disabled" : ""}`}>
+          <li className={`page-item${isNextDisabled ? " disabled": ""}`}>
             <button
               type="button"
               className="page-link"

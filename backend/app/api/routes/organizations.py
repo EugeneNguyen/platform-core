@@ -1,19 +1,19 @@
-"""RBAC-1: `POST /orgs` — an existing authenticated actor mints a further Organization.
+""": `POST /orgs` — an existing authenticated actor mints a further Organization.
 
-Source: API Document §2 (`POST /orgs` contract), ADR-0016 (organization
+Source: API Document §2 (`POST /orgs` contract), (organization
 bootstrap & creation flow — the "case (b)" route, sibling to `POST
 /auth/signup`'s "case (a)" in `app/api/routes/auth.py`).
 
 Unlike `app/api/routes/agents.py`'s `/orgs/{org_id}/...` routes, this route
 has no target `org_id` in its path — the org doesn't exist until the call
 succeeds — so neither `require_permission` (path-`org_id`-scoped) nor the
-404-vs-403 boundary (ADR-0015/NFR-19, "hide whether a target org exists")
+404-vs-403 boundary
 applies here: there is no target org's existence to hide. The gate is the
 bespoke `has_permission_in_any_org` (`app/core/rbac.py`): does the caller
 hold `organization.create` org-wide (`project_id IS NULL`) in *any* org they
 already belong to. `403 permission_denied` if not — no 404 path at all.
 
-API-1/ADR-0022 adds the generic-CRUD factory's `GET`/`PATCH`/
+API-1/ adds the generic-CRUD factory's `GET`/`PATCH`/
 `DELETE /organizations/{id}` at the bottom of this module — `create` stays
 this module's own bespoke `POST /orgs` above (and `POST /auth/signup`'s
 bootstrap case), never a bare `POST /organizations` (API Document §3
@@ -61,10 +61,10 @@ async def create_org(
     actor: User | AIAgent = Depends(get_current_actor),
     db: AsyncSession = Depends(get_db),
 ) -> OrgSummary | JSONResponse:
-    """Create a further Organization for an already-authenticated actor (ADR-0016).
+    """Create a further Organization for an already-authenticated actor.
 
     Authenticated via `get_current_actor` — `User` or `AIAgent`, no
-    human-only gate (the AC doesn't restrict this to humans, and RBAC-4's
+    human-only gate (the AC doesn't restrict this to humans, and
     `ai_agent_scoped` bundle doesn't include `organization.create` anyway,
     so in practice only an actor holding `org_admin`'s full bundle, human or
     agent, ever passes the gate below).
@@ -72,15 +72,15 @@ async def create_org(
     Order of operations:
     1. Gate: `has_permission_in_any_org(actor, "organization.create")`
        -> `403 permission_denied` if the actor holds it in zero orgs (or
-       only via a project-scoped-only grant — TC-RBAC-023).
+       only via a project-scoped-only grant — ).
     2. Create the `Organization`; flush alone so a `slug` collision is
        caught independently (`422`, same shape/posture as `POST
        /auth/signup`'s — never `409`, which is reserved for that route's
        bootstrap-closed case).
     3. Give the creator their own `OrgMembership(active)` + an org-wide
-       (`project_id=None`) `RoleAssignment` pointing at RBAC-4's seeded
-       `org_admin` system `Role` in the org just created (ADR-0016 Q3 — the
-       creator always auto-joins, since RBAC-2's invite flow doesn't exist
+       (`project_id=None`) `RoleAssignment` pointing at seeded
+       `org_admin` system `Role` in the org just created ( Q3 — the
+       creator always auto-joins, since invite flow doesn't exist
        yet to add anyone else afterward).
 
        `OrgMembership.user_id` FKs to `user.actor_id` specifically (Database
@@ -144,7 +144,7 @@ async def create_org(
     return OrgSummary(id=org.id, name=org.name, slug=org.slug)
 
 
-# --- API-1 generic-CRUD factory additions (ADR-0022) ------------------------------------------
+# --- API-1 generic-CRUD factory additions ------------------------------------------
 #
 # `Organization`'s own resolver: the row IS the tenant, `id` IS `org_id`
 # (`resolve_organization_org_id`) — no `create` (bespoke above/`auth.py`),
@@ -160,7 +160,7 @@ _ORGANIZATION_CONFIG = CrudEntityConfig(
     scope_field=None,
     resolve_org_id=resolve_organization_org_id,
     methods=frozenset({"get", "update", "delete"}),
-    # ADR-0053. No `field_meta` at all: every label auto-title-cases correctly
+    #. No `field_meta` at all: every label auto-title-cases correctly
     # ("default_standards_profile" -> "Default standards profile"), there's no
     # FK (the row IS the tenant), and no enum. `slug` derives `readOnly` (it's
     # summary-only — not reassignable through `PATCH`) and nothing derives as

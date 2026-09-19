@@ -60,7 +60,7 @@ export function LoginForm({
         <div className="col-4">
           <div className="d-grid gap-2">
             <Button type="submit" color="primary" disabled={submitting}>
-              {submitting ? "Signing in..." : submitLabel}
+              {submitting ? "Signing in...": submitLabel}
             </Button>
           </div>
         </div>

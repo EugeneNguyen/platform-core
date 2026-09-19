@@ -1,15 +1,15 @@
 /**
- * AUTH-2 access-token store.
+ * access-token store.
  *
  * Plain module-level state — deliberately NOT React state, NOT
- * `localStorage`/`sessionStorage` (ADR-0003). `apiFetch` (`lib/api/client.ts`)
+ * `localStorage`/`sessionStorage`. `apiFetch` (`lib/api/client.ts`)
  * is a plain function with no hooks, so it needs a synchronous, non-React way
  * to read/write the current access token; React consumers (e.g.
  * `AuthContext`) subscribe to change notifications instead of owning the
  * value themselves.
  *
  * The access token still only lives for the tab's lifetime — a page reload
- * loses this module's state entirely, which is exactly why AUTH-2's
+ * loses this module's state entirely, which is exactly why
  * boot-time silent refresh (Task 4, `AuthContext`) exists: it re-populates
  * this store from the httpOnly refresh-token cookie on mount.
  */

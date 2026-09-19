@@ -6,7 +6,7 @@ import EntityListPage from "./EntityListPage";
 import { apiFetch } from "../../../lib/api/client";
 
 /**
- * ADR-0059: end-to-end proof (short of a real backend) that the generic
+ *: end-to-end proof (short of a real backend) that the generic
  * admin surface's "New" button for `projects`, reached via the org-scoped
  * route `/orgs/:orgId/admin/projects`, actually POSTs to the bespoke
  * `/orgs/{org_id}/projects` route — not the flat `/projects` a plain
@@ -48,7 +48,7 @@ vi.mock("../../../pages/admin/useEntitySchema", () => {
 
 vi.mock("../../../lib/api/client", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../../lib/api/client")>();
-  return { ...actual, apiFetch: vi.fn() };
+  return {...actual, apiFetch: vi.fn() };
 });
 
 const mockApiFetch = vi.mocked(apiFetch);
@@ -67,7 +67,7 @@ function renderPage() {
 }
 
 /**
- * ADR-0060: the retired `ProjectsPage`'s replacement route
+ *: the retired `ProjectsPage`'s replacement route
  * (`/orgs/:orgId/projects`, `App.tsx`) has no `:entity` segment at all —
  * `entityKeyOverride="projects"` is what makes `EntityListPage` resolve the
  * right entity there instead of an empty `entityKey`. Distinct from the
@@ -87,7 +87,7 @@ function renderAtOverrideRoute() {
   );
 }
 
-describe("EntityListPage — projects create route override (ADR-0059) + entityKeyOverride (ADR-0060)", () => {
+describe("EntityListPage — projects create route override + entityKeyOverride ", () => {
   afterEach(() => {
     vi.clearAllMocks();
   });
@@ -120,7 +120,7 @@ describe("EntityListPage — projects create route override (ADR-0059) + entityK
     expect(body).toMatchObject({ name: "New Project", org_id: "org-1" });
   });
 
-  it("entityKeyOverride resolves the entity on a route with no :entity segment (ADR-0060)", async () => {
+  it("entityKeyOverride resolves the entity on a route with no:entity segment ", async () => {
     mockApiFetch
       .mockResolvedValueOnce({ codes: [{ code: "project.create", project_id: null }] })
       .mockResolvedValue({
@@ -133,7 +133,7 @@ describe("EntityListPage — projects create route override (ADR-0059) + entityK
     renderAtOverrideRoute();
 
     // Not "Unknown admin entity" — proves entityKeyOverride, not the (here
-    // absent) :entity route param, resolved the schema.
+    // absent):entity route param, resolved the schema.
     expect(await screen.findByRole("heading", { name: "Projects" })).toBeInTheDocument();
     expect(await screen.findByText("Existing Project")).toBeInTheDocument();
   });

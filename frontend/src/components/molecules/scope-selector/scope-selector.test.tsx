@@ -4,7 +4,7 @@ import ScopeSelector from "./scope-selector";
 import { listEntities } from "../../../lib/api/entityCrud";
 
 /**
- * ADR-0081 — `ScopeSelectorOption.via`, the cascading two-hop picker.
+ * — `ScopeSelectorOption.via`, the cascading two-hop picker.
  *
  * Mirrors `fk-autocomplete.test.tsx`'s own harness (`useEntitySchema` mocked
  * with two stable configs — an outer "widget" and a via "widget-owner" —
@@ -33,7 +33,7 @@ const { schemaState, WIDGET_SCHEMA, OWNER_SCHEMA } = vi.hoisted(() => ({
 
 vi.mock("../../../pages/admin/useEntitySchema", () => ({
   useEntitySchema: (key: string) => ({
-    config: schemaState.isLoading ? undefined : key === "widget" ? WIDGET_SCHEMA : OWNER_SCHEMA,
+    config: schemaState.isLoading ? undefined: key === "widget" ? WIDGET_SCHEMA: OWNER_SCHEMA,
     label: undefined,
     isLoading: schemaState.isLoading,
     isError: false,
@@ -42,7 +42,7 @@ vi.mock("../../../pages/admin/useEntitySchema", () => ({
 
 vi.mock("../../../lib/api/entityCrud", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../../lib/api/entityCrud")>();
-  return { ...actual, listEntities: vi.fn(), getEntity: vi.fn() };
+  return {...actual, listEntities: vi.fn(), getEntity: vi.fn() };
 });
 
 const mockListEntities = vi.mocked(listEntities);
@@ -52,7 +52,7 @@ async function pickViaOwner() {
   fireEvent.click(await screen.findByText("owner-1", {}, { timeout: 2000 }));
 }
 
-describe("ScopeSelector — via (ADR-0081)", () => {
+describe("ScopeSelector — via ", () => {
   beforeEach(() => {
     mockListEntities.mockResolvedValue({
       items: [{ id: "owner-1", name: "Alice" }],
@@ -139,7 +139,7 @@ describe("ScopeSelector — via (ADR-0081)", () => {
     expect(screen.queryByLabelText(/filter by widget$/i)).not.toBeInTheDocument();
   });
 
-  it("ADR-0089: threads labelField to the picker, so an option renders a real name, not the raw id", async () => {
+  it(": threads labelField to the picker, so an option renders a real name, not the raw id", async () => {
     mockListEntities.mockResolvedValue({
       items: [{ id: "widget-1", name: "Real Widget Name" }],
       total: 1,
@@ -159,7 +159,7 @@ describe("ScopeSelector — via (ADR-0081)", () => {
     expect(screen.queryByText("widget-1")).not.toBeInTheDocument();
   });
 
-  it("ADR-0089: threads labelField to the `via` picker too", async () => {
+  it(": threads labelField to the `via` picker too", async () => {
     render(
       <ScopeSelector
         options={{
@@ -177,7 +177,7 @@ describe("ScopeSelector — via (ADR-0081)", () => {
     expect(screen.queryByText("owner-1")).not.toBeInTheDocument();
   });
 
-  it("an option with no via renders its own picker directly, unchanged from before ADR-0081", () => {
+  it("an option with no via renders its own picker directly, unchanged from before ", () => {
     render(<ScopeSelector options={{ refEntity: "widget", paramName: "widget_id" }} onResolved={vi.fn()} />);
 
     expect(screen.getByLabelText(/filter by widget$/i)).toBeInTheDocument();

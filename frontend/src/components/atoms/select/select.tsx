@@ -1,12 +1,12 @@
 /**
- * `Select` atom — bare `.form-select` (ADR-0042), same shape as
+ * `Select` atom — bare `.form-select`, same shape as
  * `atoms/text-input`. Two existing hand-rolled `<select class="form-select">`
  * blocks (`entity-form.tsx`'s enum field, `RoleAssignmentsPanel.tsx`) meet
  * `frontend/CLAUDE.md`'s 2+-use threshold for promoting a new atom rather
  * than hand-rolling a third copy.
  *
  * `forwardRef` so callers can bind it via React Hook Form's `register()`
- * spread (ADR-0009), same convention as `TextInput`.
+ * spread, same convention as `TextInput`.
  */
 import { forwardRef, SelectHTMLAttributes } from "react";
 
@@ -26,10 +26,10 @@ export interface SelectProps extends Omit<SelectHTMLAttributes<HTMLSelectElement
 }
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select(
-  { invalid = false, size = "sm", className, children, ...rest },
+  { invalid = false, size = "sm", className, children,...rest },
   ref,
 ) {
-  const classNames = ["form-select", SIZE_CLASS[size], invalid ? "is-invalid" : "", className]
+  const classNames = ["form-select", SIZE_CLASS[size], invalid ? "is-invalid": "", className]
     .filter(Boolean)
     .join(" ");
 

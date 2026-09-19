@@ -7,13 +7,13 @@ import { apiFetch } from "../../../lib/api/client";
 import { listEntities } from "../../../lib/api/entityCrud";
 
 /**
- * ADR-0025 / UI Design Document §5 (FR-ADMIN-2 AC4): "No `<resource>.create`
+ * / UI Design Document §5: "No `<resource>.create`
  * -> the 'New' button above `EntityTable` is absent, not disabled." Uses a
  * fixture global-catalog config (no `scopeField`, so no scope-selector step
  * to drive through first) — the permission-gating logic under test here is
  * `EntityListPage`'s own, shared across every entity, not entity-specific.
  *
- * **ADR-0053:** the fixture config is unchanged, but it is now injected by
+ * **:** the fixture config is unchanged, but it is now injected by
  * mocking `./useEntitySchema` (the fetch hook every admin surface reads its
  * config from) rather than the deleted `entityConfigByKey` registry map. The
  * registry mock survives for `entityLabelByKey` only — that half stayed
@@ -46,14 +46,14 @@ vi.mock("../../../pages/admin/useEntitySchema", () => {
     },
   };
   const labels: Record<string, string> = { widgets: "Widgets" };
-  const resolveEntityKey = (key: string) => (key.endsWith("s") ? key : `${key}s`);
+  const resolveEntityKey = (key: string) => (key.endsWith("s") ? key: `${key}s`);
   return {
     resolveEntityKey,
     useEntitySchema: (key?: string) => {
-      const resolved = key ? resolveEntityKey(key) : undefined;
+      const resolved = key ? resolveEntityKey(key): undefined;
       return {
-        config: schemaState.isLoading || !resolved ? undefined : configs[resolved],
-        label: resolved ? labels[resolved] : undefined,
+        config: schemaState.isLoading || !resolved ? undefined: configs[resolved],
+        label: resolved ? labels[resolved]: undefined,
         isLoading: Boolean(resolved) && schemaState.isLoading,
         isError: false,
       };
@@ -73,12 +73,12 @@ vi.mock("../../../pages/admin/useEntitySchema", () => {
 
 vi.mock("../../../lib/api/entityCrud", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../../lib/api/entityCrud")>();
-  return { ...actual, listEntities: vi.fn(), getEntity: vi.fn(), createEntity: vi.fn(), deleteEntity: vi.fn() };
+  return {...actual, listEntities: vi.fn(), getEntity: vi.fn(), createEntity: vi.fn(), deleteEntity: vi.fn() };
 });
 
 vi.mock("../../../lib/api/client", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../../lib/api/client")>();
-  return { ...actual, apiFetch: vi.fn() };
+  return {...actual, apiFetch: vi.fn() };
 });
 
 const mockListEntities = vi.mocked(listEntities);
@@ -123,7 +123,7 @@ describe("EntityListPage — permission-driven create button", () => {
   });
 
   /**
-   * ADR-0053: the config is fetched now, so `config === undefined` no longer
+   *: the config is fetched now, so `config === undefined` no longer
    * implies an unknown `:entity`. While the schema is in flight the page must
    * show a spinner, NOT the "Unknown admin entity" error it renders for a
    * genuinely unrecognised slug.

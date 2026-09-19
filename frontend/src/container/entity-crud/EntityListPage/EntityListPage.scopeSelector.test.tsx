@@ -7,28 +7,28 @@ import { apiFetch } from "../../../lib/api/client";
 import { getEntity, listEntities } from "../../../lib/api/entityCrud";
 
 /**
- * TC-ADMIN-019: "Attachment scope-selector resolves via TestCase" — once a
- * TestCase is picked, the resulting `GET /attachments` list call is scoped
- * with `?test_case_id=<id>`, matching the backend's `resolve_via_test_case`
- * chain (ADR-0022/ADR-0025).
+ *: "Attachment scope-selector resolves via Item" — once a
+ * Item is picked, the resulting `GET /attachments` list call is scoped
+ * with `?item_id=<id>`, matching the backend's `resolve_via_item`
+ * chain.
  *
  * Uses the `Attachment` schema the backend actually serves (transcribed into
- * `ATTACHMENT_SCHEMA` below — see the ADR-0053 note) so the config wiring
+ * `ATTACHMENT_SCHEMA` below — see the note) so the config wiring
  * under test is the real one, not an invented stand-in. `ScopeSelector` itself
  * is mocked here rather than driven through its real `FkAutocomplete` child:
- * `test-case.ts`'s config has no `list` method (no `GET /test-cases` route
+ * `item.ts`'s config has no `list` method (no `GET /items` route
  * exists yet — see that file's own docstring), so `FkAutocomplete` always
  * renders disabled for this `refEntity` and a real user cannot actually pick
- * a TestCase through today's UI at all — a genuine, already-documented,
+ * a Item through today's UI at all — a genuine, already-documented,
  * pre-existing gap (`ScopeSelector.tsx`'s own docstring), not something this
  * test can honestly claim to close end-to-end. What *is* real and this test
  * does prove: once a scope value is resolved (however it eventually gets
  * resolved), `EntityListPage`'s generic scope -> list-query wiring carries
- * `test_case_id` through correctly for this specific config, so the moment
- * `test-case.ts` gains a `list` route, the rest of this chain already works.
+ * `item_id` through correctly for this specific config, so the moment
+ * `item.ts` gains a `list` route, the rest of this chain already works.
  */
 /**
- * **ADR-0053:** the configs are served by `GET /entities/{resource}/schema`
+ * **:** the configs are served by `GET /entities/{resource}/schema`
  * now, so they are injected by mocking `./useEntitySchema` rather than the
  * deleted `entityConfigByKey` registry map. `projects` is the minimal config
  * `useAdminRouteContext` needs to resolve this project-scoped route's
@@ -37,7 +37,7 @@ import { getEntity, listEntities } from "../../../lib/api/entityCrud";
  *
  * `ATTACHMENT_SCHEMA` below is a verbatim transcription of what
  * `derive_entity_schema(_ATTACHMENT_CONFIG)` actually serves — it used to be a
- * live `import` of `entityConfigs/attachment.ts`, which ADR-0053 deleted. The
+ * live `import` of `entityConfigs/attachment.ts`, which deleted. The
  * original intent ("use the real shipped config, not a stand-in") is now
  * carried by `backend/tests/integration/test_adr53_entity_schema.py`, which
  * asserts the real route's real output for every registered entity; a unit
@@ -51,11 +51,11 @@ const { ATTACHMENT_SCHEMA } = vi.hoisted(() => ({
   ATTACHMENT_SCHEMA: {
     resource: "attachment",
     path: "/attachments",
-    scopeField: "test_case_id",
-    scopeSelector: { refEntity: "test-case", paramName: "test_case_id" },
+    scopeField: "item_id",
+    scopeSelector: { refEntity: "item", paramName: "item_id" },
     methods: ["list", "get", "create", "update", "delete"],
     fields: [
-      { name: "test_case_id", label: "Test case", type: "fk", refEntity: "test-case", labelField: "title", required: true },
+      { name: "item_id", label: "Test case", type: "fk", refEntity: "item", labelField: "title", required: true },
       { name: "url_or_path", label: "URL / path", type: "string", required: true },
       { name: "mime_type", label: "MIME type", type: "string", required: true },
       { name: "size_bytes", label: "Size (bytes)", type: "string", required: true },
@@ -80,14 +80,14 @@ vi.mock("../../../pages/admin/useEntitySchema", () => {
     projects: { resource: "project", path: "/projects", methods: ["list", "get"], fields: [] },
   };
   const labels: Record<string, string> = { attachments: "Attachments", projects: "Projects" };
-  const resolveEntityKey = (key: string) => (key.endsWith("s") ? key : `${key}s`);
+  const resolveEntityKey = (key: string) => (key.endsWith("s") ? key: `${key}s`);
   return {
     resolveEntityKey,
     useEntitySchema: (key?: string) => {
-      const resolved = key ? resolveEntityKey(key) : undefined;
+      const resolved = key ? resolveEntityKey(key): undefined;
       return {
-        config: resolved ? configs[resolved] : undefined,
-        label: resolved ? labels[resolved] : undefined,
+        config: resolved ? configs[resolved]: undefined,
+        label: resolved ? labels[resolved]: undefined,
         isLoading: false,
         isError: false,
       };
@@ -113,21 +113,21 @@ vi.mock("../../../components/molecules/scope-selector", () => ({
     options: { paramName: string } | { paramName: string }[];
     onResolved: (field: string, value: string) => void;
   }) => {
-    const option = Array.isArray(options) ? options[0] : options;
+    const option = Array.isArray(options) ? options[0]: options;
     return (
-      <button onClick={() => onResolved(option.paramName, "test-case-1")}>Resolve TestCase scope (test)</button>
+      <button onClick={() => onResolved(option.paramName, "item-1")}>Resolve Item scope (test)</button>
     );
   },
 }));
 
 vi.mock("../../../lib/api/entityCrud", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../../lib/api/entityCrud")>();
-  return { ...actual, listEntities: vi.fn(), getEntity: vi.fn(), createEntity: vi.fn(), deleteEntity: vi.fn() };
+  return {...actual, listEntities: vi.fn(), getEntity: vi.fn(), createEntity: vi.fn(), deleteEntity: vi.fn() };
 });
 
 vi.mock("../../../lib/api/client", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../../lib/api/client")>();
-  return { ...actual, apiFetch: vi.fn() };
+  return {...actual, apiFetch: vi.fn() };
 });
 
 const mockListEntities = vi.mocked(listEntities);
@@ -147,19 +147,19 @@ function renderPage() {
   );
 }
 
-describe("EntityListPage — Attachment scope-selector resolves via TestCase (TC-ADMIN-019)", () => {
+describe("EntityListPage — Attachment scope-selector resolves via Item ", () => {
   afterEach(() => {
     vi.clearAllMocks();
   });
 
-  it("fires no list request until the scope is resolved, then scopes the list by test_case_id", async () => {
+  it("fires no list request until the scope is resolved, then scopes the list by item_id", async () => {
     mockGetEntity.mockResolvedValue({ id: "proj-1", org_id: "org-1" });
     mockApiFetch.mockResolvedValue({ codes: [] });
     mockListEntities.mockResolvedValue({ items: [], total: 0, page: 1, page_size: 25 });
 
     renderPage();
 
-    const resolveButton = await screen.findByRole("button", { name: /resolve testcase scope/i });
+    const resolveButton = await screen.findByRole("button", { name: /resolve item scope/i });
     expect(mockListEntities).not.toHaveBeenCalled();
 
     fireEvent.click(resolveButton);
@@ -168,7 +168,7 @@ describe("EntityListPage — Attachment scope-selector resolves via TestCase (TC
     expect(mockListEntities).toHaveBeenCalledWith(
       expect.objectContaining({ resource: ATTACHMENT_SCHEMA.resource }),
       expect.anything(),
-      expect.objectContaining({ params: expect.objectContaining({ test_case_id: "test-case-1" }) }),
+      expect.objectContaining({ params: expect.objectContaining({ item_id: "item-1" }) }),
     );
   });
 });

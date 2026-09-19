@@ -1,9 +1,9 @@
-"""Pydantic v2 schemas for the RBAC-1 `POST /orgs` route and the API-1
+"""Pydantic v2 schemas for the `POST /orgs` route and the API-1
 generic-CRUD factory's `Organization` `GET`/`PATCH`/`DELETE /organizations/{id}`
-routes (ADR-0022).
+routes.
 
 Source: API Document §2 (`POST /orgs` contract), §3 (generic CRUD routes),
-ADR-0016 (organization bootstrap & creation flow).
+ (organization bootstrap & creation flow).
 """
 
 from uuid import UUID
@@ -27,7 +27,7 @@ class CreateOrgRequest(BaseModel):
 
 
 class UpdateOrganizationRequest(BaseModel):
-    """Body of `PATCH /organizations/{id}` (ADR-0022) — partial update,
+    """Body of `PATCH /organizations/{id}` — partial update,
     `exclude_unset` semantics. `slug` is not reassignable through this route
     (no ADR/story asks for renaming an org's slug post-creation).
     """
@@ -37,7 +37,7 @@ class UpdateOrganizationRequest(BaseModel):
 
 
 class OrganizationDetail(BaseModel):
-    """Response shape for `GET`/`PATCH /organizations/{id}` (ADR-0022).
+    """Response shape for `GET`/`PATCH /organizations/{id}`.
 
     A separate schema from `OrgSummary` (`app/schemas/auth.py`) — that one is
     deliberately lightweight (`id`/`name`/`slug` only, for `LoginResponse.orgs`/

@@ -1,5 +1,5 @@
 /**
- * RBAC-2 invite-acceptance screen (ADR-0017): the new-user accept path for
+ * invite-acceptance screen: the new-user accept path for
  * `POST /invites/{token}/accept`. Public route (no `ProtectedRoute`) — the
  * invitee has no account/credentials yet, only the raw one-time token
  * embedded in the invite link an org_admin shared out-of-band.
@@ -7,8 +7,8 @@
  * `token` comes from the URL path param (`/invites/:token/accept`), matching
  * the backend route's own path shape exactly rather than a query string.
  *
- * Built with raw Bootstrap 5 / AdminLTE markup (ADR-0042, superseding the
- * CoreUI build of ADR-0012), mirrors `Signup.tsx`/`Login.tsx`'s structure.
+ * Built with raw Bootstrap 5 / AdminLTE markup (, superseding the
+ * CoreUI build of ), mirrors `Signup.tsx`/`Login.tsx`'s structure.
  * React Hook Form + Zod own the form's state/validation. There is no
  * existing password-strength rule anywhere else in this codebase to mirror
  * (`Signup.tsx`'s password field has no client-side rule beyond HTML
@@ -22,8 +22,8 @@
  * shape `login()`/`signup()` do — so, like those two screens, post-success
  * navigation is driven by the same `useEffect` watching `orgContext` rather
  * than a return value: once it resolves, navigation always targets
- * `/dashboard` (DASH-3/ADR-0063). This is what "lands logged in, not back
- * at a login screen" (ADR-0017) actually means on the frontend: the same
+ * `/dashboard`. This is what "lands logged in, not back
+ * at a login screen" actually means on the frontend: the same
  * token-store + redirect wiring `Login`/`Signup` already use, not a bespoke
  * path.
  */
@@ -74,7 +74,7 @@ function AcceptInvite() {
     try {
       await acceptInvite(token, values.password);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
+      setError(err instanceof ApiError ? err.message: "Something went wrong. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -99,7 +99,7 @@ function AcceptInvite() {
                       Password
                     </label>
                     <input
-                      className={`form-control${errors.password ? " is-invalid" : ""}`}
+                      className={`form-control${errors.password ? " is-invalid": ""}`}
                       id="password"
                       type="password"
                       autoComplete="new-password"
@@ -111,7 +111,7 @@ function AcceptInvite() {
                       Confirm password
                     </label>
                     <input
-                      className={`form-control${errors.confirmPassword ? " is-invalid" : ""}`}
+                      className={`form-control${errors.confirmPassword ? " is-invalid": ""}`}
                       id="confirmPassword"
                       type="password"
                       autoComplete="new-password"
@@ -124,7 +124,7 @@ function AcceptInvite() {
                     </Alert>
                   )}
                   <Button type="submit" color="primary" className="w-100" disabled={submitting}>
-                    {submitting ? "Setting password..." : "Set password"}
+                    {submitting ? "Setting password...": "Set password"}
                   </Button>
                 </form>
               </Card.Body>

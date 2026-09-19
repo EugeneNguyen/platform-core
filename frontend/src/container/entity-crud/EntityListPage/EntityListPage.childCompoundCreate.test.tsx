@@ -8,11 +8,11 @@ import { apiFetch } from "../../../lib/api/client";
 import { createEntity, createViaCompoundRoute, getEntity, listEntities } from "../../../lib/api/entityCrud";
 
 /**
- * ADR-0080 — the standalone `/admin/<entity>` list page (not a relation
- * tab) is a second host for ADR-0079's `child_compound_creates`. A CTO
- * follow-up ("http://.../admin/test-conditions should use the crud")
- * found the same underlying gap ADR-0079 closed for relation tabs still
- * open here: `TestCondition`'s own list page had no "New" button at all,
+ * — the standalone `/admin/<entity>` list page (not a relation
+ * tab) is a second host for `child_compound_creates`. A CTO
+ * follow-up ("http://.../admin/criterions should use the crud")
+ * found the same underlying gap closed for relation tabs still
+ * open here: `Criterion`'s own list page had no "New" button at all,
  * because `EntityListPage`'s `canCreate` only ever checked
  * `config.methods.includes("create")`.
  *
@@ -41,7 +41,7 @@ vi.mock("../../../pages/admin/useEntitySchema", () => {
     "sprockets-no-create": {
       resource: "sprocket",
       path: "/sprockets",
-      // No `create` — the whole point, same as `TestCondition`'s real config.
+      // No `create` — the whole point, same as `Criterion`'s real config.
       methods: ["list", "get", "update", "delete"],
       scopeField: "widget_id",
       scopeSelector: { refEntity: "widget", paramName: "widget_id" },
@@ -66,14 +66,14 @@ vi.mock("../../../pages/admin/useEntitySchema", () => {
     },
     projects: { resource: "project", path: "/projects", methods: ["list", "get"], fields: [] },
   };
-  const resolveEntityKey = (key: string) => (key.endsWith("s") || key.includes("-") ? key : `${key}s`);
+  const resolveEntityKey = (key: string) => (key.endsWith("s") || key.includes("-") ? key: `${key}s`);
   return {
     resolveEntityKey,
     useEntitySchema: (key?: string) => {
-      const resolved = key ? resolveEntityKey(key) : undefined;
+      const resolved = key ? resolveEntityKey(key): undefined;
       return {
-        config: resolved ? configs[resolved] : undefined,
-        label: resolved ? "Sprockets" : undefined,
+        config: resolved ? configs[resolved]: undefined,
+        label: resolved ? "Sprockets": undefined,
         isLoading: false,
         isError: false,
       };
@@ -111,7 +111,7 @@ vi.mock("../../../lib/api/entityCrud", async (importOriginal) => {
 
 vi.mock("../../../lib/api/client", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../../lib/api/client")>();
-  return { ...actual, apiFetch: vi.fn() };
+  return {...actual, apiFetch: vi.fn() };
 });
 
 const mockListEntities = vi.mocked(listEntities);
@@ -140,7 +140,7 @@ function renderPage() {
   );
 }
 
-describe("EntityListPage standalone-list compound create (ADR-0080)", () => {
+describe("EntityListPage standalone-list compound create ", () => {
   afterEach(() => {
     vi.clearAllMocks();
   });

@@ -1,13 +1,13 @@
 /**
- * ADR-0071 (COLPREF-1) — the pure preference layer behind `EntityTable`'s
+ * (COLPREF-1) — the pure preference layer behind `EntityTable`'s
  * "Columns" dialog. No DOM rendering here beyond `localStorage` itself; the
  * component-level behaviour is covered by
  * `components/organisms/column-preferences-modal/column-preferences-modal.test.tsx`
  * and `components/organisms/entity-table.columnPreferences.test.tsx`.
  *
- * Covers TC-ADMIN-050 (persistence round-trip), TC-ADMIN-051 (per-entity key
- * isolation), TC-ADMIN-052 (locked fields survive a stale stored preference),
- * and NFR-71 (graceful degradation on unavailable/corrupt storage).
+ * Covers (persistence round-trip), (per-entity key
+ * isolation), (locked fields survive a stale stored preference),
+ * and (graceful degradation on unavailable/corrupt storage).
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { EntityConfig, FieldConfig } from "../entityConfigs/types";
@@ -27,7 +27,7 @@ import {
 } from "./columnPreferences";
 
 function field(name: string, extra: Partial<FieldConfig> = {}): FieldConfig {
-  return { name, label: name.toUpperCase(), type: "string", ...extra };
+  return { name, label: name.toUpperCase(), type: "string",...extra };
 }
 
 const FIELDS: FieldConfig[] = [
@@ -40,8 +40,8 @@ const FIELDS: FieldConfig[] = [
 
 function config(overrides: Partial<EntityConfig> = {}): EntityConfig {
   return {
-    resource: "requirement",
-    path: "/requirements",
+    resource: "spec",
+    path: "/specs",
     methods: ["list", "get", "create", "update", "delete"],
     fields: FIELDS,
     ...overrides,
@@ -60,7 +60,7 @@ describe("defaultTableFields", () => {
 });
 
 describe("lockedFieldNames", () => {
-  it("locks the detailLinkField when the config has a detailPath (ADR-0060)", () => {
+  it("locks the detailLinkField when the config has a detailPath ", () => {
     expect(lockedFieldNames(config({ detailPath: "/projects/:id", detailLinkField: "name" }))).toEqual(["name"]);
   });
 
@@ -91,7 +91,7 @@ describe("toPreferenceRows / applyColumnPreferences", () => {
     ]);
   });
 
-  it("hides stored-hidden fields and leaves the rest untouched (TC-ADMIN-048)", () => {
+  it("hides stored-hidden fields and leaves the rest untouched ", () => {
     const prefs = { v: COLUMN_PREFERENCES_VERSION, order: [], hidden: ["status"] };
     expect(applyColumnPreferences(defaultTableFields(config()), prefs, []).map((f) => f.name)).toEqual([
       "name",
@@ -131,7 +131,7 @@ describe("toPreferenceRows / applyColumnPreferences", () => {
     ]);
   });
 
-  it("renders a locked field even when a stale stored preference marks it hidden (TC-ADMIN-052)", () => {
+  it("renders a locked field even when a stale stored preference marks it hidden ", () => {
     const withDetail = config({ detailPath: "/projects/:id", detailLinkField: "name" });
     const prefs = { v: COLUMN_PREFERENCES_VERSION, order: [], hidden: ["name", "status"] };
     const rendered = applyColumnPreferences(defaultTableFields(withDetail), prefs, lockedFieldNames(withDetail));
@@ -159,7 +159,7 @@ describe("toPreferenceRows / applyColumnPreferences", () => {
 describe("preferencesFromRows", () => {
   it("serializes the current row order and the hidden set", () => {
     const rows = toPreferenceRows(defaultTableFields(config()), null, []).map((row) =>
-      row.field.name === "status" ? { ...row, visible: false } : row,
+      row.field.name === "status" ? {...row, visible: false }: row,
     );
     expect(preferencesFromRows(rows)).toEqual({
       v: COLUMN_PREFERENCES_VERSION,
@@ -171,7 +171,7 @@ describe("preferencesFromRows", () => {
   it("round-trips through apply: what the modal saves is what the table renders", () => {
     const initial = toPreferenceRows(defaultTableFields(config()), null, []);
     const reordered = moveRow(initial, 2, "up");
-    const hidden = reordered.map((row) => (row.field.name === "created_at" ? { ...row, visible: false } : row));
+    const hidden = reordered.map((row) => (row.field.name === "created_at" ? {...row, visible: false }: row));
     const saved = preferencesFromRows(hidden);
     expect(applyColumnPreferences(defaultTableFields(config()), saved, []).map((f) => f.name)).toEqual([
       "name",
@@ -192,46 +192,46 @@ describe("moveRow", () => {
     expect(moveRow(rows, 0, "down").map((r) => r.field.name)).toEqual(["status", "name", "owner", "created_at"]);
   });
 
-  it("is a no-op past either end (TC-ADMIN-049)", () => {
+  it("is a no-op past either end ", () => {
     expect(moveRow(rows, 0, "up")).toBe(rows);
     expect(moveRow(rows, rows.length - 1, "down")).toBe(rows);
   });
 });
 
 describe("storage round-trip", () => {
-  it("saves and loads a preference (TC-ADMIN-050)", () => {
+  it("saves and loads a preference ", () => {
     const prefs = { v: COLUMN_PREFERENCES_VERSION, order: ["status", "name"], hidden: ["owner"] };
-    saveColumnPreferences("requirement", prefs);
-    expect(loadColumnPreferences("requirement")).toEqual(prefs);
+    saveColumnPreferences("spec", prefs);
+    expect(loadColumnPreferences("spec")).toEqual(prefs);
   });
 
-  it("keys storage per entity, so one entity's change never reaches another (TC-ADMIN-051)", () => {
-    saveColumnPreferences("requirement", { v: COLUMN_PREFERENCES_VERSION, order: [], hidden: ["status"] });
-    expect(columnPreferencesKey("requirement")).toBe("platform-core.column-prefs.requirement");
-    expect(columnPreferencesKey("test_case")).toBe("platform-core.column-prefs.test_case");
-    expect(loadColumnPreferences("test_case")).toBeNull();
-    expect(applyColumnPreferences(defaultTableFields(config()), loadColumnPreferences("test_case"), []).length).toBe(
+  it("keys storage per entity, so one entity's change never reaches another ", () => {
+    saveColumnPreferences("spec", { v: COLUMN_PREFERENCES_VERSION, order: [], hidden: ["status"] });
+    expect(columnPreferencesKey("spec")).toBe("platform-core.column-prefs.spec");
+    expect(columnPreferencesKey("item")).toBe("platform-core.column-prefs.item");
+    expect(loadColumnPreferences("item")).toBeNull();
+    expect(applyColumnPreferences(defaultTableFields(config()), loadColumnPreferences("item"), []).length).toBe(
       4,
     );
   });
 
-  it("does not leak between resource slugs where one is a prefix of the other (TC-ADMIN-051)", () => {
-    // TC-ADMIN-051's own literal precondition: "resource slugs [that] differ
+  it("does not leak between resource slugs where one is a prefix of the other ", () => {
+    // own literal precondition: "resource slugs [that] differ
     // but are similar enough to catch a key-prefix bug". `widget`/`gadget`
     // (used by the component-level suite) are unrelated strings and would not
     // catch a `startsWith`-style lookup; these three would.
-    saveColumnPreferences("test_case", { v: COLUMN_PREFERENCES_VERSION, order: ["a"], hidden: ["a"] });
-    expect(loadColumnPreferences("test_case_step")).toBeNull();
-    expect(loadColumnPreferences("test_condition")).toBeNull();
+    saveColumnPreferences("item", { v: COLUMN_PREFERENCES_VERSION, order: ["a"], hidden: ["a"] });
+    expect(loadColumnPreferences("item_step")).toBeNull();
+    expect(loadColumnPreferences("criterion")).toBeNull();
     expect(loadColumnPreferences("test")).toBeNull();
 
-    saveColumnPreferences("test_case_step", { v: COLUMN_PREFERENCES_VERSION, order: ["b"], hidden: [] });
-    expect(loadColumnPreferences("test_case")).toEqual({
+    saveColumnPreferences("item_step", { v: COLUMN_PREFERENCES_VERSION, order: ["b"], hidden: [] });
+    expect(loadColumnPreferences("item")).toEqual({
       v: COLUMN_PREFERENCES_VERSION,
       order: ["a"],
       hidden: ["a"],
     });
-    expect(loadColumnPreferences("test_case_step")).toEqual({
+    expect(loadColumnPreferences("item_step")).toEqual({
       v: COLUMN_PREFERENCES_VERSION,
       order: ["b"],
       hidden: [],
@@ -239,13 +239,13 @@ describe("storage round-trip", () => {
   });
 
   it("clears a preference", () => {
-    saveColumnPreferences("requirement", { v: COLUMN_PREFERENCES_VERSION, order: [], hidden: ["status"] });
-    clearColumnPreferences("requirement");
-    expect(loadColumnPreferences("requirement")).toBeNull();
+    saveColumnPreferences("spec", { v: COLUMN_PREFERENCES_VERSION, order: [], hidden: ["status"] });
+    clearColumnPreferences("spec");
+    expect(loadColumnPreferences("spec")).toBeNull();
   });
 });
 
-describe("parseColumnPreferences — hostile input (NFR-71)", () => {
+describe("parseColumnPreferences — hostile input ", () => {
   it.each([
     ["null", null],
     ["empty string", ""],
@@ -271,13 +271,13 @@ describe("parseColumnPreferences — hostile input (NFR-71)", () => {
   });
 });
 
-describe("storage unavailable (NFR-71)", () => {
+describe("storage unavailable ", () => {
   it("loadColumnPreferences returns null instead of throwing", () => {
     vi.spyOn(window.localStorage, "getItem").mockImplementation(() => {
       throw new Error("SecurityError: access denied");
     });
-    expect(() => loadColumnPreferences("requirement")).not.toThrow();
-    expect(loadColumnPreferences("requirement")).toBeNull();
+    expect(() => loadColumnPreferences("spec")).not.toThrow();
+    expect(loadColumnPreferences("spec")).toBeNull();
   });
 
   it("saveColumnPreferences swallows a quota error", () => {
@@ -285,7 +285,7 @@ describe("storage unavailable (NFR-71)", () => {
       throw new Error("QuotaExceededError");
     });
     expect(() =>
-      saveColumnPreferences("requirement", { v: COLUMN_PREFERENCES_VERSION, order: [], hidden: [] }),
+      saveColumnPreferences("spec", { v: COLUMN_PREFERENCES_VERSION, order: [], hidden: [] }),
     ).not.toThrow();
   });
 
@@ -293,14 +293,14 @@ describe("storage unavailable (NFR-71)", () => {
     vi.spyOn(window.localStorage, "removeItem").mockImplementation(() => {
       throw new Error("SecurityError");
     });
-    expect(() => clearColumnPreferences("requirement")).not.toThrow();
+    expect(() => clearColumnPreferences("spec")).not.toThrow();
   });
 
   it("the table still renders its config defaults when storage is dead", () => {
     vi.spyOn(window.localStorage, "getItem").mockImplementation(() => {
       throw new Error("SecurityError");
     });
-    const rendered = applyColumnPreferences(defaultTableFields(config()), loadColumnPreferences("requirement"), []);
+    const rendered = applyColumnPreferences(defaultTableFields(config()), loadColumnPreferences("spec"), []);
     expect(rendered.map((f) => f.name)).toEqual(["name", "status", "owner", "created_at"]);
   });
 });

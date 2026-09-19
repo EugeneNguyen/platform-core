@@ -1,5 +1,5 @@
 /**
- * ADR-0071 (COLPREF-1) — per-entity column visibility + ordering for
+ * (COLPREF-1) — per-entity column visibility + ordering for
  * `EntityTable`, persisted in `localStorage`.
  *
  * This module is the *pure* half of the feature: no React, no DOM beyond the
@@ -9,9 +9,9 @@
  *
  * **Keyed per entity, never shared.** The storage key is
  * `platform-core.column-prefs.<config.resource>` — `resource` is the snake_case
- * permission-code slug (`test_case`, `requirement`, ...), unique per entity,
+ * permission-code slug (`item`, `spec`,...), unique per entity,
  * so hiding a column on one entity's list can never affect another's
- * (NFR-71).
+ *.
  *
  * **Everything is defensive.** `localStorage` can throw outright (a private
  * window, blocked site data), can return `null`, and can return a value some
@@ -115,10 +115,10 @@ export function defaultTableFields(config: EntityConfig): FieldConfig[] {
 }
 
 /**
- * Fields the user may never hide (ADR-0071 Decision §5).
+ * Fields the user may never hide.
  *
  * Today this is exactly one rule: the `detailLinkField` of a config that has
- * a `detailPath` (ADR-0060 — `Project.name` is the only entity using it).
+ * a `detailPath`.
  * That cell is the only navigation into that entity's real detail workspace,
  * so hiding it strands the user on a list they can't click through.
  *
@@ -147,14 +147,14 @@ export interface ColumnPreferenceRow {
  * single source of truth for both the modal's rows and the table's rendered
  * columns, so the two can never disagree.
  *
- * Merge rules (ADR-0071 Decision §6):
+ * Merge rules:
  * - Fields named in `order` come first, in that order — but only if the
- *   schema still serves them. A stale name is dropped silently.
+ * schema still serves them. A stale name is dropped silently.
  * - Any schema field the stored `order` doesn't mention is appended after
- *   them, in config order. An entity that gains a column later therefore
- *   *shows* that column rather than silently swallowing it.
+ * them, in config order. An entity that gains a column later therefore
+ * *shows* that column rather than silently swallowing it.
  * - A field in `hidden` is hidden — unless it is locked, in which case the
- *   stale preference is overridden and it renders anyway.
+ * stale preference is overridden and it renders anyway.
  */
 export function toPreferenceRows(
   fields: FieldConfig[],
@@ -204,7 +204,7 @@ export function applyColumnPreferences(
 ): FieldConfig[] {
   const rows = toPreferenceRows(fields, preferences, locked);
   const visible = rows.filter((row) => row.visible).map((row) => row.field);
-  return visible.length > 0 ? visible : rows.map((row) => row.field);
+  return visible.length > 0 ? visible: rows.map((row) => row.field);
 }
 
 /** Serializes the modal's current rows back into the persisted shape. */
@@ -222,7 +222,7 @@ export function moveRow(
   index: number,
   direction: "up" | "down",
 ): ColumnPreferenceRow[] {
-  const target = direction === "up" ? index - 1 : index + 1;
+  const target = direction === "up" ? index - 1: index + 1;
   if (index < 0 || index >= rows.length || target < 0 || target >= rows.length) {
     return rows;
   }

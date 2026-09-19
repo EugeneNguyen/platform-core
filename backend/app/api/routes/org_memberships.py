@@ -1,7 +1,7 @@
-"""RBAC-2: invite/list/accept/suspend/reactivate/revoke org members.
+""": invite/list/accept/suspend/reactivate/revoke org members.
 
 Source: API Document §2 (`/orgs/{org_id}/members*`, `/invites/{token}/accept`
-contracts), ADR-0017 (invite & manage org members), Database Document §3.1
+contracts), (invite & manage org members), Database Document §3.1
 (`Invite` table spec).
 
 Route-by-route gate order (mirrors `agents.py`'s established pattern where
@@ -11,14 +11,14 @@ applicable — see that module's own docstring):
   `PATCH /orgs/{org_id}/members/{membership_id}`,
   `DELETE /orgs/{org_id}/members/{membership_id}`: (1) any-status
   `OrgMembership` existence check for the CALLER -> `404 not_found`
-  (NFR-1/NFR-19 boundary, `_org_membership_exists`, same shape as
+  (/ boundary, `_org_membership_exists`, same shape as
   `agents.py`'s helper of the same name — duplicated locally per this
   codebase's established per-module duplication convention, not imported);
   (2) `require_permission(...)` invoked directly, not as a route-level
   `Depends`, so the 404 above can never be preceded by a 403 (FastAPI
   resolves `Depends` before the route body runs); (3) business logic/422s.
-  `require_permission` itself now also enforces RBAC-2's suspended-member
-  gate (`app/core/rbac.py`, ADR-0017) — a `User` caller whose own
+  `require_permission` itself now also enforces suspended-member
+  gate — a `User` caller whose own
   `OrgMembership` in `org_id` is `suspended` (not `active`) gets
   `403 membership_inactive` here, before the `org_membership.*` check runs.
 
@@ -28,9 +28,9 @@ applicable — see that module's own docstring):
 - `POST /orgs/{org_id}/members/{membership_id}/accept`: authenticated,
   identity-gated (caller must be the `User` the membership targets), no
   `Permission` code — the invitee is acting on their own pending membership,
-  not exercising an org_admin privilege (ADR-0017).
+  not exercising an org_admin privilege.
 
-API-1/ADR-0022 adds the generic-CRUD factory's `GET /org-memberships` (list)
+API-1/ adds the generic-CRUD factory's `GET /org-memberships` (list)
 and `GET`/`PATCH`/`DELETE /org-memberships/{id}` at the bottom of this
 module — a distinct, additive path prefix from the bespoke
 `/orgs/{org_id}/members*` routes above (verified no collision before wiring,
@@ -85,21 +85,21 @@ from app.schemas.org_memberships import (
 
 router = APIRouter()
 
-# ADR-0017: 7 days from issuance.
+#: 7 days from issuance.
 _INVITE_EXPIRY_DAYS = 7
-# NFR-6: page size 25 default, offset pagination — same default the generic
+#: page size 25 default, offset pagination — same default the generic
 # CRUD factory's list routes use.
 #
-# DS-2/ADR-0041: this route previously had NO ceiling at all — `page_size`
+# /: this route previously had NO ceiling at all — `page_size`
 # went straight into `.limit()` unclamped, so `?page_size=100000` was an
 # unbounded escape hatch. It now clamps through `crud_factory.clamp_pagination`
 # with a plain literal `100` ceiling at the call site (see `list_members`),
 # matching what `crud_factory.py`/`releases.py` enforce. Discovered while
-# implementing DS-2 — ADR-0041's own Decision text assumed this module already
+# implementing — own Decision text assumed this module already
 # hardcoded a 25 ceiling to bump; it didn't.
 _DEFAULT_PAGE_SIZE = 25
 
-# ADR-0017 Decision: the only legal transition through the PATCH route.
+# Decision: the only legal transition through the PATCH route.
 _PATCH_LEGAL_STATUSES = frozenset({OrgMembershipStatus.active, OrgMembershipStatus.suspended})
 
 
@@ -123,7 +123,7 @@ def _error(
 def _is_legal_patch_transition(current: OrgMembershipStatus, requested: OrgMembershipStatus) -> bool:
     """Whether `PATCH /orgs/{org_id}/members/{membership_id} {status: requested}` is legal.
 
-    ADR-0017 Decision: the only legal transition is `active <-> suspended`.
+     Decision: the only legal transition is `active <-> suspended`.
     `invited -> active` is reachable only through the two accept routes,
     never this one; nothing ever moves a membership backward into `invited`.
     Pure function, no DB access — unit-tested directly
@@ -135,7 +135,7 @@ def _is_legal_patch_transition(current: OrgMembershipStatus, requested: OrgMembe
 def _is_revocable(status: OrgMembershipStatus) -> bool:
     """Whether `DELETE /orgs/{org_id}/members/{membership_id}` may act on `status`.
 
-    ADR-0017 Decision: scoped to `status = invited` only — revokes a
+     Decision: scoped to `status = invited` only — revokes a
     not-yet-accepted invite; `422` against an `active`/`suspended`
     membership (this route is not a general remove-member action).
     """
@@ -166,10 +166,10 @@ async def list_members(
     page: int = 1,
     page_size: int = _DEFAULT_PAGE_SIZE,
 ) -> MemberListResponse | JSONResponse:
-    """List an org's members (FR-RBAC-2), `org_membership.read`.
+    """List an org's members, `org_membership.read`.
 
     Same 404-vs-403 boundary as every other org-scoped route (module
-    docstring). Offset-paginated per NFR-6 — see
+    docstring). Offset-paginated — see
     `app.schemas.org_memberships.MemberListResponse`'s own docstring for why
     this envelope shape, not a bare array.
     """
@@ -178,7 +178,7 @@ async def list_members(
 
     await require_permission("org_membership.read")(request, actor)
 
-    # DS-2/ADR-0041: clamp to the shared convention — `page` floors at 1,
+    # /: clamp to the shared convention — `page` floors at 1,
     # `page_size` floors at 1 and ceilings at 100 (plain literal, no shared
     # constant, per the ADR). Previously unclamped entirely.
     page, page_size = clamp_pagination(page, page_size, 100)
@@ -219,24 +219,24 @@ async def invite_member(
     actor: User | AIAgent = Depends(get_current_actor),
     db: AsyncSession = Depends(get_db),
 ) -> InviteMemberResponse | JSONResponse:
-    """Invite a member by email (FR-RBAC-2), `org_membership.create`.
+    """Invite a member by email, `org_membership.create`.
 
-    Branches on whether `email` already resolves to a `User` (ADR-0017):
+    Branches on whether `email` already resolves to a `User`:
 
     - **Existing email, no membership in this org yet**: creates
       `OrgMembership(status=invited)` pointing at the existing `User`, no
-      `Invite` row, `invite_link: null` (TC-RBAC-024).
+      `Invite` row, `invite_link: null`.
     - **Existing email, already `invited` in this org**: resend — if a live
       `Invite` row exists (the original invite was via the new-email
       branch), replaces its `token_hash`/`expires_at` in place and returns a
-      fresh `invite_link` (TC-RBAC-026); otherwise (original was the
+      fresh `invite_link`; otherwise (original was the
       existing-user branch, no token involved) a no-op re-confirmation,
       `invite_link: null`.
     - **Existing email, already `active`/`suspended` in this org**: `409`
-      (TC-RBAC-025).
+      .
     - **New email**: creates `Actor`+`User` (no `AuthIdentity` yet) +
       `OrgMembership(status=invited)` + an `Invite` row, `invite_link`
-      non-null (TC-RBAC-004).
+      non-null.
 
     `User.password_hash` is NOT NULL (Database Document §3.4) — the
     new-email branch's freshly created `User` gets a random, never-revealed
@@ -244,7 +244,7 @@ async def invite_member(
     than a schema change. This is not a usable credential: `POST
     /auth/login` only ever resolves a `User` joined to a `provider=local`
     `AuthIdentity` row, which doesn't exist yet for this user — so "no
-    password until they accept" (ADR-0017) holds functionally even though
+    password until they accept" holds functionally even though
     the column itself is never NULL.
     """
     if not await _actor_membership_exists(db, org_id, actor):
@@ -274,7 +274,7 @@ async def invite_member(
             )
             if existing_invite is not None:
                 # Resend, new-email path: replace this row's token/expiry in
-                # place (ADR-0017) — TC-RBAC-026.
+                # place —.
                 raw_token = generate_invite_token()
                 existing_invite.token_hash = hash_invite_token(raw_token)
                 existing_invite.expires_at = datetime.now(UTC) + timedelta(days=_INVITE_EXPIRY_DAYS)
@@ -289,7 +289,7 @@ async def invite_member(
                 membership_id=existing_membership.id, status="invited", invite_link=None
             )
 
-        # "Existing email" branch (ADR-0017): user exists, no membership in
+        # "Existing email" branch: user exists, no membership in
         # this org yet.
         membership = OrgMembership(
             org_id=org_id, user_id=existing_user.actor_id, status=OrgMembershipStatus.invited
@@ -299,16 +299,16 @@ async def invite_member(
         await db.refresh(membership)
         return InviteMemberResponse(membership_id=membership.id, status="invited", invite_link=None)
 
-    # "New email" branch (ADR-0017): Actor+User (no AuthIdentity yet) +
+    # "New email" branch: Actor+User (no AuthIdentity yet) +
     # OrgMembership(invited) + Invite.
-    placeholder_secret = secrets.token_urlsafe(32)  # never revealed, see docstring
+    placeholder_secret = secrets.token_urlsafe(32) # never revealed, see docstring
     new_user = User(name=email, email=email, password_hash=hash_password(placeholder_secret))
     db.add(new_user)
-    await db.flush()  # populate new_user.actor_id (joined-table inheritance PK/FK)
+    await db.flush() # populate new_user.actor_id (joined-table inheritance PK/FK)
 
     membership = OrgMembership(org_id=org_id, user_id=new_user.actor_id, status=OrgMembershipStatus.invited)
     db.add(membership)
-    await db.flush()  # populate membership.id
+    await db.flush() # populate membership.id
 
     raw_token = generate_invite_token()
     now = datetime.now(UTC)
@@ -337,17 +337,17 @@ async def accept_invite_by_token(
     response: Response,
     db: AsyncSession = Depends(get_db),
 ) -> LoginResponse | JSONResponse:
-    """New-user accept path (FR-RBAC-2): public, no `Authorization` header.
+    """New-user accept path: public, no `Authorization` header.
 
     Looks up `Invite` by `token_hash`; missing or `expires_at` elapsed ->
     `404 invite_not_found` (does not distinguish "never existed" from
-    "expired" — no enumeration value in doing so; TC-RBAC-027/028). On
+    "expired" — no enumeration value in doing so; /028). On
     success: creates the pre-created `User`'s `AuthIdentity(provider=local)`
     (argon2 hash, same as signup/login), sets its real `password_hash`
     (overwriting the invite-time placeholder — see `invite_member`'s
     docstring), flips the linked `OrgMembership.status` to `active`, sets
     `joined_at`, deletes the `Invite` row, and issues tokens exactly like
-    `POST /auth/login`'s success path (TC-RBAC-005).
+    `POST /auth/login`'s success path.
     """
     token_hash = hash_invite_token(token)
     now = datetime.now(UTC)
@@ -408,13 +408,13 @@ async def accept_membership_self(
     actor: User | AIAgent = Depends(get_current_actor),
     db: AsyncSession = Depends(get_db),
 ) -> MemberSummary | JSONResponse:
-    """Existing-user accept path (FR-RBAC-2): authenticated, identity-gated.
+    """Existing-user accept path: authenticated, identity-gated.
 
     No `Permission` code — the caller must be the `User` the membership
     targets (`actor.actor_id == membership.user_id`); anything else is
     `403 actor_forbidden`, same shape as every other identity-mismatch
-    rejection in this codebase (TC-RBAC-030). Membership must be
-    `status = invited`, else `422` (TC-RBAC-029).
+    rejection in this codebase. Membership must be
+    `status = invited`, else `422`.
     """
     membership = await db.scalar(
         select(OrgMembership).where(OrgMembership.id == membership_id, OrgMembership.org_id == org_id)
@@ -453,9 +453,9 @@ async def patch_membership_status(
     actor: User | AIAgent = Depends(get_current_actor),
     db: AsyncSession = Depends(get_db),
 ) -> MemberSummary | JSONResponse:
-    """Suspend/reactivate a member (FR-RBAC-2), `org_membership.update`.
+    """Suspend/reactivate a member, `org_membership.update`.
 
-    The only legal transition is `active <-> suspended` (TC-RBAC-034) — see
+    The only legal transition is `active <-> suspended` — see
     `_is_legal_patch_transition`. Same 404-vs-403 boundary as every
     org-scoped route.
     """
@@ -497,11 +497,11 @@ async def revoke_pending_invite(
     actor: User | AIAgent = Depends(get_current_actor),
     db: AsyncSession = Depends(get_db),
 ) -> Response | JSONResponse:
-    """Revoke a pending invite (FR-RBAC-2), `org_membership.delete`.
+    """Revoke a pending invite, `org_membership.delete`.
 
     Scoped to `status = invited` only (`_is_revocable`) — `422` against an
-    `active`/`suspended` membership (TC-RBAC-033); deletes the membership
-    row and its `Invite` row, if any (TC-RBAC-032). Not a general
+    `active`/`suspended` membership; deletes the membership
+    row and its `Invite` row, if any. Not a general
     remove-member action.
     """
     if not await _actor_membership_exists(db, org_id, actor):
@@ -530,7 +530,7 @@ async def revoke_pending_invite(
     return Response(status_code=204)
 
 
-# --- API-1 generic-CRUD factory additions (ADR-0022) --------------------------------------------
+# --- API-1 generic-CRUD factory additions --------------------------------------------
 
 _ORG_MEMBERSHIP_CONFIG = CrudEntityConfig(
     model=OrgMembership,
@@ -541,9 +541,9 @@ _ORG_MEMBERSHIP_CONFIG = CrudEntityConfig(
     scope_field="org_id",
     resolve_org_id=chain_resolver([]),
     methods=frozenset({"list", "get", "update", "delete"}),
-    # ADR-0053. Direct org scope (the route's own `:orgId`), so no
+    #. Direct org scope (the route's own `:orgId`), so no
     # scope-selector. `user_id` gets a label override but no `ref_entity`:
-    # `User` is excluded from this admin surface entirely (ADR-0025), so
+    # `User` is excluded from this admin surface entirely, so
     # there's nothing to autocomplete against — it stays a plain read-only
     # string, same as the hand-written config had it. `status` derives as
     # not-required because `create_schema` is `None` (no generic create —

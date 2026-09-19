@@ -1,10 +1,10 @@
 /**
- * `FilterModal` organism (ADR-0072 / FR-ADMIN-5) — the "Filter" dialog behind
+ * `FilterModal` organism — the "Filter" dialog behind
  * `EntityTable`'s own header button. Lets the user build one or more
  * exact-match conditions over the entity's filterable fields, all combined
  * with `AND`, and Apply them to the list query.
  *
- * `organisms/` tier per ADR-0043: it composes the `Modal` molecule, the
+ * `organisms/` tier per: it composes the `Modal` molecule, the
  * `FkAutocomplete`/`FkSelect` molecules and the `Button`/`Select`/`TextInput`
  * atoms — no new raw `.modal`/`.btn`/`.form-select` markup is hand-rolled here
  * (root `CLAUDE.md`'s mandatory reuse check; the `Modal` molecule already
@@ -29,11 +29,11 @@
  * **Typed value controls, matching `EntityForm`'s own branch.** A filter value
  * is submitted against a real typed column, so an `enum` gets a `<select>` of
  * its own served `values`, a `boolean` gets a true/false `<select>`, a `date`
- * gets `<input type="date">`, and an `fk` gets `field.select ? FkSelect :
+ * gets `<input type="date">`, and an `fk` gets `field.select ? FkSelect:
  * FkAutocomplete` — byte-for-byte the same pick `entity-form.tsx` makes for the
  * same field types, so a field is filtered through the same control it is
  * edited through. Everything else is a plain text input. This is what keeps the
- * backend's new per-column coercion (ADR-0072's 422-not-500 half) from being
+ * backend's new per-column coercion from being
  * the user's first line of defence against a typo.
  *
  * **Draft state.** Edits are local to the modal until "Apply" — Cancel and ESC
@@ -66,7 +66,7 @@ import { Modal } from "../../molecules/modal";
 
 export interface FilterModalProps {
   visible: boolean;
-  /** Entity label for the dialog title, e.g. "Requirements". */
+  /** Entity label for the dialog title, e.g. "Specs". */
   entityLabel?: string;
   config: EntityConfig;
   /** The filters currently applied to the list query. Re-read whenever the modal opens. */
@@ -147,7 +147,7 @@ export function FilterModal({ visible, entityLabel, config, filters, onClose, on
         // the same control it is edited through. Both molecules own their
         // label + `.mb-3` wrapper, hence the `flex-grow-1` wrapper rather than
         // an extra label of our own.
-        const FkControl = field.select ? FkSelect : FkAutocomplete;
+        const FkControl = field.select ? FkSelect: FkAutocomplete;
         return (
           <div className="flex-grow-1" data-testid={testId}>
             <FkControl
@@ -177,7 +177,7 @@ export function FilterModal({ visible, entityLabel, config, filters, onClose, on
   return (
     <Modal
       visible={visible}
-      title={<>Filter{entityLabel ? <span className="text-body-secondary"> — {entityLabel}</span> : null}</>}
+      title={<>Filter{entityLabel ? <span className="text-body-secondary"> — {entityLabel}</span>: null}</>}
       onClose={onClose}
     >
       <Modal.Body>
@@ -190,11 +190,11 @@ export function FilterModal({ visible, entityLabel, config, filters, onClose, on
           <p className="text-body-secondary mb-0" data-testid="filter-no-fields">
             No filterable fields are available for this entity.
           </p>
-        ) : draft.length === 0 ? (
+        ): draft.length === 0 ? (
           <p className="text-body-secondary mb-0" data-testid="filter-empty">
             No conditions yet — add one to narrow this list.
           </p>
-        ) : (
+        ): (
           <ul className="list-unstyled mb-0" data-testid="filter-condition-list">
             {draft.map((condition, index) => {
               const field = fields.find((candidate) => candidate.name === condition.field);
@@ -242,7 +242,7 @@ export function FilterModal({ visible, entityLabel, config, filters, onClose, on
             color="secondary"
             size="sm"
             disabled={!canAdd}
-            title={canAdd ? undefined : "Every filterable field is already used by a condition."}
+            title={canAdd ? undefined: "Every filterable field is already used by a condition."}
             onClick={() => setDraft((prev) => addCondition(fields, prev))}
             data-testid="filter-add-condition"
           >

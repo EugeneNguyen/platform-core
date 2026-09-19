@@ -12,7 +12,7 @@ from alembic import context
 from sqlalchemy.ext.asyncio import async_engine_from_config
 from sqlalchemy import pool
 
-import app.models  # noqa: F401 — populates Base.metadata as a side effect
+import app.models # noqa: F401 — populates Base.metadata as a side effect
 from app.core.config import settings
 from app.db.base import Base
 

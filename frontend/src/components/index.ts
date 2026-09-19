@@ -1,5 +1,5 @@
 /**
- * Single barrel for the whole atomic-design component system (ADR-0043:
+ * Single barrel for the whole atomic-design component system (:
  * atoms/molecules/organisms/templates). Every reusable component in
  * `components/` is re-exported from here — this is the only import line a
  * consumer outside `components/` should need:

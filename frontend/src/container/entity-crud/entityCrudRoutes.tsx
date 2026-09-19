@@ -1,9 +1,9 @@
 /**
- * ADR-0057 addendum: one call site per scope wires up the whole ADR-0025
+ * addendum: one call site per scope wires up the whole
  * generic admin CRUD surface (List/Add/Edit/Delete) instead of hand-writing
  * a `<Route>` element per screen per scope. `App.tsx` calls this once per
  * scope (`/orgs/:orgId/admin`, `/projects/:projectId/admin`) — 6 hand-written
- * `<Route>`s (3 screens x 2 scopes, since ADR-0073 added the detail view)
+ * `<Route>`s
  * collapse to 2 one-line calls.
  *
  * Returns a `<React.Fragment>` of `<Route>` elements, the officially
@@ -27,7 +27,7 @@ import EntityListPage from "./EntityListPage";
 
 /**
  * @param basePath e.g. `/orgs/:orgId/admin` or `/projects/:projectId/admin`
- *   — no trailing slash, no `:entity` suffix (added here).
+ * — no trailing slash, no `:entity` suffix (added here).
  */
 export function entityCrudRoutes(basePath: string) {
   return (
@@ -49,7 +49,7 @@ export function entityCrudRoutes(basePath: string) {
         }
       />
       {/*
-        ADR-0073: the read-only detail view. Declared after `:id/edit` purely
+        : the read-only detail view. Declared after `:id/edit` purely
         for readability — react-router v6 ranks by segment specificity, not
         declaration order, and `/:entity/:id` has one fewer segment than
         `/:entity/:id/edit` so the two can never be ambiguous.

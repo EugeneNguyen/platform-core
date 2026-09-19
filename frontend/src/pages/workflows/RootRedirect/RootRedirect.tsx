@@ -1,16 +1,16 @@
 /**
- * DASH-1 root guard (ADR-0035). `/` is not a screen — it's a pure
+ * root guard. `/` is not a screen — it's a pure
  * `accessToken`-gated redirect, evaluated in this order:
  *
  * 1. `isInitializing` (boot-time silent refresh still in flight) -> spinner.
- *    Checked first, unconditionally — an `accessToken` already present must
- *    not short-circuit this, since `AuthContext`'s boot effect can still be
- *    settling `isInitializing` even when a token is already in the store.
+ * Checked first, unconditionally — an `accessToken` already present must
+ * not short-circuit this, since `AuthContext`'s boot effect can still be
+ * settling `isInitializing` even when a token is already in the store.
  * 2. No `accessToken` -> `/login`.
  * 3. `accessToken` present -> `/dashboard`.
  *
  * **Deliberately never reads `orgContext`/`orgs`.** The superseded LANDING-1
- * version of this guard (ADR-0024) branched on `orgContext` to send an
+ * version of this guard branched on `orgContext` to send an
  * authenticated visitor to `/orgs/{id}` or `/orgs/pick` — but `orgContext`/
  * `orgs` are only ever populated by `login()`/`signup()`/`acceptInvite()`'s
  * own response bodies, never by the boot-time silent refresh (`POST
@@ -21,11 +21,11 @@
  * from being logged out. Routing to the empty `/dashboard` placeholder
  * instead needs no org resolution at all, which is what makes dropping the
  * `orgContext` dependency here a real fix rather than a workaround (see
- * ADR-0035's Context/Decision sections).
+ * Context/Decision sections).
  *
  * `Login.tsx`/`Signup.tsx`/`AcceptInvite.tsx`'s own separate post-auth
- * `orgContext` redirect (to `/dashboard`, unconditionally, as of DASH-3/
- * ADR-0063 — run immediately after an explicit login/signup/accept-invite)
+ * `orgContext` redirect (to `/dashboard`, unconditionally, as of /
+ * — run immediately after an explicit login/signup/accept-invite)
  * is untouched by this guard; this guard only governs a direct/reloaded hit
  * on `/`, which lands on the exact same `/dashboard` target either way.
  */

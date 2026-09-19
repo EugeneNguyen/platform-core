@@ -8,7 +8,7 @@ import { apiFetch } from "../../../lib/api/client";
 import { getEntity, listEntities } from "../../../lib/api/entityCrud";
 
 /**
- * ADR-0092 — a relationship tab's table gets the same sort/Filter/Columns
+ * — a relationship tab's table gets the same sort/Filter/Columns
  * capability a standalone `EntityListPage` has, not a stripped-down view.
  *
  * Same mocking shape as `EntityDetailPage.tabs.test.tsx`, with one relation
@@ -56,14 +56,14 @@ vi.mock("../../../pages/admin/useEntitySchema", () => {
       relations: [],
     },
   };
-  const resolveEntityKey = (key: string) => (key.endsWith("s") ? key : `${key}s`);
+  const resolveEntityKey = (key: string) => (key.endsWith("s") ? key: `${key}s`);
   return {
     resolveEntityKey,
     useEntitySchema: (key?: string) => {
-      const resolved = key ? resolveEntityKey(key) : undefined;
+      const resolved = key ? resolveEntityKey(key): undefined;
       return {
-        config: resolved ? configs[resolved] : undefined,
-        label: resolved ? "Sprockets" : undefined,
+        config: resolved ? configs[resolved]: undefined,
+        label: resolved ? "Sprockets": undefined,
         isLoading: false,
         isError: false,
       };
@@ -83,12 +83,12 @@ vi.mock("../../../pages/admin/useEntitySchema", () => {
 
 vi.mock("../../../lib/api/entityCrud", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../../lib/api/entityCrud")>();
-  return { ...actual, getEntity: vi.fn(), listEntities: vi.fn() };
+  return {...actual, getEntity: vi.fn(), listEntities: vi.fn() };
 });
 
 vi.mock("../../../lib/api/client", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../../lib/api/client")>();
-  return { ...actual, apiFetch: vi.fn() };
+  return {...actual, apiFetch: vi.fn() };
 });
 
 const mockGetEntity = vi.mocked(getEntity);
@@ -116,7 +116,7 @@ function primeMocks(items: Record<string, unknown>[] = []) {
   mockListEntities.mockResolvedValue({ items, total: items.length, page: 1, page_size: 25 });
 }
 
-describe("EntityRelationTab sort/filter/columns (ADR-0092)", () => {
+describe("EntityRelationTab sort/filter/columns ", () => {
   afterEach(() => {
     vi.clearAllMocks();
   });

@@ -1,20 +1,20 @@
-"""AUTH-4: AI-agent credential issuance/revocation routes (ADR-0015).
+""": AI-agent credential issuance/revocation routes.
 
 Source: API Document §2 (`POST /orgs/{org_id}/agents`,
-`POST /orgs/{org_id}/agents/{agent_id}/revoke` contracts), ADR-0015 (AI agent
-credential mechanics & minimal-RBAC-now decision), ADR-0007 (real
+`POST /orgs/{org_id}/agents/{agent_id}/revoke` contracts), (AI agent
+credential mechanics & minimal-RBAC-now decision), (real
 multi-tenancy — the 404-vs-403 boundary these routes establish as precedent).
 
 Both routes share the same gate order, deliberately checked in this
-sequence (not interchangeable — see ADR-0015 §"404-vs-403 boundary"):
+sequence:
 1. Human-only gate (hardcoded, independent of `RoleAssignment` contents —
    an `AIAgent` bearer credential can never issue/revoke agent credentials,
-   mirrors RBAC-5's Approval double-enforcement pattern). 403 `actor_forbidden`.
+   mirrors Approval double-enforcement pattern). 403 `actor_forbidden`.
 2. Any `OrgMembership` (any status) for the caller in the path's `org_id` —
    none (including a nonexistent `org_id`) -> 404 `not_found`. This is
    checked BEFORE the permission check so a non-member can never learn
    whether the permission they lack would otherwise have been granted
-   (NFR-1: cross-tenant existence is never confirmable). Deliberately does
+   . Deliberately does
    NOT use `require_permission` as a route-level `Depends(...)` parameter —
    FastAPI resolves `Depends` parameters before the route body runs, which
    would let a 403 fire ahead of this 404 check. Instead `require_permission`
@@ -27,7 +27,7 @@ sequence (not interchangeable — see ADR-0015 §"404-vs-403 boundary"):
 
 Never logs the raw API key: `generate_api_key`'s return value is only ever
 passed to `hash_api_key` (for persistence) and into the response body
-(shown once) — never printed/logged (same discipline as AUTH-1's plaintext
+(shown once) — never printed/logged (same discipline as plaintext
 password rule).
 """
 
@@ -56,8 +56,8 @@ from app.schemas.auth import MeOrgsResponse, OrgSummary
 
 router = APIRouter()
 
-# ADR-0063: same default/max as `role_assignments.py`'s own bespoke list
-# route (DS-2/ADR-0041) — a plain literal at the call site, no shared
+#: same default/max as `role_assignments.py`'s own bespoke list
+# route — a plain literal at the call site, no shared
 # constant, per that route's own precedent.
 _DEFAULT_PAGE_SIZE = 25
 
@@ -79,13 +79,13 @@ def _error(status_code: int, code: str, message: str) -> JSONResponse:
 async def _org_membership_exists(db: AsyncSession, org_id: UUID, user_id: UUID) -> bool:
     """Any-status `OrgMembership` existence check for the 404-vs-403 boundary.
 
-    Deliberately NOT filtered to `status == active` — ADR-0015 is explicit
+    Deliberately NOT filtered to `status == active` — is explicit
     that *any* membership (invited/active/suspended) counts for the
     existence check ("the requester has *any* `OrgMembership` in the path's
     `org_id`"). This is a different, narrower question than "is this
     membership functionally usable" (which login's active-only org
     resolution answers) — here it only decides whether the org boundary
-    itself is confirmable to this caller at all (NFR-1).
+    itself is confirmable to this caller at all.
     """
     result = await db.scalar(
         select(OrgMembership.id).where(OrgMembership.org_id == org_id, OrgMembership.user_id == user_id).limit(1)
@@ -101,7 +101,7 @@ async def create_agent(
     actor: User | AIAgent = Depends(get_current_actor),
     db: AsyncSession = Depends(get_db),
 ) -> CreateAgentResponse | JSONResponse:
-    """Issue a new AIAgent bearer API key (ADR-0015).
+    """Issue a new AIAgent bearer API key.
 
     Order of operations (see module docstring for why this exact order):
     1. Human-only gate.
@@ -182,7 +182,7 @@ async def revoke_agent(
     actor: User | AIAgent = Depends(get_current_actor),
     db: AsyncSession = Depends(get_db),
 ) -> RevokeAgentResponse | JSONResponse:
-    """Revoke an AIAgent's bearer API key (ADR-0015).
+    """Revoke an AIAgent's bearer API key.
 
     Idempotent: revoking an already-revoked agent returns 200 with the
     existing `revoked_at`, not an error — mirrors `RefreshToken`'s
@@ -252,19 +252,19 @@ async def list_agents(
     page: int = 1,
     page_size: int = _DEFAULT_PAGE_SIZE,
 ) -> ListAgentsResponse | JSONResponse:
-    """List every `AIAgent` credential issued "on behalf of" a member of `org_id` (ADR-0063).
+    """List every `AIAgent` credential issued "on behalf of" a member of `org_id`.
 
     Same gate order as `create_agent`/`revoke_agent` (human-only, then the
     404-vs-403 boundary, then a permission check) — an `AIAgent` caller can
     view other agents' credential metadata no more than it can mint or
     revoke one.
 
-    **Permission code reuse, not a new one**: ADR-0015 seeded only
+    **Permission code reuse, not a new one**: seeded only
     `ai_agent.create`/`ai_agent.update`, no `.read` code, and this route
     deliberately reuses `ai_agent.create` rather than adding a third
     permission code + its own RBAC seed-bundle migration (`backend/CLAUDE.md`
     "RBAC bundle extensions always need a new data migration") for a single
-    read route — the same minimal-RBAC-now posture ADR-0015 itself already
+    read route — the same minimal-RBAC-now posture itself already
     took. Revisit if a future story needs to grant list-only access without
     create rights.
 
@@ -277,7 +277,7 @@ async def list_agents(
     full history, not just currently-active keys.
 
     Ordered by `issued_at` ascending, then `agent_id` — same explicit,
-    stable-order requirement offset pagination always needs
+    stable-order spec offset pagination always needs
     (`role_assignments.py`'s own list route already established this).
     """
     # 1. Human-only gate.
@@ -327,10 +327,10 @@ async def agent_me_orgs(
     actor: User | AIAgent = Depends(get_current_actor),
     db: AsyncSession = Depends(get_db),
 ) -> MeOrgsResponse | JSONResponse:
-    """The calling AIAgent's own **active**-membership Organizations (ADR-0090).
+    """The calling AIAgent's own **active**-membership Organizations.
 
-    The AIAgent-only mirror of `GET /auth/me/orgs` (`auth.py`, SHELL-6/
-    ADR-0036) — that route explicitly 403s any `AIAgent` caller, since
+    The AIAgent-only mirror of `GET /auth/me/orgs` (`auth.py`, /
+    ) — that route explicitly 403s any `AIAgent` caller, since
     `OrgMembership.user_id` FKs `user.actor_id` and an `AIAgent` has no row
     there at all to resolve. This route answers the same question for the
     actor type that route structurally cannot: an `AIAgent`'s own orgs are
@@ -340,12 +340,12 @@ async def agent_me_orgs(
     definition of the caller's orgs" reasoning that function's own docstring
     already gives for `login()`/`refresh()`/`me_orgs()`.
 
-    Exists because the MCP surface (ADR-0033/ADR-0065/ADR-0068) gives an
+    Exists because the MCP surface gives an
     `AIAgent` no way to discover which org(s) it may act within before
     calling any org-scoped list route (`GET /projects?org_id=...` and
     friends all require `org_id` up front, and nothing on this server lists
     orgs without one) — `/auth/*` is otherwise deliberately excluded from
-    the MCP-reachable surface (ADR-0065 Decision §2, "human-identity/token
+    the MCP-reachable surface ( Decision §2, "human-identity/token
     flows, not agent-actionable data"), so this is a new, narrow route
     outside that prefix rather than a widening of it.
 

@@ -8,7 +8,7 @@ import { apiFetch } from "../../../lib/api/client";
 import { getEntity, listEntities } from "../../../lib/api/entityCrud";
 
 /**
- * ADR-0074 — relationship tabs on the generic detail page.
+ * — relationship tabs on the generic detail page.
  *
  * Same mocking shape as `EntityDetailPage.test.tsx` (config via
  * `useEntitySchema`, permissions via `apiFetch`, the record via `getEntity`),
@@ -19,8 +19,8 @@ import { getEntity, listEntities } from "../../../lib/api/entityCrud";
  * under test is that the component is driven by `config.relations` alone:
  *
  * - `widgets` — one one-to-many relation (`sprockets`, a plain child) and one
- *   many-to-many relation (`widget-gizmo-links`, a link table whose far side
- *   is `gizmos`). This is the `Requirement`/`TestCase` shape.
+ * many-to-many relation (`widget-gizmo-links`, a link table whose far side
+ * is `gizmos`). This is the `Spec`/`Item` shape.
  * - `gadgets` — no relations at all, so no tab strip should render.
  *
  * `widgets` also has an `owner_id` fk pointing at a *parent* — a many-to-one —
@@ -116,14 +116,14 @@ vi.mock("../../../pages/admin/useEntitySchema", () => {
     },
   };
   const labels: Record<string, string> = { widgets: "Widgets", gadgets: "Gadgets" };
-  const resolveEntityKey = (key: string) => (key.endsWith("s") ? key : `${key}s`);
+  const resolveEntityKey = (key: string) => (key.endsWith("s") ? key: `${key}s`);
   return {
     resolveEntityKey,
     useEntitySchema: (key?: string) => {
-      const resolved = key ? resolveEntityKey(key) : undefined;
+      const resolved = key ? resolveEntityKey(key): undefined;
       return {
-        config: schemaState.isLoading || !resolved ? undefined : configs[resolved],
-        label: resolved ? labels[resolved] : undefined,
+        config: schemaState.isLoading || !resolved ? undefined: configs[resolved],
+        label: resolved ? labels[resolved]: undefined,
         isLoading: Boolean(resolved) && schemaState.isLoading,
         isError: false,
       };
@@ -143,12 +143,12 @@ vi.mock("../../../pages/admin/useEntitySchema", () => {
 
 vi.mock("../../../lib/api/entityCrud", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../../lib/api/entityCrud")>();
-  return { ...actual, getEntity: vi.fn(), listEntities: vi.fn() };
+  return {...actual, getEntity: vi.fn(), listEntities: vi.fn() };
 });
 
 vi.mock("../../../lib/api/client", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../../lib/api/client")>();
-  return { ...actual, apiFetch: vi.fn() };
+  return {...actual, apiFetch: vi.fn() };
 });
 
 const mockGetEntity = vi.mocked(getEntity);
@@ -184,12 +184,12 @@ function renderPage(entity: "widgets" | "gadgets" = "widgets", search = "") {
 function primeMocks(items: Record<string, unknown>[] = []) {
   mockApiFetch.mockResolvedValue({ codes: [] });
   mockGetEntity.mockImplementation(async (config: { path: string }, id: string) =>
-    config.path === "/widget-owners" ? { id, name: "Ada Owner" } : WIDGET_ROW,
+    config.path === "/widget-owners" ? { id, name: "Ada Owner" }: WIDGET_ROW,
   );
   mockListEntities.mockResolvedValue({ items, total: items.length, page: 1, page_size: 25 });
 }
 
-describe("EntityDetailPage relationship tabs (ADR-0074)", () => {
+describe("EntityDetailPage relationship tabs ", () => {
   afterEach(() => {
     vi.clearAllMocks();
     schemaState.isLoading = false;
@@ -197,10 +197,10 @@ describe("EntityDetailPage relationship tabs (ADR-0074)", () => {
   });
 
   /**
-   * TC-ADMIN-065: Info is the first tab and is the one shown on arrival, with
-   * the all-fields view ADR-0073 shipped still rendered underneath it.
+   *: Info is the first tab and is the one shown on arrival, with
+   * the all-fields view shipped still rendered underneath it.
    */
-  it("TC-ADMIN-065: opens on an Info tab that is first in the strip and renders the all-fields view", async () => {
+  it(": opens on an Info tab that is first in the strip and renders the all-fields view", async () => {
     primeMocks();
 
     renderPage();
@@ -210,18 +210,18 @@ describe("EntityDetailPage relationship tabs (ADR-0074)", () => {
     const tabs = screen.getAllByRole("tab");
     expect(tabs[0]).toHaveTextContent("Info");
     expect(tabs[0]).toHaveAttribute("aria-selected", "true");
-    // The Info panel is ADR-0073's field list, unchanged.
+    // The Info panel is field list, unchanged.
     expect(screen.getByTestId("entity-detail-fields")).toBeInTheDocument();
     // No relationship list request fires until a relationship tab is opened.
     expect(mockListEntities).not.toHaveBeenCalled();
   });
 
   /**
-   * TC-ADMIN-065 (negative half): an entity the backend reports no
+   * (negative half): an entity the backend reports no
    * relationships for renders no tab strip at all — the page is byte-for-byte
-   * the pre-ADR-0074 one.
+   * the pre- one.
    */
-  it("TC-ADMIN-065: renders no tab strip for an entity with no relationships", async () => {
+  it(": renders no tab strip for an entity with no relationships", async () => {
     primeMocks();
 
     renderPage("gadgets");
@@ -232,12 +232,12 @@ describe("EntityDetailPage relationship tabs (ADR-0074)", () => {
   });
 
   /**
-   * TC-ADMIN-066: exactly one tab per served relationship, in the order
+   *: exactly one tab per served relationship, in the order
    * served, labelled by the relation's own label — and *no* tab for the
    * entity's own many-to-one fk (`owner_id` -> `widget-owners`), which is the
    * exclusion the design rests on.
    */
-  it("TC-ADMIN-066: renders one tab per 1-n and n-n relation and none for a many-to-one fk", async () => {
+  it(": renders one tab per 1-n and n-n relation and none for a many-to-one fk", async () => {
     primeMocks();
 
     renderPage();
@@ -251,17 +251,17 @@ describe("EntityDetailPage relationship tabs (ADR-0074)", () => {
 
     // `widgets` declares an `owner_id` fk pointing at its parent...
     expect(screen.getByTestId("entity-detail-field-owner_id")).toBeInTheDocument();
-    // ...which must not have become a tab.
+    //...which must not have become a tab.
     expect(screen.queryByTestId("entity-detail-tab-widget-owners")).not.toBeInTheDocument();
   });
 
   /**
-   * TC-ADMIN-067: opening a relationship tab lists the related entity's rows
+   *: opening a relationship tab lists the related entity's rows
    * scoped to this record — the request carries `?{scopeField}={parentId}` —
    * and the scoping column is suppressed because it holds the same value on
    * every row.
    */
-  it("TC-ADMIN-067: lists the related rows scoped by the parent id and hides the scoping column", async () => {
+  it(": lists the related rows scoped by the parent id and hides the scoping column", async () => {
     const user = userEvent.setup();
     primeMocks([{ id: "s-1", name: "First sprocket", widget_id: "w-1" }]);
 
@@ -278,7 +278,7 @@ describe("EntityDetailPage relationship tabs (ADR-0074)", () => {
 
     // The related row renders...
     expect(await screen.findByText("First sprocket")).toBeInTheDocument();
-    // ...with a "Name" column but no "Widget" column: `widget_id` is the
+    //...with a "Name" column but no "Widget" column: `widget_id` is the
     // scoping field, identical on every row in this tab.
     const headers = screen.getAllByRole("columnheader").map((h) => h.textContent);
     expect(headers).toContain("Name");
@@ -286,10 +286,10 @@ describe("EntityDetailPage relationship tabs (ADR-0074)", () => {
   });
 
   /**
-   * TC-ADMIN-068 (one-to-many half): the listed row *is* the record, so a row
+   * (one-to-many half): the listed row *is* the record, so a row
    * click opens that row's own detail page under the current admin scope.
    */
-  it("TC-ADMIN-068: a one-to-many row click opens the listed row's own detail page", async () => {
+  it(": a one-to-many row click opens the listed row's own detail page", async () => {
     const user = userEvent.setup();
     primeMocks([{ id: "s-1", name: "First sprocket", widget_id: "w-1" }]);
 
@@ -302,11 +302,11 @@ describe("EntityDetailPage relationship tabs (ADR-0074)", () => {
   });
 
   /**
-   * TC-ADMIN-068 (many-to-many half): the listed row is an ADR-0005 link row,
+   * (many-to-many half): the listed row is an link row,
    * which is bookkeeping — the click follows `targetField` to the *far*
    * record's id and opens that entity's detail page instead of the link's.
    */
-  it("TC-ADMIN-068: a many-to-many row click follows targetField to the far entity's detail page", async () => {
+  it(": a many-to-many row click follows targetField to the far entity's detail page", async () => {
     const user = userEvent.setup();
     primeMocks([{ id: "link-1", widget_id: "w-1", gizmo_id: "g-9" }]);
 
@@ -320,11 +320,11 @@ describe("EntityDetailPage relationship tabs (ADR-0074)", () => {
   });
 
   /**
-   * TC-ADMIN-069: the active tab is in the URL, so a relationship tab is
+   *: the active tab is in the URL, so a relationship tab is
    * shareable and survives a reload — arriving with `?tab=` opens it directly,
    * without an Info-tab render first.
    */
-  it("TC-ADMIN-069: opens the tab named by ?tab= on arrival", async () => {
+  it(": opens the tab named by ?tab= on arrival", async () => {
     primeMocks([{ id: "s-1", name: "First sprocket", widget_id: "w-1" }]);
 
     renderPage("widgets", "?tab=sprockets");
@@ -337,11 +337,11 @@ describe("EntityDetailPage relationship tabs (ADR-0074)", () => {
   });
 
   /**
-   * TC-ADMIN-069 (fallback half): a stale bookmark naming a relationship this
+   * (fallback half): a stale bookmark naming a relationship this
    * entity does not serve falls back to Info rather than rendering an empty
    * panel or erroring.
    */
-  it("TC-ADMIN-069: falls back to Info for a ?tab= this entity does not serve", async () => {
+  it(": falls back to Info for a ?tab= this entity does not serve", async () => {
     primeMocks();
 
     renderPage("widgets", "?tab=not-a-relation");
@@ -352,10 +352,10 @@ describe("EntityDetailPage relationship tabs (ADR-0074)", () => {
   });
 
   /**
-   * TC-ADMIN-069 (write half): selecting a tab puts it in the URL, and
+   * (write half): selecting a tab puts it in the URL, and
    * returning to Info removes the param rather than leaving `?tab=info`.
    */
-  it("TC-ADMIN-069: writes the selected tab to ?tab= and clears it on returning to Info", async () => {
+  it(": writes the selected tab to ?tab= and clears it on returning to Info", async () => {
     const user = userEvent.setup();
     primeMocks();
 
@@ -370,13 +370,13 @@ describe("EntityDetailPage relationship tabs (ADR-0074)", () => {
   });
 
   /**
-   * ADR-0074's Amendment — Tabler's documented "tabs in the card header"
+   * Amendment — Tabler's documented "tabs in the card header"
    * markup, asserted structurally rather than by eye, because every class here
-   * is load-bearing: `.tab-content > .tab-pane` is `display:none` in both
+   * is load-bearing: `.tab-content >.tab-pane` is `display:none` in both
    * design systems' shipped CSS, so a pane that loses `active` renders an
    * invisible (but present, and therefore still query-able) panel.
    */
-  it("mounts the tab strip as the card header and each panel as a .tab-pane in the card body", async () => {
+  it("mounts the tab strip as the card header and each panel as a.tab-pane in the card body", async () => {
     primeMocks();
 
     const { container } = renderPage();
@@ -402,7 +402,7 @@ describe("EntityDetailPage relationship tabs (ADR-0074)", () => {
   });
 
   /**
-   * The a11y pair ADR-0074's Amendment completes: the active tab points at the
+   * The a11y pair Amendment completes: the active tab points at the
    * panel with `aria-controls`, and the panel points back with
    * `aria-labelledby`. Both ends move together when a tab is switched.
    */
@@ -435,7 +435,7 @@ describe("EntityDetailPage relationship tabs (ADR-0074)", () => {
   /**
    * The relationship pane renders `EntityTable` in `bare` mode, so the page's
    * one card isn't given a second card inside its own body — the visible
-   * defect (a bordered, shadowed box around the table, titled with the tab's
+   * issue (a bordered, shadowed box around the table, titled with the tab's
    * own label) that moving the strip into the header would otherwise create.
    */
   it("renders a relationship tab's table inside the page's own card, not a nested one", async () => {
@@ -448,7 +448,7 @@ describe("EntityDetailPage relationship tabs (ADR-0074)", () => {
     expect(await screen.findByText("First sprocket")).toBeInTheDocument();
 
     expect(container.querySelectorAll(".card")).toHaveLength(1);
-    // ...and exactly one card header: the tab strip's.
+    //...and exactly one card header: the tab strip's.
     expect(container.querySelectorAll(".card-header")).toHaveLength(1);
     expect(screen.getByRole("tabpanel")).toContainElement(screen.getByRole("table"));
   });
@@ -500,7 +500,7 @@ describe("EntityDetailPage relationship tabs (ADR-0074)", () => {
    * A relationship tab is read-only, matching the page it sits on: no Edit, no
    * Delete, no New. Every related record is fully editable on its own screen.
    */
-  it("TC-ADMIN-067: renders relationship rows read-only, with no row actions", async () => {
+  it(": renders relationship rows read-only, with no row actions", async () => {
     const user = userEvent.setup();
     primeMocks([{ id: "s-1", name: "First sprocket", widget_id: "w-1" }]);
 

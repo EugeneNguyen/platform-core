@@ -48,7 +48,7 @@ describe("Modal", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it("lets the caller supply its own .modal-body + .modal-footer inside one <form>", () => {
+  it("lets the caller supply its own.modal-body +.modal-footer inside one <form>", () => {
     render(
       <Modal visible title="New thing" onClose={vi.fn()}>
         <form>

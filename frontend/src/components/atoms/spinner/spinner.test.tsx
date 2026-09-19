@@ -18,8 +18,8 @@ describe("Spinner", () => {
   });
 
   it("supports a custom label", () => {
-    render(<Spinner label="Fetching defects..." />);
+    render(<Spinner label="Fetching issues..." />);
 
-    expect(screen.getByRole("status")).toHaveTextContent("Fetching defects...");
+    expect(screen.getByRole("status")).toHaveTextContent("Fetching issues...");
   });
 });

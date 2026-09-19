@@ -1,11 +1,11 @@
 /**
- * SHELL-9 (ADR-0050): resolve the current screen's owning `org_id`, whether
+ *: resolve the current screen's owning `org_id`, whether
  * the route carries it directly or only names a Project.
  *
  * `AppSidebar`/`AppBreadcrumb` derived all org-scoped nav content from a raw
  * `useParams<{orgId}>()` read. Every route under `/orgs/:orgId/...` has that
  * param; every route under `/projects/:projectId/...` (`ProjectDetail`,
- * `TestPlanDetail`, `TestCycleDetail`, and the 20 project-scoped generic-admin
+ * `BatchDetail`, `RoundDetail`, and the 20 project-scoped generic-admin
  * pages) does not — so on every project-scoped screen both components computed
  * an empty nav and a bare, unlinked "Project" crumb, leaving no click-path back
  * to the org's Projects list. This hook closes that gap for both consumers at
@@ -20,14 +20,14 @@
  * hook consumed by two `components/organisms/*` siblings with no admin/auth
  * affinity has no such home, so it gets its own top-level one: the same "a new
  * top-level thing earns a home once a second sibling needs it" precedent
- * `container/` set for DS-2's shared `Table` (ADR-0041).
+ * `container/` set for shared `Table`.
  *
  * ## Why not reuse `useAdminRouteContext`
  *
  * That hook already solves this exact sub-problem — but only for itself, and
  * only typed/scoped around the admin registry (`EntityConfig`, `getEntity`), a
  * dependency `AppSidebar`/`AppBreadcrumb` have no other reason to take on.
- * ADR-0050 deliberately generalizes the *idea* (route param, else fetch the
+ * deliberately generalizes the *idea* (route param, else fetch the
  * Project and read its `org_id`) into this small registry-free hook rather than
  * refactoring the already-shipped admin resolver — smallest blast radius.
  *
@@ -37,7 +37,7 @@
  * The plain entity key is what a page fetching the same row for its own
  * purposes would naturally use, so sidebar + breadcrumb + page collapse to a
  * single `GET /projects/{id}` per page load instead of one per consumer
- * (NFR-55, TC-SHELL-034). The consequence, named in ADR-0050's own Consequences
+ *. The consequence, named in own Consequences
  * rather than treated as an oversight: on the 20 project-scoped admin pages two
  * differently-keyed queries now fetch the identical row (this hook's key for the
  * shell chrome, the admin resolver's for the page itself). Unifying them is a
@@ -55,12 +55,12 @@ export interface ResolvedOrgContext {
    * branch), `"org"` otherwise (the route-param branch, including
    * `/dashboard` where the answer is legitimately `undefined`).
    *
-   * Added by SHELL-10 (ADR-0050), which renders a *different nav entirely* on
+   * Added, which renders a *different nav entirely* on
    * project-scoped routes and so needs to branch on the route's kind rather
    * than on "did `orgId` come back truthy." `AppSidebar` previously could not
-   * tell the two apart: SHELL-9 deliberately made project routes resolve the
+   * tell the two apart: deliberately made project routes resolve the
    * *same* `orgId` an org route would, which is exactly what made the org nav
-   * render there — correct for SHELL-9, but it left no signal to branch on.
+   * render there — correct for, but it left no signal to branch on.
    *
    * Deriving this from `Boolean(projectId)` is sound because the two params are
    * mutually exclusive in `App.tsx`'s route table: every path is either
@@ -90,7 +90,7 @@ export interface ResolvedOrgContext {
    * or `/dashboard` where the answer is legitimately `undefined`); otherwise the
    * underlying query's own status. Callers use this to distinguish "still
    * loading" from "resolved to nothing" — both of which render the same
-   * degraded state today (ADR-0050 Decision §4), but only one of which is
+   * degraded state today, but only one of which is
    * permanent.
    */
   status: "pending" | "error" | "success";
@@ -103,7 +103,7 @@ export function useResolvedOrgId(): ResolvedOrgContext {
   // false` keeps this a no-op on every `/orgs/:orgId/...` screen — the hook
   // costs nothing there beyond the `useParams` read it replaced.
   const shouldFetch = Boolean(projectId) && !orgId;
-  const mode: "org" | "project" = projectId ? "project" : "org";
+  const mode: "org" | "project" = projectId ? "project": "org";
   const projectQuery = useQuery({
     queryKey: ["project", projectId],
     queryFn: () => getProject(projectId as string),

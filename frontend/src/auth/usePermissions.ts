@@ -1,12 +1,12 @@
 /**
- * ADR-0025 / FR-ADMIN-2 AC4: client-side permission signal, wrapping
+ * / AC4: client-side permission signal, wrapping
  * `GET /orgs/{org_id}/permissions/mine` (`backend/app/api/routes/rbac_routes.py`)
  * in a TanStack Query hook so action buttons can be hidden/disabled
  * *before* an attempt, not just react to a 403 after the fact (the
- * `OrgMembers.tsx` precedent ADR-0025 explicitly declines to repeat for
+ * `OrgMembers.tsx` precedent explicitly declines to repeat for
  * this surface).
  *
- * `has(code, projectId?)` semantics (UI Design Document §5 / ADR-0025's
+ * `has(code, projectId?)` semantics (UI Design Document §5 /
  * `MyPermissionCode` docstring): a row with `project_id: null` is an
  * org-wide grant and satisfies every project; a row with a non-null
  * `project_id` only satisfies that exact project. This mirrors

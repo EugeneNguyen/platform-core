@@ -1,23 +1,23 @@
 /**
- * SHELL-6 organization-switcher dropdown unit tests (ADR-0036, UI Design
+ * organization-switcher dropdown unit tests (, UI Design
  * Document §2-§4).
  *
- * Co-located with `AppHeader.tsx` (per [ADR-0049](docs/adr/0049-frontend-co-locate-unit-tests.md))
+ * Co-located with `AppHeader.tsx` ()
  * and named for its own story rather than folded into the existing
  * `app-header.test.tsx`, matching this repo's per-story test-file convention.
  *
  * Test-case coverage in this file:
- * - **TC-SHELL-016** — lazy-fetches, one call per open, no caching across opens.
- * - **TC-SHELL-017** — switching from a deeply nested route lands on the org ROOT.
- *   (Also covered end-to-end in a real browser by `e2e/tests/shell6-org-switcher.spec.ts`;
- *   this is the fast, deterministic half of that pair.)
- * - **TC-SHELL-018** (first clause only) — the org matching `:orgId` is marked
- *   current and is non-clickable. The clause about the *target* org's own
- *   permissions governing post-switch rendering is deliberately NOT claimed
- *   here — it needs a real backend with two real roles, so it lives in the
- *   e2e spec. Nothing in this file should be read as covering it.
- * - **TC-SHELL-019** — single-org account still renders the trigger.
- * - **TC-SHELL-020** — empty vs. failed-fetch states are distinct.
+ * - **** — lazy-fetches, one call per open, no caching across opens.
+ * - **** — switching from a deeply nested route lands on the org ROOT.
+ * (Also covered end-to-end in a real browser by `e2e/tests/shell6-org-switcher.spec.ts`;
+ * this is the fast, deterministic half of that pair.)
+ * - **** (first clause only) — the org matching `:orgId` is marked
+ * current and is non-clickable. The clause about the *target* org's own
+ * permissions governing post-switch rendering is deliberately NOT claimed
+ * here — it needs a real backend with two real roles, so it lives in the
+ * e2e spec. Nothing in this file should be read as covering it.
+ * - **** — single-org account still renders the trigger.
+ * - **** — empty vs. failed-fetch states are distinct.
  */
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useParams } from "react-router-dom";
@@ -29,15 +29,15 @@ import { getMyOrgs } from "../../../lib/api/auth";
 // Same partial-mock pattern the sibling `AppHeader.test.tsx` uses.
 vi.mock("../../../auth/AuthContext", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../../auth/AuthContext")>();
-  return { ...actual, useAuth: vi.fn() };
+  return {...actual, useAuth: vi.fn() };
 });
 
 // The API module is mocked (not `fetch`) so "how many calls to
-// GET /auth/me/orgs" — TC-SHELL-016's actual assertion — is countable
+// GET /auth/me/orgs" — actual assertion — is countable
 // directly, without asserting on URL strings.
 vi.mock("../../../lib/api/auth", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../../lib/api/auth")>();
-  return { ...actual, getMyOrgs: vi.fn() };
+  return {...actual, getMyOrgs: vi.fn() };
 });
 
 const mockUseAuth = vi.mocked(useAuth);
@@ -111,7 +111,7 @@ function closeSwitcher() {
   fireEvent.click(document.body);
 }
 
-describe("AppHeader org switcher (SHELL-6)", () => {
+describe("AppHeader org switcher ", () => {
   beforeEach(() => {
     mockGetMyOrgs.mockResolvedValue({ orgs: [ORG_A, ORG_B] });
   });
@@ -121,7 +121,7 @@ describe("AppHeader org switcher (SHELL-6)", () => {
   });
 
   it("renders the trigger but issues no request before the first open", () => {
-    // TC-SHELL-016, first clause: "Mount AppHeader, assert zero
+    //, first clause: "Mount AppHeader, assert zero
     // GET /auth/me/orgs calls".
     renderHeader(`/orgs/${ORG_A.id}`);
 
@@ -130,7 +130,7 @@ describe("AppHeader org switcher (SHELL-6)", () => {
   });
 
   it("fetches exactly once per open and re-fetches on a reopen, never reusing a cache", async () => {
-    // TC-SHELL-016, remaining clauses: "open dropdown once, assert exactly
+    //, remaining clauses: "open dropdown once, assert exactly
     // one call; close and reopen, assert a second independent call".
     renderHeader(`/orgs/${ORG_A.id}`);
 
@@ -153,7 +153,7 @@ describe("AppHeader org switcher (SHELL-6)", () => {
   });
 
   it("marks the current org active and renders it as non-clickable", async () => {
-    // TC-SHELL-018, first clause (current-org indication) + UI Design
+    //, first clause (current-org indication) + UI Design
     // Document §3's "not itself clickable".
     renderHeader(`/orgs/${ORG_A.id}`);
     openSwitcher();
@@ -168,7 +168,7 @@ describe("AppHeader org switcher (SHELL-6)", () => {
   });
 
   it("navigates to the target org's ROOT when switching from a deeply nested route", async () => {
-    // TC-SHELL-017 word-for-word: start on `/orgs/:orgId/admin/:entity`
+    // word-for-word: start on `/orgs/:orgId/admin/:entity`
     // (the TC's own `/orgs/:orgId/admin/roles` example), switch, and land on
     // `/orgs/{newOrgId}` — NOT `/orgs/{newOrgId}/admin/roles`.
     renderHeader(`/orgs/${ORG_A.id}/admin/roles`);
@@ -187,7 +187,7 @@ describe("AppHeader org switcher (SHELL-6)", () => {
   });
 
   it("still renders the trigger and one current, non-clickable row for a single-org account", async () => {
-    // TC-SHELL-019.
+    //.
     mockGetMyOrgs.mockResolvedValue({ orgs: [ORG_A] });
     renderHeader(`/orgs/${ORG_A.id}`);
 
@@ -202,7 +202,7 @@ describe("AppHeader org switcher (SHELL-6)", () => {
   });
 
   it("shows a distinct 'No organizations' row when the list is empty", async () => {
-    // TC-SHELL-020 case (a).
+    // case (a).
     mockGetMyOrgs.mockResolvedValue({ orgs: [] });
     renderHeader(`/orgs/${ORG_A.id}`);
     openSwitcher();
@@ -212,7 +212,7 @@ describe("AppHeader org switcher (SHELL-6)", () => {
   });
 
   it("shows a distinct \"Couldn't load organizations\" row when the fetch fails", async () => {
-    // TC-SHELL-020 case (b) — and specifically that a failure never renders
+    // case (b) — and specifically that a failure never renders
     // as the empty state, which would be a false "you have no orgs".
     mockGetMyOrgs.mockRejectedValue(new Error("network down"));
     renderHeader(`/orgs/${ORG_A.id}`);
@@ -224,7 +224,7 @@ describe("AppHeader org switcher (SHELL-6)", () => {
     expect(screen.queryByTestId("org-switcher-empty")).not.toBeInTheDocument();
   });
 
-  it("marks no org as current on a route that has no :orgId param", async () => {
+  it("marks no org as current on a route that has no:orgId param", async () => {
     // Test-design §31's current-org class, negative half: "on a route with
     // no `:orgId` (e.g. `/dashboard`), no org is marked current."
     renderHeader("/dashboard");

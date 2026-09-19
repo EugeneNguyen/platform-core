@@ -1,5 +1,5 @@
 /**
- * RBAC-2 org-membership API calls (ADR-0017): invite/list/suspend/reactivate/
+ * org-membership API calls: invite/list/suspend/reactivate/
  * revoke org members, plus the two accept-invite routes.
  *
  * Source: API Document §2 (`GET/POST/PATCH/DELETE /orgs/{org_id}/members*`,
@@ -19,7 +19,7 @@ export type MembershipStatus = "invited" | "active" | "suspended";
 /**
  * A single row from `GET /orgs/{org_id}/members`'s paginated `items` array
  * (API Document §2). `joined_at` is `null` for a still-`invited` membership —
- * the backend only sets it once the invite is accepted (ADR-0017).
+ * the backend only sets it once the invite is accepted.
  */
 export interface OrgMember {
   membership_id: string;
@@ -46,8 +46,8 @@ export interface ListMembersParams {
 }
 
 /**
- * `GET /orgs/{org_id}/members` (RBAC-2): `org_membership.read`. Same
- * 404-vs-403 boundary as every org-scoped route (NFR-19) — a caller with
+ * `GET /orgs/{org_id}/members`: `org_membership.read`. Same
+ * 404-vs-403 boundary as every org-scoped route — a caller with
  * zero `OrgMembership` in `org_id` gets `404`, one present but missing
  * `org_membership.read` gets `403 permission_denied`.
  */
@@ -59,7 +59,7 @@ export async function listMembers(
   if (params.page !== undefined) query.set("page", String(params.page));
   if (params.page_size !== undefined) query.set("page_size", String(params.page_size));
   const qs = query.toString();
-  return apiFetch<OrgMembersPage>(`/api/v1/orgs/${orgId}/members${qs ? `?${qs}` : ""}`);
+  return apiFetch<OrgMembersPage>(`/api/v1/orgs/${orgId}/members${qs ? `?${qs}`: ""}`);
 }
 
 export interface InviteMemberPayload {
@@ -67,7 +67,7 @@ export interface InviteMemberPayload {
 }
 
 /**
- * `POST /orgs/{org_id}/members/invite` (RBAC-2): `org_membership.create`.
+ * `POST /orgs/{org_id}/members/invite`: `org_membership.create`.
  * `invite_link` is populated (embeds the raw, one-time invite token, shown
  * exactly once) only for the new-email branch — an invite to an email that
  * already resolves to an existing `User` returns `invite_link: null` (that
@@ -95,7 +95,7 @@ export interface AcceptInvitePayload {
 }
 
 /**
- * `POST /invites/{token}/accept` (RBAC-2): public, no `Authorization`
+ * `POST /invites/{token}/accept`: public, no `Authorization`
  * header — same unauthenticated shape as `login()`/`signup()`
  * (`lib/api/auth.ts`). `credentials: "include"` is required for the same
  * reason those two need it: on success the backend sets the httpOnly
@@ -108,7 +108,7 @@ export interface AcceptInvitePayload {
  *
  * Rejects with an `ApiError` on failure: `404 invite_not_found` for a
  * missing or expired token (deliberately not distinguished, no enumeration
- * value in doing so — ADR-0017).
+ * value in doing so — ).
  */
 export async function acceptInvite(
   token: string,
@@ -123,7 +123,7 @@ export async function acceptInvite(
 }
 
 /**
- * `POST /orgs/{org_id}/members/{membership_id}/accept` (RBAC-2): the
+ * `POST /orgs/{org_id}/members/{membership_id}/accept`: the
  * existing-user accept path — authenticated, no `Permission` code, caller
  * must be the `User` the membership targets or `403 actor_forbidden`.
  * `422` if the membership isn't `status = invited`. No token/password
@@ -139,13 +139,13 @@ export async function acceptOwnMembership(orgId: string, membershipId: string): 
 
 /**
  * The only two legal values `PATCH /orgs/{org_id}/members/{membership_id}`
- * accepts (ADR-0017) — `invited -> active` is reachable only through the
+ * accepts — `invited -> active` is reachable only through the
  * two accept routes above, never through this one.
  */
 export type MembershipStatusTransition = "active" | "suspended";
 
 /**
- * `PATCH /orgs/{org_id}/members/{membership_id}` (RBAC-2): `org_membership.update`,
+ * `PATCH /orgs/{org_id}/members/{membership_id}`: `org_membership.update`,
  * suspend (`active -> suspended`) or reactivate (`suspended -> active`).
  * Any other requested transition (including `invited -> active`) is `422`.
  */
@@ -161,7 +161,7 @@ export async function updateMembershipStatus(
 }
 
 /**
- * `DELETE /orgs/{org_id}/members/{membership_id}` (RBAC-2): `org_membership.delete`,
+ * `DELETE /orgs/{org_id}/members/{membership_id}`: `org_membership.delete`,
  * revokes a not-yet-accepted invite. Scoped to `status = invited` only —
  * `422` against an `active`/`suspended` membership (this route is not a
  * general remove-member action). `204 No Content` on success, same as

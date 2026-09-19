@@ -1,10 +1,10 @@
 /**
- * RBAC-2 org member management screen (ADR-0017): list an org's members,
+ * org member management screen: list an org's members,
  * invite a new one by email, suspend/reactivate an active/suspended member,
  * revoke a still-pending invite.
  *
- * Originally built with CoreUI (ADR-0012) — CTable/CCard/CForm/CFormInput/
- * CButton/CAlert/CBadge only, no hand-rolled table/badge markup. **ADR-0042
+ * Originally built with CoreUI — CTable/CCard/CForm/CFormInput/
+ * CButton/CAlert/CBadge only, no hand-rolled table/badge markup. **
  * (2026-09-08)** replaces CoreUI with AdminLTE v4, so those components are
  * now raw Bootstrap 5 markup written out directly (`table.table` inside a
  * `div.table-responsive`, `div.card`, `input.form-control`, `button.btn`,
@@ -15,13 +15,13 @@
  *
  * Two deliberate markup details here, both load-bearing:
  * - the members `<table>` gets **no `table-hover`** — the CoreUI original
- *   passed `responsive` only, so only the `div.table-responsive` wrapper
- *   carries over;
+ * passed `responsive` only, so only the `div.table-responsive` wrapper
+ * carries over;
  * - the two invite-success `div.alert-success` blocks carry **no
- *   `role="alert"`**, matching the `CAlert`s they replace (which were
- *   written without one). Adding one would give this screen two
- *   alert-role nodes at once and turn a singular `getByRole("alert")` into
- *   a strict-mode multiple-match failure.
+ * `role="alert"`**, matching the `CAlert`s they replace (which were
+ * written without one). Adding one would give this screen two
+ * alert-role nodes at once and turn a singular `getByRole("alert")` into
+ * a strict-mode multiple-match failure.
  *
  * Permission gating: unlike `Login`/`Signup`/`Dashboard`, this repo has no
  * existing client-side signal of the current actor's *permissions* to reuse
@@ -29,11 +29,11 @@
  * field), and `GET /auth/me` deliberately ships identity-only, its "+
  * resolved permission codes" contract explicitly deferred (API Document §2)
  * until a story exists to resolve permission codes for the frontend at all.
- * RBAC-2 doesn't add that route. So this page can't pre-emptively hide
+ * doesn't add that route. So this page can't pre-emptively hide
  * itself for a non-`org_admin` the way a client-side role flag would allow;
  * instead it attempts `GET /orgs/{org_id}/members` (`org_membership.read`,
- * `org_admin`-only per RBAC-4's seeded bundles) and, on a `403
- * permission_denied` (or the `404` NFR-19 cross-tenant/no-membership case),
+ * `org_admin`-only seeded bundles) and, on a `403
+ * permission_denied`,
  * renders only that error and never mounts the invite form or per-row
  * action buttons — the backend's `require_permission` check is the actual
  * gate, this is just not rendering controls a `403` would immediately
@@ -77,7 +77,7 @@ function statusColor(status: OrgMember["status"]): "success" | "warning" | "seco
 function formatJoinedAt(joinedAt: string | null): string {
   if (!joinedAt) return "—";
   const date = new Date(joinedAt);
-  return Number.isNaN(date.getTime()) ? joinedAt : date.toLocaleDateString();
+  return Number.isNaN(date.getTime()) ? joinedAt: date.toLocaleDateString();
 }
 
 function OrgMembers() {
@@ -117,7 +117,7 @@ function OrgMembers() {
       setMembers(result.items);
       setLoadError(null);
     } catch (err) {
-      setLoadError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
+      setLoadError(err instanceof ApiError ? err.message: "Something went wrong. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -135,11 +135,11 @@ function OrgMembers() {
     setIsInviting(true);
     try {
       const result = await inviteMember(orgId, { email: values.email });
-      setInviteResult({ ...result, email: values.email });
+      setInviteResult({...result, email: values.email });
       reset();
       await fetchMembers();
     } catch (err) {
-      setInviteError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
+      setInviteError(err instanceof ApiError ? err.message: "Something went wrong. Please try again.");
     } finally {
       setIsInviting(false);
     }
@@ -153,7 +153,7 @@ function OrgMembers() {
       await updateMembershipStatus(orgId, member.membership_id, "suspended");
       await fetchMembers();
     } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
+      setActionError(err instanceof ApiError ? err.message: "Something went wrong. Please try again.");
     } finally {
       setPendingMembershipId(null);
     }
@@ -167,7 +167,7 @@ function OrgMembers() {
       await updateMembershipStatus(orgId, member.membership_id, "active");
       await fetchMembers();
     } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
+      setActionError(err instanceof ApiError ? err.message: "Something went wrong. Please try again.");
     } finally {
       setPendingMembershipId(null);
     }
@@ -181,7 +181,7 @@ function OrgMembers() {
       await revokeInvite(orgId, member.membership_id);
       await fetchMembers();
     } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
+      setActionError(err instanceof ApiError ? err.message: "Something went wrong. Please try again.");
     } finally {
       setPendingMembershipId(null);
     }
@@ -189,7 +189,7 @@ function OrgMembers() {
 
   // `navigator.clipboard` only exists in a secure context (HTTPS, or
   // `localhost`/`127.0.0.1`) — a plain-HTTP LAN-IP origin (this app's own
-  // documented "access via the host's LAN IP" mode, ADR-0010) never gets it,
+  // documented "access via the host's LAN IP" mode, ) never gets it,
   // so the fallback below is the *expected* path there, not just a rare
   // permission-denial edge case. Shared by both the just-created invite's
   // "Copy" button and each pending row's "Copy link" action.
@@ -239,26 +239,26 @@ function OrgMembers() {
     if (!orgId) return;
     setActionError(null);
     setPendingMembershipId(member.membership_id);
-    setRowCopyStatus((prev) => ({ ...prev, [member.membership_id]: undefined }));
+    setRowCopyStatus((prev) => ({...prev, [member.membership_id]: undefined }));
     try {
-      // RBAC-2 never re-exposes a previously-issued invite token (same
+      // never re-exposes a previously-issued invite token (same
       // one-time-secret pattern as an AIAgent API key) — the only way to get
       // a usable link for an already-pending invite is to resend it, which
-      // mints a fresh token and invalidates the old one (ADR-0017; the old
+      // mints a fresh token and invalidates the old one (; the old
       // link stops working the moment this succeeds).
       const result = await inviteMember(orgId, { email: member.email });
       if (result.invite_link) {
         const succeeded = await copyToClipboard(result.invite_link);
         setRowCopyStatus((prev) => ({
           ...prev,
-          [member.membership_id]: succeeded ? "copied" : "error",
+          [member.membership_id]: succeeded ? "copied": "error",
         }));
       } else {
         // Existing-user invite path — never had a token/link to begin with.
-        setRowCopyStatus((prev) => ({ ...prev, [member.membership_id]: "no-link" }));
+        setRowCopyStatus((prev) => ({...prev, [member.membership_id]: "no-link" }));
       }
     } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
+      setActionError(err instanceof ApiError ? err.message: "Something went wrong. Please try again.");
     } finally {
       setPendingMembershipId(null);
     }
@@ -273,7 +273,7 @@ function OrgMembers() {
 
             {isLoading && (
               <div className="d-flex align-items-center gap-2">
-                {/* `CSpinner` carried `role="status"` implicitly (ADR-0042 §4.5.5) — a raw div must say so. */}
+                {/* `CSpinner` carried `role="status"` implicitly — a raw div must say so. */}
                 <div className="spinner-border spinner-border-sm text-primary" role="status">
                   <span className="visually-hidden">Loading...</span>
                 </div>
@@ -302,7 +302,7 @@ function OrgMembers() {
                           <input
                             id="invite-email"
                             type="email"
-                            className={`form-control${errors.email ? " is-invalid" : ""}`}
+                            className={`form-control${errors.email ? " is-invalid": ""}`}
                             {...register("email")}
                           />
                           {errors.email && (
@@ -311,7 +311,7 @@ function OrgMembers() {
                         </div>
                         <div className="col-12 col-sm-4 d-flex align-items-end">
                           <Button type="submit" color="primary" className="w-100" disabled={isInviting}>
-                            {isInviting ? "Sending..." : "Send invite"}
+                            {isInviting ? "Sending...": "Send invite"}
                           </Button>
                         </div>
                       </div>
@@ -332,7 +332,7 @@ function OrgMembers() {
                             className="btn btn-outline-secondary"
                             onClick={() => void handleCopyLink(inviteResult.invite_link as string)}
                           >
-                            {copied ? "Copied!" : "Copy"}
+                            {copied ? "Copied!": "Copy"}
                           </button>
                         </div>
                         {copyError && (
@@ -357,7 +357,7 @@ function OrgMembers() {
 
                 <Card>
                   <Card.Body>
-                    {/* `responsive` only on the old CTable — no `table-hover` here (ADR-0042 §4.5.11). */}
+                    {/* `responsive` only on the old CTable — no `table-hover` here. */}
                     <div className="table-responsive">
                       <table className="table">
                         <thead>

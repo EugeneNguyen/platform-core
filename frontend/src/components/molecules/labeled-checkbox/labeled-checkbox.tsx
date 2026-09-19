@@ -15,7 +15,7 @@ export interface LabeledCheckboxProps
 }
 
 export const LabeledCheckbox = forwardRef<HTMLInputElement, LabeledCheckboxProps>(
-  function LabeledCheckbox({ id, label, className, ...rest }, ref) {
+  function LabeledCheckbox({ id, label, className,...rest }, ref) {
     const wrapperClassNames = ["form-check", className].filter(Boolean).join(" ");
 
     return (

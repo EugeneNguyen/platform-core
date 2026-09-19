@@ -1,5 +1,5 @@
 /**
- * `Alert` atom — Bootstrap 5 `.alert`/`.alert-*` feedback box (ADR-0042).
+ * `Alert` atom — Bootstrap 5 `.alert`/`.alert-*` feedback box.
  * `EntityListPage.tsx` alone hand-rolled `<div class="alert alert-*"
  * role="alert">` three times (danger x2, info x1); 12 other files across the
  * codebase do the same, so this atom is the reusable primitive going

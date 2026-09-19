@@ -1,26 +1,26 @@
 /**
- * DASH-3 dashboard org list + chooser (ADR-0063, UI Design Document,
- * supersedes DASH-1's empty placeholder, ADR-0035).
+ * dashboard org list + chooser (, UI Design Document,
+ * supersedes empty placeholder, ).
  *
  * Routed at `/dashboard`, global (no `:orgId` — no org is chosen yet at the
  * point a user reaches it) and `ProtectedRoute`-wrapped like every other
- * authenticated screen (unchanged from DASH-1). On mount, fetches the
+ * authenticated screen. On mount, fetches the
  * caller's active org memberships fresh via `GET /auth/me/orgs`
- * (`getMyOrgs`, unchanged since SHELL-6/ADR-0036) — deliberately never reads
+ * — deliberately never reads
  * `AuthContext.orgs`, which is populated only at login/signup/accept-invite
- * time and never refreshed afterward (the AUTH-2 gap NFR-35 already
+ * time and never refreshed afterward (the gap already
  * documents), so a reload landing here would otherwise see a stale/empty
  * list.
  *
  * Branches on the fetch result:
  * - 0 orgs: empty state + a "Create organization" CTA (reuses `POST /orgs`,
- *   the same call `OrgPicker.tsx` used to make — no new backend surface).
+ * the same call `OrgPicker.tsx` used to make — no new backend surface).
  * - exactly 1 org: no render at all — immediately `navigate()`s to
- *   `/orgs/{id}`, replacing history so the back button doesn't return here.
+ * `/orgs/{id}`, replacing history so the back button doesn't return here.
  * - 2+ orgs: a "Select an organization" card list; clicking a card
- *   navigates to `/orgs/{id}`. A "Create organization" affordance stays
- *   available here too (same posture `OrgPicker` already had — pick or
- *   create together).
+ * navigates to `/orgs/{id}`. A "Create organization" affordance stays
+ * available here too (same posture `OrgPicker` already had — pick or
+ * create together).
  *
  * `/orgs/pick`/`OrgPicker.tsx` are retired by this same story — this screen
  * now owns 100% of "list orgs, let the user pick or create one," reached
@@ -30,7 +30,7 @@
  *
  * Heading text is deliberately never the literal word "Dashboard" — this
  * incidentally softens (does not resolve) the separate `/dashboard`-vs-
- * `OrgHome` "Dashboard" naming overlap (ADR-0039/NFR-49), which stays an
+ * `OrgHome` "Dashboard" naming overlap, which stays an
  * open, accepted, unrelated issue.
  */
 import { FormEvent, useEffect, useState } from "react";
@@ -66,7 +66,7 @@ function Dashboard() {
           return;
         }
         setOrgs(response.orgs);
-        setState(response.orgs.length === 0 ? "empty" : "list");
+        setState(response.orgs.length === 0 ? "empty": "list");
       })
       .catch(() => {
         if (!cancelled) setState("error");
@@ -99,7 +99,7 @@ function Dashboard() {
       setShowModal(false);
       navigate(`/orgs/${org.id}`);
     } catch (err) {
-      setCreateError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
+      setCreateError(err instanceof ApiError ? err.message: "Something went wrong. Please try again.");
     } finally {
       setCreating(false);
     }
@@ -143,7 +143,7 @@ function Dashboard() {
             Cancel
           </Button>
           <Button type="submit" color="primary" disabled={creating}>
-            {creating ? "Creating..." : "Create"}
+            {creating ? "Creating...": "Create"}
           </Button>
         </Modal.Footer>
       </form>

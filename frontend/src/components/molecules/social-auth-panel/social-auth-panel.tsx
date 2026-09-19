@@ -19,7 +19,7 @@
  * children.
  *
  * Renders nothing for an empty `providers` array (added during the Wire-up
- * stage: platform-core's own `Login.tsx` has no OAuth providers to offer, ADR-0003
+ * stage: platform-core's own `Login.tsx` has no OAuth providers to offer,
  * is password-only — an "- OR -" divider with zero buttons below it would be
  * a dead affordance, not a faithful "no providers configured" state).
  */

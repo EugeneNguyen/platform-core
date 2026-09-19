@@ -9,16 +9,16 @@ import { apiFetch } from "../../../lib/api/client";
 import { createEntity, createViaCompoundRoute, getEntity, listEntities } from "../../../lib/api/entityCrud";
 
 /**
- * ADR-0079 — "New <child>" on a one-to-many tab whose child has **no generic
+ * — "New <child>" on a one-to-many tab whose child has **no generic
  * `create` at all**, closed via the same bespoke atomic-create route the
  * child's own real authoring path already uses.
  *
  * Harness mirrors `EntityDetailPage.compoundCreate.test.tsx`'s own shape
- * (same synthetic `widgets` parent, same mock structure) — the ADR-0078
+ * (same synthetic `widgets` parent, same mock structure) — the
  * sibling for the many-to-many case. The one new fixture here:
  * `sprockets-no-create`, a one-to-many child with `create` withdrawn and a
  * `childCompoundCreates` entry declared instead, matching this tab's own
- * `scopeField` exactly (the shape all three live ADR-0079 declarations have —
+ * `scopeField` exactly (the shape all three live declarations have —
  * no parent picker, ever, per `test_adr79_child_compound_create.py`'s own
  * `test_path_template_placeholder_equals_far_field`).
  */
@@ -69,7 +69,7 @@ vi.mock("../../../pages/admin/useEntitySchema", () => {
           pathTemplate: "/widgets/{widget_id}/sprockets",
           // Deliberately NOT `sprocket.create` -- proves the gate reads the
           // declared code, not a conventionally-derived one, the same
-          // discipline ADR-0078's own sibling test enforces.
+          // discipline own sibling test enforces.
           permission: "sprocket.author",
           linksAutomatically: true,
           parentEntity: null,
@@ -87,14 +87,14 @@ vi.mock("../../../pages/admin/useEntitySchema", () => {
       relations: [],
     },
   };
-  const resolveEntityKey = (key: string) => (key.endsWith("s") || key.includes("-") ? key : `${key}s`);
+  const resolveEntityKey = (key: string) => (key.endsWith("s") || key.includes("-") ? key: `${key}s`);
   return {
     resolveEntityKey,
     useEntitySchema: (key?: string) => {
-      const resolved = key ? resolveEntityKey(key) : undefined;
+      const resolved = key ? resolveEntityKey(key): undefined;
       return {
-        config: schemaState.isLoading || !resolved ? undefined : configs[resolved],
-        label: resolved ? "Widgets" : undefined,
+        config: schemaState.isLoading || !resolved ? undefined: configs[resolved],
+        label: resolved ? "Widgets": undefined,
         isLoading: Boolean(resolved) && schemaState.isLoading,
         isError: false,
       };
@@ -125,7 +125,7 @@ vi.mock("../../../lib/api/entityCrud", async (importOriginal) => {
 
 vi.mock("../../../lib/api/client", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../../lib/api/client")>();
-  return { ...actual, apiFetch: vi.fn() };
+  return {...actual, apiFetch: vi.fn() };
 });
 
 const mockGetEntity = vi.mocked(getEntity);
@@ -139,7 +139,7 @@ const WIDGET_ROW = { id: "w-1", title: "First widget" };
 function primeMocks(codes: string[]) {
   mockApiFetch.mockResolvedValue({ codes: codes.map((code) => ({ code, project_id: null })) });
   mockGetEntity.mockImplementation(async (config: EntityConfig, id: string) =>
-    config.path === "/projects" ? { id, org_id: "org-1", name: "Project one" } : WIDGET_ROW,
+    config.path === "/projects" ? { id, org_id: "org-1", name: "Project one" }: WIDGET_ROW,
   );
   mockListEntities.mockResolvedValue({ items: [], total: 0, page: 1, page_size: 25 });
   mockCreateViaCompoundRoute.mockResolvedValue({ id: "new-1" });
@@ -158,13 +158,13 @@ function renderPage() {
   );
 }
 
-describe("EntityRelationTab one-to-many compound create (ADR-0079)", () => {
+describe("EntityRelationTab one-to-many compound create ", () => {
   afterEach(() => {
     vi.clearAllMocks();
     schemaState.isLoading = false;
   });
 
-  it("TC-ADMIN-131: a one-to-many tab whose child has no generic create renders New via its declared compound route", async () => {
+  it(": a one-to-many tab whose child has no generic create renders New via its declared compound route", async () => {
     primeMocks(["sprocket.author"]);
 
     renderPage();
@@ -175,7 +175,7 @@ describe("EntityRelationTab one-to-many compound create (ADR-0079)", () => {
     expect(screen.queryByTestId("entity-relation-link")).not.toBeInTheDocument();
   });
 
-  it("TC-ADMIN-131: the New button is ABSENT without the declared permission code — not `sprocket.create`, which does not exist", async () => {
+  it(": the New button is ABSENT without the declared permission code — not `sprocket.create`, which does not exist", async () => {
     primeMocks(["sprocket.create"]);
 
     renderPage();
@@ -184,7 +184,7 @@ describe("EntityRelationTab one-to-many compound create (ADR-0079)", () => {
     expect(screen.queryByTestId("entity-relation-create")).not.toBeInTheDocument();
   });
 
-  it("TC-ADMIN-132: submitting the New form calls the bespoke compound route, not the generic create — with the tab's own scope filled from the URL, not the form", async () => {
+  it(": submitting the New form calls the bespoke compound route, not the generic create — with the tab's own scope filled from the URL, not the form", async () => {
     primeMocks(["sprocket.author"]);
     const user = userEvent.setup();
 

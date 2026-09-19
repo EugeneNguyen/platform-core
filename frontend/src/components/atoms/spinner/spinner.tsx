@@ -1,8 +1,8 @@
 /**
  * `Spinner` atom — Bootstrap 5 `.spinner-border` loading indicator
- * (ADR-0042), centered in a `d-flex justify-content-center` wrapper.
+ *, centered in a `d-flex justify-content-center` wrapper.
  * `EntityFormPage.tsx` alone hand-rolled this exact 5-line block three times
- * (schema load, item load, defects load — each with a different wrapper
+ * (schema load, item load, issues load — each with a different wrapper
  * `py-*` spacing); 7 other files across the codebase do the same. Per
  * `frontend/CLAUDE.md`'s component-reuse rule, this is the reusable
  * primitive going forward — not retrofitted into every existing call site

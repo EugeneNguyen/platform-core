@@ -15,8 +15,8 @@ export interface TextLinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
   centered?: boolean;
 }
 
-export function TextLink({ centered = false, className, children, ...rest }: TextLinkProps) {
-  const classNames = [centered ? "text-center" : "", className].filter(Boolean).join(" ");
+export function TextLink({ centered = false, className, children,...rest }: TextLinkProps) {
+  const classNames = [centered ? "text-center": "", className].filter(Boolean).join(" ");
 
   return (
     <a className={classNames || undefined} {...rest}>

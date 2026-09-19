@@ -2,14 +2,14 @@
  * Featured-card primitive: a card with a header line, a
  * title+body-text+CTA-button block, and a secondary footer line.
  *
- * Raw HTML/JSX against AdminLTE/Bootstrap's CSS classes (ADR-0042) — same
- * "hand-roll the markup, keep the CSS" pattern ADR-0037 established for
+ * Raw HTML/JSX against AdminLTE/Bootstrap's CSS classes — same
+ * "hand-roll the markup, keep the CSS" pattern established for
  * `AppSidebar`/`AppBreadcrumb`, now the universal rule repo-wide. Class
  * names below are exactly Bootstrap's documented card markup, not
  * reconstructed from any component library's rendered output.
  *
- * Location/reuse scope: `frontend/src/components/molecules/` (ADR-0043,
- * superseding ADR-0023's `components/shared/` location) — cross-screen UI
+ * Location/reuse scope: `frontend/src/components/molecules/` (,
+ * superseding `components/shared/` location) — cross-screen UI
  * building blocks with duplication evidence behind them, tiered here as a
  * molecule (a fixed composite of header/title/body/CTA/footer, no further
  * sub-composition of other custom components).
@@ -41,7 +41,7 @@ export function FeaturedCard({
   footerText,
   className,
 }: FeaturedCardProps) {
-  const cardClassName = className ? `card text-center ${className}` : "card text-center";
+  const cardClassName = className ? `card text-center ${className}`: "card text-center";
 
   return (
     <div className={cardClassName}>

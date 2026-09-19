@@ -8,7 +8,7 @@ import { forwardRef, InputHTMLAttributes } from "react";
 export type CheckboxProps = Omit<InputHTMLAttributes<HTMLInputElement>, "type" | "size">;
 
 export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(function Checkbox(
-  { className, ...rest },
+  { className,...rest },
   ref,
 ) {
   const classNames = ["form-check-input", className].filter(Boolean).join(" ");

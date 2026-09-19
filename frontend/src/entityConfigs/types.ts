@@ -1,5 +1,5 @@
 /**
- * ADR-0025 / FR-ADMIN-2: field-config schema for the generic admin CRUD
+ * /: field-config schema for the generic admin CRUD
  * surface. Source of truth: UI Design Document §3
  * (docs/ui-design/2026-09-05-generic-admin-crud-ui-design.md).
  *
@@ -10,27 +10,27 @@
  * it is unaffected, and none of §3's own fields were removed or renamed:
  *
  * 1. `FieldConfig.readOnly` — several `*Summary` schemas expose audit/
- *    system columns (`created_at`, `is_system_role`, `created_by_actor_id`,
- *    …) that their `Create*Request`/`Update*Request` siblings never accept.
- *    §3 has no "table-only, never in the form" flag; without one,
- *    `EntityForm` would try to submit a field the API rejects. `readOnly`
- *    fields render in `EntityTable` and as plain (disabled) display in
- *    `EntityForm`, never as part of the submitted payload.
+ * system columns (`created_at`, `is_system_role`, `created_by_actor_id`,
+ * …) that their `Create*Request`/`Update*Request` siblings never accept.
+ * §3 has no "table-only, never in the form" flag; without one,
+ * `EntityForm` would try to submit a field the API rejects. `readOnly`
+ * fields render in `EntityTable` and as plain (disabled) display in
+ * `EntityForm`, never as part of the submitted payload.
  * 2. `EntityConfig.scopeSelector` accepts an *array* of options, not just a
- *    single one — needed for `RiskItem`'s real shape (UI Design Document
- *    §4, screen shape C): "a toggle between 'by Requirement' / 'by
- *    TestPlan'". §3's own dataclass sketch only wrote the single-option
- *    shape; §4's prose already describes the toggle, so this is reconciling
- *    an internal inconsistency in the design doc, not inventing new scope.
- *    A single object (not wrapped in an array) still works for every other
- *    scope-selector entity (`Attachment`, and the several "plain" §4 shape-B
- *    entities whose *real* backend `scope_field` turned out not to be
- *    `project_id` — see each config file's own docstring for specifics).
+ * single one — needed for `RiskNote`'s real shape (UI Design Document
+ * §4, screen shape C): "a toggle between 'by Spec' / 'by
+ * Batch'". §3's own dataclass sketch only wrote the single-option
+ * shape; §4's prose already describes the toggle, so this is reconciling
+ * an internal inconsistency in the design doc, not inventing new scope.
+ * A single object (not wrapped in an array) still works for every other
+ * scope-selector entity (`Attachment`, and the several "plain" §4 shape-B
+ * entities whose *real* backend `scope_field` turned out not to be
+ * `project_id` — see each config file's own docstring for specifics).
  * 3. `EntityConfig.scopeResolution` and `listPath`/`createPath` — see their
- *    own doc comments below. Both exist to represent two backend routes
- *    that don't fit the generic `{path}`/`{path}?{scopeField}=` convention
- *    at all (`Project`, `Release`) — see `entityConfigs/project.ts` and
- *    `entityConfigs/release.ts`.
+ * own doc comments below. Both exist to represent two backend routes
+ * that don't fit the generic `{path}`/`{path}?{scopeField}=` convention
+ * at all (`Project`, `Release`) — see `entityConfigs/project.ts` and
+ * `entityConfigs/release.ts`.
  */
 
 /**
@@ -53,13 +53,13 @@ export interface FieldConfig {
    * the entity's own `Create*Request` schema. Fields only ever supplied via
    * `Update*Request` (already-partial by construction) are not marked
    * required even though they're often "logically" required (see e.g.
-   * `test-case.ts`'s own comment on `title`/`status`).
+   * `item.ts`'s own comment on `title`/`status`).
    */
   required?: boolean;
   /** enum only. */
   values?: string[];
   /**
-   * enum only (ADR-0053) — value -> Bootstrap theme-colour name, e.g.
+   * enum only — value -> Bootstrap theme-colour name, e.g.
    * `{"critical": "danger"}`. Served by `GET /entities/{resource}/schema`,
    * replacing `EntityTable`'s own module-level `ENUM_BADGE_COLORS` constant.
    * Already filtered backend-side to this field's own declared `values`, and
@@ -75,7 +75,7 @@ export interface FieldConfig {
   /** default true; e.g. hide a long text field from the table, still in the form. */
   showInTable?: boolean;
   /**
-   * default true (ADR-0053, sort) — whether clicking this column's header on
+   * default true — whether clicking this column's header on
    * `EntityTable` sorts the list by it. Served by `GET
    * /entities/{resource}/schema`; `false` for the 3 static `Release` fields
    * (`overrides.ts`), whose list route is 100% bespoke and doesn't support
@@ -83,13 +83,13 @@ export interface FieldConfig {
    */
   sortable?: boolean;
   /**
-   * default true (ADR-0072, filters) — whether this field may be used as an
+   * default true — whether this field may be used as an
    * exact-match `?<field>=<value>` condition in `EntityTable`'s Filter modal.
    * Served by `GET /entities/{resource}/schema`, derived from the entity's own
    * schema rather than a hand-kept per-entity tuple (the same posture
-   * `sortable` already takes, ADR-0053). `false` for `type: "text"` fields —
+   * `sortable` already takes, ). `false` for `type: "text"` fields —
    * exact equality against an unbounded free-text column answers no question
-   * a user has; `?q=` (ADR-0070) is what covers those.
+   * a user has; `?q=` is what covers those.
    *
    * `EntityConfig.filterFields` below carries the same information as a flat
    * list and is what `lib/entityFilters.ts` actually reads; this per-field
@@ -108,8 +108,8 @@ export interface FieldConfig {
    * native `<select>` (fetches the ref entity's full list once, no
    * debounced search) instead of `FkAutocomplete`'s type-to-search widget.
    * Server-derived from `crud_factory.FieldMeta.select`; only set `true` for
-   * a small, bounded catalog (`TestLevel`/`TestType`/per-project
-   * `TestCondition`) — leave unset/`false` for an unbounded ref entity.
+   * a small, bounded catalog (`Tier`/`Category`/per-project
+   * `Criterion`) — leave unset/`false` for an unbounded ref entity.
    */
   select?: boolean;
 }
@@ -120,27 +120,27 @@ export interface ScopeSelectorOption {
   refEntity: string;
   /** The scope query-param/body-field name this option resolves. */
   paramName: string;
-  /** Toggle-button label when this option is one of several (`RiskItem`). */
+  /** Toggle-button label when this option is one of several (`RiskNote`). */
   label?: string;
   /**
-   * ADR-0081: when set, `refEntity`'s own list route needs a SECOND scope
-   * param this page's own route params never supply (`TestCycle` needs
-   * `test_plan_id`, `TestExecution` needs `test_case_id`) — `ScopeSelector`
+   *: when set, `refEntity`'s own list route needs a SECOND scope
+   * param this page's own route params never supply (`Round` needs
+   * `batch_id`, `Run` needs `item_id`) — `ScopeSelector`
    * renders this as a preceding picker step and threads its resolved value
    * in as an extra search param on the OUTER option's own `FkAutocomplete`,
    * never reporting it to `onResolved` itself.
    */
   via?: ScopeSelectorOption;
   /**
-   * ADR-0087: render this option's picker as `FkSelect` (a plain `<select>`,
+   *: render this option's picker as `FkSelect` (a plain `<select>`,
    * `refEntity`'s full list fetched once) instead of `FkAutocomplete` —
    * only ever `true` for a `refEntity` the backend has vetted as a small,
-   * bounded catalog (`test-plan`, `test-suite`, `test-cycle`); everything
+   * bounded catalog (`batch`, `collection`, `round`); everything
    * else defaults `false`.
    */
   select?: boolean;
   /**
-   * ADR-0089: which field of `refEntity`'s own served rows the picker
+   *: which field of `refEntity`'s own served rows the picker
    * displays for each option — `ScopeSelector` never had an equivalent to
    * `FieldConfig.labelField`/`CompoundCreateAction.parentLabelField` until
    * now, so every scope-selector picker rendered the raw `id` instead.
@@ -170,7 +170,7 @@ export interface ScopeResolution {
 }
 
 /**
- * [ADR-0074](../../../docs/adr/0074-entity-detail-relationship-tabs.md): one
+ *: one
  * *inbound* relationship of an entity — some other entity pointing at it —
  * rendered as one tab on `EntityDetailPage`. Derived entirely on the backend
  * (`crud_factory.derive_entity_relations`) by walking every registered
@@ -182,7 +182,7 @@ export interface ScopeResolution {
 export interface EntityRelation {
   /**
    * `"one-to-many"` — `entity` is a child entity whose own rows carry
-   * `scopeField`. `"many-to-many"` — `entity` is one of ADR-0005's link
+   * `scopeField`. `"many-to-many"` — `entity` is one of link
    * tables; its rows are what's listed, but the tab is *about*
    * `targetEntity`, the far side.
    */
@@ -208,7 +208,7 @@ export interface EntityRelation {
 }
 
 /**
- * [ADR-0076](../../../docs/adr/0076-relationship-tab-write-actions.md): how to
+ *: how to
  * create **one row** of a junction/link entity, served on that entity's own
  * schema (`crud_factory.LinkCreateAction`). Present only for the six link
  * tables; `undefined` for every other entity.
@@ -221,9 +221,9 @@ export interface EntityRelation {
  * junction.
  *
  * `permission` is the exact code the bespoke route gates on, for
- * `usePermissions`. It is **not** always `<resource>.create`: REQ-4's and
- * PLAN-1's two junction routes predate ADR-0076 and gate on the parent's
- * `test_suite.update`/`test_plan.update`.
+ * `usePermissions`. It is **not** always `<resource>.create`: and
+ * two junction routes predate and gate on the parent's
+ * `collection.update`/`batch.update`.
  */
 export interface LinkCreateAction {
   pathTemplate: string;
@@ -231,7 +231,7 @@ export interface LinkCreateAction {
 }
 
 /**
- * [ADR-0077](../../../docs/adr/0077-relationship-tab-unlink-action.md):
+ *:
  * `LinkCreateAction`'s exact mirror — how to **remove one row** of a
  * junction/link entity, served on that entity's own schema
  * (`crud_factory.LinkDeleteAction`). Present only for the six link tables;
@@ -246,10 +246,10 @@ export interface LinkCreateAction {
  * lives elsewhere needs no client change.
  *
  * `permission` is the exact code the bespoke `DELETE` gates on, and is **not**
- * always `<resource>.delete`: REQ-4's and PLAN-1's junction routes predate this
- * ADR and gate both verbs on the parent's `test_suite.update`/
- * `test_plan.update`. It is also **not** necessarily the same code as
- * `linkCreate.permission` — for the four ADR-0005 traceability links the two
+ * always `<resource>.delete`: and junction routes predate this
+ * ADR and gate both verbs on the parent's `collection.update`/
+ * `batch.update`. It is also **not** necessarily the same code as
+ * `linkCreate.permission` — for the four traceability links the two
  * differ, which is the whole reason the actions are gated independently.
  */
 export interface LinkDeleteAction {
@@ -258,14 +258,14 @@ export interface LinkDeleteAction {
 }
 
 /**
- * [ADR-0078](../../../docs/adr/0078-compound-create-through-bespoke-routes.md):
+ *:
  * how a relationship tab creates the **far** entity of a junction when that
  * entity has no generic `create` route at all.
  *
- * ADR-0076 Amendment 1's "Create new <far entity>" is the far entity's generic
+ * Amendment 1's "Create new <far entity>" is the far entity's generic
  * `create` followed by this junction's `linkCreate`. Three of the twelve live
  * link directions point at an entity with no generic `create` —
- * `TestCondition` and `Defect`, both authored only through a bespoke atomic
+ * `Criterion` and `Issue`, both authored only through a bespoke atomic
  * route because their parent FK is `NOT NULL`. This declaration substitutes
  * that bespoke route for the first call; everything else about the action is
  * unchanged.
@@ -284,7 +284,7 @@ export interface CompoundCreateAction {
   /**
    * The bespoke route's URL with **exactly one** `{...}` placeholder, named
    * after the created entity's own parent FK column
-   * (`/requirements/{requirement_id}/test-conditions`). Filled by
+   * (`/specs/{spec_id}/criterions`). Filled by
    * `interpolateLinkPath`, the same substitution `linkCreate` uses.
    */
   pathTemplate: string;
@@ -295,7 +295,7 @@ export interface CompoundCreateAction {
    * own transaction. `true` — one request and the tab is done; calling
    * `linkCreate` afterwards would `409` on the pair it just wrote. `false` —
    * the route linked something else (or nothing), and the client must follow
-   * with `linkCreate`, exactly as ADR-0076 Amendment 1 does.
+   * with `linkCreate`, exactly as Amendment 1 does.
    *
    * Not inferable from anything else on the wire, which is why it is declared.
    */
@@ -313,11 +313,11 @@ export interface CompoundCreateAction {
   parentLabelField: string | null;
   /**
    * Extra fixed query params the picker must send for a business rule the
-   * route enforces and the picker cannot see (`{result: "fail"}` — a defect
+   * route enforces and the picker cannot see (`{result: "fail"}` — a issue
    * can only be raised against a failed execution). `{}` when there is none.
    */
   parentFilters: Record<string, string>;
-  /** ADR-0087: render the parent picker as `FkSelect` — same bounded-catalog caveat as `ScopeSelectorOption.select`. */
+  /**: render the parent picker as `FkSelect` — same bounded-catalog caveat as `ScopeSelectorOption.select`. */
   parentSelect?: boolean;
 }
 
@@ -337,7 +337,7 @@ export interface EntityConfig {
   /** Same override, for `create` (only `Release`). */
   createPath?: string;
   /**
-   * ADR-0060 extension: only `Project` uses this today.
+   * extension: only `Project` uses this today.
    * `EntityTable` has no built-in "click a row to navigate elsewhere"
    * concept — every entity's own detail view is its generic edit form.
    * `Project`'s pre-existing bespoke screen (`ProjectsPage`) linked each
@@ -347,13 +347,13 @@ export interface EntityConfig {
    * field's table cell becomes the link, e.g. `"name"`) together restore
    * that navigation generically, without inventing a per-entity special
    * case in `EntityTable` itself. Both are frontend-only route-wiring
-   * (ADR-0053's split), set via `entityConfigs/overrides.ts`.
+   *, set via `entityConfigs/overrides.ts`.
    */
   detailPath?: string;
   detailLinkField?: string;
-  /** Matches backend's scope_field shape (RiskItem's tuple case). */
+  /** Matches backend's scope_field shape (RiskNote's tuple case). */
   scopeField?: string | [string, string];
-  /** RiskItem/Attachment (per §4) plus the other scope-selector entities documented above. */
+  /** RiskNote/Attachment (per §4) plus the other scope-selector entities documented above. */
   scopeSelector?: ScopeSelectorOption | ScopeSelectorOption[];
   /** `Project` only — see `ScopeResolution`'s own doc comment. */
   scopeResolution?: ScopeResolution;
@@ -363,7 +363,7 @@ export interface EntityConfig {
   filterFields?: string[];
   searchFields?: string[];
   /**
-   * ADR-0074: backend-derived inbound relationships, one tab each on
+   *: backend-derived inbound relationships, one tab each on
    * `EntityDetailPage`.
    *
    * Optional for the same reason `filterFields`/`searchFields` are: a config
@@ -375,7 +375,7 @@ export interface EntityConfig {
    */
   relations?: EntityRelation[];
   /**
-   * ADR-0076: backend-declared handle on this entity's bespoke link-create
+   *: backend-declared handle on this entity's bespoke link-create
    * route. Optional for the same reason `relations` is — every hand-written
    * `EntityConfig` literal in the Vitest fixtures would otherwise become a
    * compile error for a key none of them care about. Absent for the 25
@@ -383,18 +383,18 @@ export interface EntityConfig {
    */
   linkCreate?: LinkCreateAction;
   /**
-   * ADR-0077: backend-declared handle on this entity's bespoke link-delete
+   *: backend-declared handle on this entity's bespoke link-delete
    * route. Optional for the same reason `linkCreate` is — every hand-written
    * `EntityConfig` literal in the Vitest fixtures would otherwise become a
    * compile error for a key none of them care about. Absent for the 25
    * non-link entities, and independently absent from `linkCreate`: a junction
    * that could be linked and not unlinked was the real, shipped state of four
-   * of the six between ADR-0076 and ADR-0077, so the two keys are deliberately
+   * of the six between and, so the two keys are deliberately
    * not modelled as one.
    */
   linkDelete?: LinkDeleteAction;
   /**
-   * ADR-0078: per-direction compound-create actions, for a junction direction
+   *: per-direction compound-create actions, for a junction direction
    * whose far entity has no generic `create`. Optional for the same
    * fixture-compatibility reason as the two keys above, but semantically a
    * *list searched by direction* rather than a presence flag — a consumer does
@@ -404,7 +404,7 @@ export interface EntityConfig {
    */
   compoundCreates?: CompoundCreateAction[];
   /**
-   * ADR-0079: `compoundCreates`' one-to-many sibling — declared on the CHILD
+   *: `compoundCreates`' one-to-many sibling — declared on the CHILD
    * entity's own config, never a link entity's, and matched by
    * `farField === relation.scopeField` (never `relation.targetField`, which
    * is `null` for every one-to-many tab). Same `CompoundCreateAction` shape;

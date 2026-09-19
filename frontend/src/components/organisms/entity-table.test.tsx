@@ -6,15 +6,15 @@ import { getEntity } from "../../lib/api/entityCrud";
 import type { EntityConfig } from "../../entityConfigs/types";
 
 /**
- * ADR-0025: `EntityTable` is a generic, config-driven component — these
+ *: `EntityTable` is a generic, config-driven component — these
  * tests exercise the shared rendering/permission logic once, not per
  * entity (per the ADR's own "test the shared logic once" scope note),
  * using a small fixture `EntityConfig` rather than a real one.
  *
- * **ADR-0053:** FK columns resolve their ref-entity configs via
+ * **:** FK columns resolve their ref-entity configs via
  * `useEntitySchemas([...])` (one batched fetch at the top of the component)
  * instead of the retired `entityConfigByKey` registry map. The hook is mocked
- * here — every test in this file, including the 9 that predate ADR-0053 and
+ * here — every test in this file, including the 9 that predate and
  * have no FK column at all, would otherwise need a `QueryClientProvider`,
  * since `useEntitySchemas` calls `useQueries` unconditionally.
  * `refSchemas` is the mock's own resolved-schema map; a key absent from it is
@@ -27,13 +27,13 @@ const { refSchemas } = vi.hoisted(() => ({
 vi.mock("../../pages/admin/useEntitySchema", () => ({
   // Same singular -> plural shape the real `resolveEntityKey` implements
   // ("widget-owner" -> "widget-owners"), minus its registry membership check.
-  resolveEntityKey: (key: string) => (key.endsWith("s") ? key : `${key}s`),
+  resolveEntityKey: (key: string) => (key.endsWith("s") ? key: `${key}s`),
   useEntitySchemas: () => refSchemas,
 }));
 
 vi.mock("../../lib/api/entityCrud", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../lib/api/entityCrud")>();
-  return { ...actual, getEntity: vi.fn() };
+  return {...actual, getEntity: vi.fn() };
 });
 
 const mockGetEntity = vi.mocked(getEntity);
@@ -60,7 +60,7 @@ const FULL_CRUD_CONFIG: EntityConfig = {
   methods: ["list", "get", "create", "update", "delete"],
 };
 
-/** ADR-0053: `badgeColors` is served per-field, already filtered to `values`. */
+/**: `badgeColors` is served per-field, already filtered to `values`. */
 const BADGE_COLOR_CONFIG: EntityConfig = {
   ...READ_ONLY_CONFIG,
   fields: [
@@ -162,9 +162,9 @@ describe("EntityTable", () => {
     expect(screen.queryByLabelText("Delete")).not.toBeInTheDocument();
   });
 
-  // --- ADR-0077: the per-row Remove (unlink) action -----------------------------------------
+  // ---: the per-row Remove (unlink) action -----------------------------------------
 
-  it("TC-ADMIN-108: renders a per-row Remove, and an Actions column, on a read-only config when onUnlink is given", () => {
+  it(": renders a per-row Remove, and an Actions column, on a read-only config when onUnlink is given", () => {
     /**
      * The claim that matters, and the whole reason `onUnlink` is a third prop
      * rather than a reuse of `onDelete`: a link entity's `methods` is
@@ -194,7 +194,7 @@ describe("EntityTable", () => {
     expect(screen.queryByLabelText("Edit")).not.toBeInTheDocument();
   });
 
-  it("TC-ADMIN-108: renders no Remove and no actions column when onUnlink is omitted", () => {
+  it(": renders no Remove and no actions column when onUnlink is omitted", () => {
     /**
      * Hide-don't-disable: `EntityRelationTab` passes `undefined` when the
      * junction declares no `linkDelete` or the actor lacks its permission, so
@@ -216,9 +216,9 @@ describe("EntityTable", () => {
     expect(screen.queryByRole("columnheader", { name: "Actions" })).not.toBeInTheDocument();
   });
 
-  it("TC-ADMIN-108: clicking Remove calls onUnlink with that row and does not fire onRowClick", () => {
+  it(": clicking Remove calls onUnlink with that row and does not fire onRowClick", () => {
     /**
-     * The second half is ADR-0073's actions-cell `stopPropagation` contract,
+     * The second half is actions-cell `stopPropagation` contract,
      * re-asserted for the new control: a relationship tab's row click
      * navigates to the far record, so a Remove that also navigated would
      * unmount the confirm modal the click is supposed to open.
@@ -261,7 +261,7 @@ describe("EntityTable", () => {
 
     rerender(
       <EntityTable
-        config={{ ...READ_ONLY_CONFIG, searchFields: ["title"] }}
+        config={{...READ_ONLY_CONFIG, searchFields: ["title"] }}
         rows={ROWS}
         total={2}
         page={1}
@@ -279,7 +279,7 @@ describe("EntityTable", () => {
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
   });
 
-  // TC-ADMIN-003 (superseded): pagination now renders even when everything
+  // (superseded): pagination now renders even when everything
   // fits on one page — Previous/Next are just disabled.
   it("renders a disabled pagination control when everything fits on one page", () => {
     render(<EntityTable config={READ_ONLY_CONFIG} rows={ROWS} total={2} page={1} pageSize={25} onPageChange={vi.fn()} />);
@@ -294,7 +294,7 @@ describe("EntityTable", () => {
       <EntityTable config={READ_ONLY_CONFIG} rows={ROWS} total={55} page={1} pageSize={25} onPageChange={onPageChange} />,
     );
 
-    // ceil(55 / 25) = 3 pages. ADR-0042: each page control is now a real
+    // ceil(55 / 25) = 3 pages.: each page control is now a real
     // `<button class="page-link">` inside its `<li class="page-item">` (CoreUI
     // rendered `<a>`, or `<span>` for the active one). The `page-item`/`active`
     // class contract the assertions below read is unchanged either way — it
@@ -321,11 +321,11 @@ describe("EntityTable", () => {
     expect(screen.getByText("Next").closest("li")).toHaveClass("disabled");
   });
 
-  // DS-2/ADR-0041, TC-DS-016: EntityTable's own pagination chrome now comes
+  // /,: EntityTable's own pagination chrome now comes
   // from `container/Table.tsx` — this is the one genuinely new piece of
   // behavior the migration adds (every assertion above this one is
-  // regression coverage, unmodified from before DS-2).
-  it("DS-2: renders a Rows-per-page selector (10/25/50/100) and forwards onPageSizeChange", () => {
+  // regression coverage, unmodified from before ).
+  it(": renders a Rows-per-page selector (10/25/50/100) and forwards onPageSizeChange", () => {
     const onPageSizeChange = vi.fn();
     render(
       <EntityTable
@@ -346,10 +346,10 @@ describe("EntityTable", () => {
     expect(onPageSizeChange).toHaveBeenCalledWith(100);
   });
 
-  // ADR-0053: the FK column's ref-entity config comes from the batched
+  //: the FK column's ref-entity config comes from the batched
   // `useEntitySchemas` lookup, keyed by the *resolved* (plural) entity key —
   // `refEntity` on the field is singular.
-  it("ADR-0053: resolves an fk cell's label via the batched ref-entity schema lookup", async () => {
+  it(": resolves an fk cell's label via the batched ref-entity schema lookup", async () => {
     refSchemas["widget-owners"] = OWNER_CONFIG;
     mockGetEntity.mockResolvedValue({ id: "owner-1", name: "Alice" });
 
@@ -371,7 +371,7 @@ describe("EntityTable", () => {
   // The schema now arrives asynchronously, where the registry lookup was
   // synchronous — until it lands there is nothing to call `getEntity` with, and
   // the raw id is what the cell shows (the same fallback a failed lookup uses).
-  it("ADR-0053: renders the raw fk id, and fires no request, while the ref-entity schema is unresolved", async () => {
+  it(": renders the raw fk id, and fires no request, while the ref-entity schema is unresolved", async () => {
     render(
       <EntityTable
         config={FK_CONFIG}
@@ -387,9 +387,9 @@ describe("EntityTable", () => {
     await waitFor(() => expect(mockGetEntity).not.toHaveBeenCalled());
   });
 
-  // ADR-0053: enum badge colours are served per-field by the backend, replacing
+  //: enum badge colours are served per-field by the backend, replacing
   // this component's old module-level `ENUM_BADGE_COLORS` constant.
-  it("ADR-0053: colours an enum badge from the field's backend-served badgeColors", () => {
+  it(": colours an enum badge from the field's backend-served badgeColors", () => {
     render(
       <EntityTable
         config={BADGE_COLOR_CONFIG}
@@ -408,7 +408,7 @@ describe("EntityTable", () => {
   // Two enums (`EntryExitCriteria.type`, `TestLog.event_type`) are served with
   // no `badgeColors` key at all, and a partially-coloured enum leaves its other
   // values uncoloured — both must keep rendering the plain grey badge.
-  it("ADR-0053: falls back to a plain grey badge for any enum value with no served colour", () => {
+  it(": falls back to a plain grey badge for any enum value with no served colour", () => {
     const { rerender } = render(
       <EntityTable config={READ_ONLY_CONFIG} rows={ROWS} total={2} page={1} pageSize={25} onPageChange={vi.fn()} />,
     );
@@ -437,10 +437,10 @@ describe("EntityTable", () => {
     expect(screen.getByText("done")).toHaveClass("badge", "bg-success");
   });
 
-  // ADR-0060: restores ProjectsPage's "click a row's name to open it"
+  //: restores ProjectsPage's "click a row's name to open it"
   // navigation, generically — only `Project` uses this today, but the
   // mechanism itself is config-driven, not hardcoded to that entity.
-  describe("detailPath/detailLinkField (ADR-0060)", () => {
+  describe("detailPath/detailLinkField ", () => {
     const DETAIL_LINK_CONFIG: EntityConfig = {
       ...READ_ONLY_CONFIG,
       detailPath: "/widgets/:id",
@@ -472,13 +472,13 @@ describe("EntityTable", () => {
   });
 
   /**
-   * ADR-0073: the row-click affordance half of the generic detail view.
+   *: the row-click affordance half of the generic detail view.
    * `EntityTable` owns the affordance (pointer cursor, keyboard reachability,
    * and the Actions cell's propagation stop); *where* the click goes is the
    * caller's — hence `onRowClick` receiving the row and nothing more.
    */
-  describe("onRowClick (ADR-0073)", () => {
-    it("TC-ADMIN-059: fires onRowClick with the clicked row's own object", () => {
+  describe("onRowClick ", () => {
+    it(": fires onRowClick with the clicked row's own object", () => {
       const onRowClick = vi.fn();
       render(
         <EntityTable
@@ -498,7 +498,7 @@ describe("EntityTable", () => {
       expect(onRowClick).toHaveBeenCalledWith(ROWS[1]);
     });
 
-    it("TC-ADMIN-062: fires onRowClick on Enter and on Space when a row has keyboard focus", () => {
+    it(": fires onRowClick on Enter and on Space when a row has keyboard focus", () => {
       const onRowClick = vi.fn();
       render(
         <EntityTable
@@ -529,7 +529,7 @@ describe("EntityTable", () => {
       expect(onRowClick).toHaveBeenNthCalledWith(2, ROWS[0]);
     });
 
-    it("TC-ADMIN-061: clicking Edit or Delete in a row fires only that action, never onRowClick", () => {
+    it(": clicking Edit or Delete in a row fires only that action, never onRowClick", () => {
       const onRowClick = vi.fn();
       const onEdit = vi.fn();
       const onDelete = vi.fn();
@@ -557,7 +557,7 @@ describe("EntityTable", () => {
       expect(onDelete).toHaveBeenCalledWith(ROWS[1]);
       expect(onRowClick).not.toHaveBeenCalled();
 
-      // ...while a click on the row itself still navigates, proving the
+      //...while a click on the row itself still navigates, proving the
       // suppression above is scoped to the actions cell and hasn't simply
       // disabled row clicks for this config.
       fireEvent.click(screen.getByTestId("entity-table-row-1"));
@@ -577,13 +577,13 @@ describe("EntityTable", () => {
   });
 
   /**
-   * ADR-0074 (Amendment): `bare` drops the `.card`/`.card-header` wrapper for a
+   * (Amendment): `bare` drops the `.card`/`.card-header` wrapper for a
    * caller that already owns a card — `EntityDetailPage`'s relationship tab
    * pane, whose card header is the tab strip itself. The table and its
    * `.card-body` sections are unchanged; only the wrapper goes.
    */
-  describe("bare (ADR-0074)", () => {
-    it("renders the same table with no .card/.card-header wrapper", () => {
+  describe("bare ", () => {
+    it("renders the same table with no.card/.card-header wrapper", () => {
       const { container } = render(
         <EntityTable
           bare

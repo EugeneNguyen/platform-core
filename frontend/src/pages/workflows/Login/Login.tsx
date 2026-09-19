@@ -1,12 +1,12 @@
 /**
- * AUTH-1 login screen: email+password form calling `useAuth().login`.
+ * login screen: email+password form calling `useAuth().login`.
  *
  * Markup layer migrated to the AdminLTE-sourced component set (TNX-0056,
  * Decomposition/Style-Translation/Scaffold stage comments) — `AuthBoxLayout`
  * template + `LoginPanel`/`LoginForm` organisms, replacing the previous
  * CoreUI (`CCard`/`CForm`/`CButton`) markup. Per the Decomposition stage's
  * open question 4 default, this is a markup-layer swap only: React Hook
- * Form + Zod (ADR-0009) still own form state/validation here, unchanged.
+ * Form + Zod still own form state/validation here, unchanged.
  * `LoginForm`/`LoginPanel` are presentational-only (no `useForm`/`useAuth`
  * inside them) — this page is the container that wires field bindings and
  * the submit/error handling into them, per TNX-0056's Wire-up stage brief.
@@ -15,7 +15,7 @@
  * so post-success navigation is driven by a `useEffect` watching
  * `orgContext` rather than a return value: once it resolves (either
  * `"auto"` or `"picker"`), navigation always targets `/dashboard`
- * (DASH-3/ADR-0063) — `Dashboard` itself owns the org-count branching
+ * — `Dashboard` itself owns the org-count branching
  * (auto-advance on exactly 1 org, a chooser on 2+, an empty state on 0),
  * so this screen no longer needs to know which case it is. On failure, the
  * thrown `ApiError`'s `message` (the backend's message, or a generic
@@ -24,7 +24,7 @@
  * per-field `IconInputGroup` messages). The submit button is disabled while
  * a request is in flight to avoid double-submit.
  *
- * `socialAuthProviders` is `[]` — platform-core has no OAuth login path (ADR-0003
+ * `socialAuthProviders` is `[]` — platform-core has no OAuth login path (
  * is password + refresh-token only), so the AdminLTE source's Facebook/
  * Google buttons aren't wired to anything real. `SocialAuthPanel` renders
  * nothing for an empty array (no dead affordance shown), see the Wire-up
@@ -75,7 +75,7 @@ function Login() {
     try {
       await login(values.email, values.password);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
+      setError(err instanceof ApiError ? err.message: "Something went wrong. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -99,7 +99,7 @@ function Login() {
             void handleSubmit(onSubmit)(event);
           },
           submitting,
-          errorSlot: error ? <Alert color="danger">{error}</Alert> : undefined,
+          errorSlot: error ? <Alert color="danger">{error}</Alert>: undefined,
         }}
         socialAuthProviders={[]}
         forgotPasswordHref="#"

@@ -3,13 +3,13 @@ import indexHtmlSource from "../index.html?raw";
 import packageJsonSource from "../package.json?raw";
 
 /**
- * TABLER-1 / DS-4 ([ADR-0053](../../docs/adr/0053-tabler-install-phase-1-cdn.md)),
- * Test Design §44's **asset-presence class**. Covers **TC-DS-032** only.
+ * TABLER-1 / (),
+ * Test Design §44's **asset-presence class**. Covers **** only.
  *
- * **One assertion updated for [ADR-0054](../../docs/adr/0054-tabler-shell-migration-phase-2.md)
+ * **One assertion updated for
  * (Phase 2, 2026-09-10):** the stylesheet's document position moved from
  * `<head>` to `<body>` (after the module script) — the deliberate cascade
- * flip ADR-0054 makes so Tabler wins conflicting selectors project-wide.
+ * flip makes so Tabler wins conflicting selectors project-wide.
  * Every other assertion in this file (tag count, pinned version, no npm
  * package) is unchanged — Phase 2 only reordered the existing tags, it
  * didn't add, remove, or re-source either one.
@@ -18,20 +18,20 @@ import packageJsonSource from "../package.json?raw";
  * and `frontend/package.json` literally *declare* — that exactly the two
  * documented CDN tags exist, both pinned to `1.5.1`, and that no
  * `@tabler/core` npm dependency was added. It says **nothing** about what the
- * browser then does with those tags. The cascade-order claim (ADR-0053's
+ * browser then does with those tags. The cascade-order claim (
  * actual risk: two Bootstrap-family stylesheets loaded together) is a real
  * computed-style question that jsdom cannot answer at all, and lives in
- * `e2e/tests/ds4-tabler-cdn-no-regression.spec.ts` (TC-DS-031) against a real
+ * `e2e/tests/ds4-tabler-cdn-no-regression.spec.ts` against a real
  * browser — per Test Design §44's own split, and root `CLAUDE.md`'s standing
  * note that CSS layout/cascade claims need a live instance, not a unit test.
  *
- * Test Design §44 is explicit that this class is NOT redundant with TC-DS-031:
+ * Test Design §44 is explicit that this class is NOT redundant with:
  * a silently bumped version, an accidentally duplicated tag, or a swap to the
- * npm package would all leave TC-DS-031 passing unchanged, because none of
+ * npm package would all leave passing unchanged, because none of
  * them changes AdminLTE's rendered output.
  *
  * Location: co-located beside its subject. `index.html` is the Vite entry that
- * pairs with `src/main.tsx` (the file whose own CSS imports ADR-0053's cascade
+ * pairs with `src/main.tsx` (the file whose own CSS imports cascade
  * decision is stated relative to), so this sits at `src/main.<Section>.test.ts`
  * per `frontend/CLAUDE.md`'s per-story multi-section naming convention.
  * Sources are pulled in with Vite's own `?raw` rather than `node:fs`, matching
@@ -39,7 +39,7 @@ import packageJsonSource from "../package.json?raw";
  * `@types/node`.
  */
 
-/** ADR-0053 Decision: the exact pinned version, CDN-hosted, jsDelivr. */
+/** Decision: the exact pinned version, CDN-hosted, jsDelivr. */
 const TABLER_VERSION = "1.5.1";
 const TABLER_CSS_HREF = `https://cdn.jsdelivr.net/npm/@tabler/core@${TABLER_VERSION}/dist/css/tabler.min.css`;
 const TABLER_JS_SRC = `https://cdn.jsdelivr.net/npm/@tabler/core@${TABLER_VERSION}/dist/js/tabler.min.js`;
@@ -51,7 +51,7 @@ function occurrences(haystack: string, needle: string): number {
   return haystack.split(needle).length - 1;
 }
 
-describe("TC-DS-032: index.html declares exactly the documented Tabler CDN tags", () => {
+describe(": index.html declares exactly the documented Tabler CDN tags", () => {
   it("has the Tabler stylesheet <link>, pinned to 1.5.1, exactly once", () => {
     expect(indexHtmlSource).toContain(TABLER_CSS_HREF);
     expect(occurrences(indexHtmlSource, TABLER_CSS_HREF)).toBe(1);
@@ -79,20 +79,20 @@ describe("TC-DS-032: index.html declares exactly the documented Tabler CDN tags"
   it("references @tabler/core exactly twice, and never at any other version", () => {
     // Catches both a silently duplicated tag and a partial version bump (one
     // tag moved to a new version while the other was left behind) — neither of
-    // which TC-DS-031 could ever see, since neither changes AdminLTE's output.
+    // which could ever see, since neither changes AdminLTE's output.
     const versions = [...indexHtmlSource.matchAll(TABLER_REF)].map((m) => m[1]);
     expect(versions).toHaveLength(2);
     expect(new Set(versions)).toEqual(new Set([TABLER_VERSION]));
   });
 
-  // ADR-0054 (Phase 2) moves the stylesheet from <head> to <body>, after the
-  // app's own module script — the exact move ADR-0053's own Alternatives
+  // (Phase 2) moves the stylesheet from <head> to <body>, after the
+  // app's own module script — the exact move own Alternatives
   // section named and deferred ("revisit this ordering choice deliberately
   // once the real migration begins moving screens onto Tabler markup"). Both
   // tags now sit in <body>, both after `/src/main.tsx` — that ordering is
   // what makes Tabler win the cascade project-wide (see `index.html`'s own
-  // updated comment and ADR-0054 Decision).
-  it("places both the stylesheet and the script in <body>, after the app's own module script (ADR-0054)", () => {
+  // updated comment and Decision).
+  it("places both the stylesheet and the script in <body>, after the app's own module script ", () => {
     const bodyStart = indexHtmlSource.indexOf("<body>");
     const bodyEnd = indexHtmlSource.indexOf("</body>");
     const appScriptAt = indexHtmlSource.indexOf("/src/main.tsx");
@@ -110,7 +110,7 @@ describe("TC-DS-032: index.html declares exactly the documented Tabler CDN tags"
   });
 });
 
-describe("TC-DS-032: package.json declares no Tabler npm package", () => {
+describe(": package.json declares no Tabler npm package", () => {
   const pkg = JSON.parse(packageJsonSource) as {
     dependencies?: Record<string, string>;
     devDependencies?: Record<string, string>;
@@ -121,7 +121,7 @@ describe("TC-DS-032: package.json declares no Tabler npm package", () => {
     expect(pkg.devDependencies ?? {}).not.toHaveProperty("@tabler/core");
   });
 
-  it("has no @tabler/* package at all (CDN-only, per ADR-0053)", () => {
+  it("has no @tabler/* package at all ", () => {
     const declared = [
       ...Object.keys(pkg.dependencies ?? {}),
       ...Object.keys(pkg.devDependencies ?? {}),
@@ -130,7 +130,7 @@ describe("TC-DS-032: package.json declares no Tabler npm package", () => {
   });
 
   it("still declares admin-lte and bootstrap — Phase 1 removes nothing", () => {
-    // ADR-0053 Consequences: AdminLTE (ADR-0042) remains the live design
+    // Consequences: AdminLTE remains the live design
     // system in full; this phase is install-only. A Tabler install that also
     // dropped either package would be a Phase 2 change smuggled in here.
     expect(pkg.dependencies ?? {}).toHaveProperty("admin-lte");

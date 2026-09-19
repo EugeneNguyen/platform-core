@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { entityCrudRoutes } from "./entityCrudRoutes";
 
 /**
- * ADR-0057 addendum: `entityCrudRoutes()` is a pure route-wiring helper, so
+ * addendum: `entityCrudRoutes()` is a pure route-wiring helper, so
  * this test only proves the wiring (path -> component, `ProtectedRoute`
  * applied) — not `EntityListPage`/`EntityFormPage`'s own behavior, which
  * their own test files already cover. Both are mocked to a stub `data-testid`
@@ -44,10 +44,10 @@ describe("entityCrudRoutes", () => {
   });
 
   it("wires both routes for a different scope's basePath (project-scoped)", async () => {
-    renderAt("/projects/proj-1/admin/test-cases", "/projects/:projectId/admin");
+    renderAt("/projects/proj-1/admin/items", "/projects/:projectId/admin");
     expect(await screen.findByTestId("entity-list-page-stub")).toBeInTheDocument();
 
-    renderAt("/projects/proj-1/admin/test-cases/tc-1/edit", "/projects/:projectId/admin");
+    renderAt("/projects/proj-1/admin/items/tc-1/edit", "/projects/:projectId/admin");
     expect(await screen.findByTestId("entity-form-page-stub")).toBeInTheDocument();
   });
 });

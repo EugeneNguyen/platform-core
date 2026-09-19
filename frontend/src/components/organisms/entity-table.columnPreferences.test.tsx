@@ -1,5 +1,5 @@
 /**
- * ADR-0071 (COLPREF-1) — the integration seam the two unit suites either side
+ * (COLPREF-1) — the integration seam the two unit suites either side
  * of it cannot prove on their own: that a preference chosen in
  * `ColumnPreferencesModal` actually changes the columns `EntityTable` paints,
  * reaches `localStorage`, and is still in force on a **fresh mount**.
@@ -12,7 +12,7 @@
  * the browser reload that `e2e/tests/colpref1-column-preferences.spec.ts`
  * exercises for real.
  *
- * Covers TC-ADMIN-047..052 at the component level.
+ * Covers..052 at the component level.
  */
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
@@ -22,7 +22,7 @@ import type { EntityConfig } from "../../entityConfigs/types";
 import { columnPreferencesKey } from "../../lib/columnPreferences";
 
 vi.mock("../../pages/admin/useEntitySchema", () => ({
-  resolveEntityKey: (key: string) => (key.endsWith("s") ? key : `${key}s`),
+  resolveEntityKey: (key: string) => (key.endsWith("s") ? key: `${key}s`),
   useEntitySchemas: () => ({}),
 }));
 
@@ -39,9 +39,9 @@ const WIDGET_CONFIG: EntityConfig = {
 };
 
 /** A different entity, to prove the storage key really is per-entity. */
-const GADGET_CONFIG: EntityConfig = { ...WIDGET_CONFIG, resource: "gadget", path: "/gadgets" };
+const GADGET_CONFIG: EntityConfig = {...WIDGET_CONFIG, resource: "gadget", path: "/gadgets" };
 
-/** ADR-0060 detail navigation — makes `title` a locked column. */
+/** detail navigation — makes `title` a locked column. */
 const LINKED_CONFIG: EntityConfig = {
   ...WIDGET_CONFIG,
   detailPath: "/widgets/:id",
@@ -101,7 +101,7 @@ describe("EntityTable — Columns header button", () => {
     expect(screen.queryByTestId("column-preferences-list")).toBeNull();
   });
 
-  it("opens a modal listing every table field of the served schema (TC-ADMIN-047)", () => {
+  it("opens a modal listing every table field of the served schema ", () => {
     renderTable();
     openColumnsModal();
     const list = screen.getByTestId("column-preferences-list");
@@ -121,7 +121,7 @@ describe("EntityTable — Columns header button", () => {
   });
 });
 
-describe("EntityTable — hiding a column (TC-ADMIN-048)", () => {
+describe("EntityTable — hiding a column ", () => {
   it("removes exactly that column's header and cells, leaving the others intact", () => {
     renderTable();
     openColumnsModal();
@@ -129,7 +129,7 @@ describe("EntityTable — hiding a column (TC-ADMIN-048)", () => {
     fireEvent.click(screen.getByTestId("column-preferences-apply"));
 
     expect(headerLabels()).toEqual(["Title", "Owner"]);
-    // Gone from *every* row, not just the first (TC-ADMIN-048's literal wording).
+    // Gone from *every* row, not just the first.
     expect(screen.queryByText("draft")).toBeNull();
     expect(screen.queryByText("done")).toBeNull();
     // Every surviving column's cells still render, in both rows, asserted by
@@ -158,7 +158,7 @@ describe("EntityTable — hiding a column (TC-ADMIN-048)", () => {
   });
 });
 
-describe("EntityTable — reordering columns (TC-ADMIN-049)", () => {
+describe("EntityTable — reordering columns ", () => {
   it("renders the columns in the chosen order", () => {
     renderTable();
     openColumnsModal();
@@ -182,7 +182,7 @@ describe("EntityTable — reordering columns (TC-ADMIN-049)", () => {
   });
 });
 
-describe("EntityTable — persistence (TC-ADMIN-050)", () => {
+describe("EntityTable — persistence ", () => {
   it("writes the preference to the per-entity localStorage key", () => {
     renderTable();
     openColumnsModal();
@@ -233,7 +233,7 @@ describe("EntityTable — persistence (TC-ADMIN-050)", () => {
   });
 });
 
-describe("EntityTable — per-entity isolation (TC-ADMIN-051)", () => {
+describe("EntityTable — per-entity isolation ", () => {
   it("a preference set on one entity leaves another entity at its own defaults", () => {
     const widgets = renderTable(WIDGET_CONFIG);
     openColumnsModal();
@@ -272,7 +272,7 @@ describe("EntityTable — per-entity isolation (TC-ADMIN-051)", () => {
   });
 });
 
-describe("EntityTable — locked columns (TC-ADMIN-052)", () => {
+describe("EntityTable — locked columns ", () => {
   it("disables the detailLinkField's checkbox", () => {
     renderTable(LINKED_CONFIG);
     openColumnsModal();
@@ -300,8 +300,8 @@ describe("EntityTable — locked columns (TC-ADMIN-052)", () => {
     expect(headerLabels()).toEqual(["Title"]);
   });
 
-  it("persists a hidden column AND a reorder together in one stored object (TC-ADMIN-050)", () => {
-    // TC-ADMIN-050's literal precondition is one column hidden *and* two
+  it("persists a hidden column AND a reorder together in one stored object ", () => {
+    // literal precondition is one column hidden *and* two
     // columns reordered in the same session — a write path that persists
     // `hidden` but drops `order` (or vice versa) passes each half separately
     // and fails only here.
@@ -342,13 +342,13 @@ describe("EntityTable — reset and degradation", () => {
     expect(window.localStorage.getItem(columnPreferencesKey("widget"))).toBeNull();
   });
 
-  it("falls back to config defaults on a corrupt stored value (NFR-71)", () => {
+  it("falls back to config defaults on a corrupt stored value ", () => {
     window.localStorage.setItem(columnPreferencesKey("widget"), "{not json");
     renderTable();
     expect(headerLabels()).toEqual(["Title", "Status", "Owner"]);
   });
 
-  it("renders normally when localStorage access throws outright (NFR-71)", () => {
+  it("renders normally when localStorage access throws outright ", () => {
     vi.spyOn(window.localStorage, "getItem").mockImplementation(() => {
       throw new Error("SecurityError");
     });

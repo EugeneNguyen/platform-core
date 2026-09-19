@@ -5,12 +5,12 @@ import { getEntity } from "../../lib/api/entityCrud";
 import { FieldConfig } from "../../entityConfigs/types";
 
 /**
- * ADR-0074, Amendment 1 on [ADR-0073](../../../../docs/adr/0073-generic-entity-detail-page.md):
+ *, Amendment 1 on:
  * a regression guard on an unbounded fetch loop.
  *
  * `useFkLabels`' effect used to key on the `rows` **array identity**. Any
  * caller that built that array inline — `EntityDetailPage`'s
- * `row ? [row] : EMPTY_ROWS` did exactly this — got a fresh array on every
+ * `row ? [row]: EMPTY_ROWS` did exactly this — got a fresh array on every
  * render, so the effect re-ran every render, and every run ended in
  * `setFkLabels(next)` with a fresh object, which re-rendered. Measured **2913
  * `getEntity` calls in 400ms** before the fix.
@@ -18,17 +18,17 @@ import { FieldConfig } from "../../entityConfigs/types";
  * **The reason this needs a dedicated test rather than being covered by the
  * page's own suite:** the rendered output is byte-for-byte identical whether
  * the effect runs once or forever. Every assertion about what the page *shows*
- * passes either way — which is precisely why ADR-0073's own unit tests and its
+ * passes either way — which is precisely why own unit tests and its
  * live manual verification both missed it. The only thing that can see this
- * defect is counting the requests, so that is what this file does.
+ * issue is counting the requests, so that is what this file does.
  */
 vi.mock("../../lib/api/entityCrud", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../lib/api/entityCrud")>();
-  return { ...actual, getEntity: vi.fn() };
+  return {...actual, getEntity: vi.fn() };
 });
 
 vi.mock("./useEntitySchema", () => ({
-  resolveEntityKey: (key: string) => (key.endsWith("s") ? key : `${key}s`),
+  resolveEntityKey: (key: string) => (key.endsWith("s") ? key: `${key}s`),
   useEntitySchemas: () => ({
     "widget-owners": {
       resource: "widget_owner",
@@ -49,11 +49,11 @@ const ROW = { id: "w-1", owner_id: "o-1" };
 
 /** Rebuilds `rows` inline on every render — the shape that used to loop. */
 function ProbeWithInlineRows({ row }: { row: Record<string, unknown> | undefined }) {
-  const labels = useFkLabels(FK_FIELDS, row ? [row] : [], FK_FIELDS);
+  const labels = useFkLabels(FK_FIELDS, row ? [row]: [], FK_FIELDS);
   return <div data-testid="label">{labels.owner_id?.["o-1"] ?? "—"}</div>;
 }
 
-describe("useFkLabels (ADR-0074 regression guard)", () => {
+describe("useFkLabels ", () => {
   it("settles after resolving each distinct fk id once, and stops fetching", async () => {
     mockGetEntity.mockResolvedValue({ id: "o-1", name: "Ada Owner" } as never);
 
@@ -82,7 +82,7 @@ describe("useFkLabels (ADR-0074 regression guard)", () => {
 
     // A different row object carrying the same fk value — a new array, and a
     // new element identity, but nothing this hook needs to re-resolve.
-    rerender(<ProbeWithInlineRows row={{ ...ROW }} />);
+    rerender(<ProbeWithInlineRows row={{...ROW }} />);
     await new Promise((resolve) => setTimeout(resolve, 100));
 
     expect(mockGetEntity.mock.calls.length).toBe(before);

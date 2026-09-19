@@ -1,6 +1,6 @@
 """SQLAlchemy 2.0 declarative base + UUIDv7 primary-key generator.
 
-Per ADR-0008: every table's primary key is a UUID generated at insert time,
+Per: every table's primary key is a UUID generated at insert time,
 using UUIDv7 (time-sortable) uniformly across all tables — no auto-increment
 integers anywhere.
 """
@@ -20,7 +20,7 @@ try:
         """Generate a time-sortable UUIDv7 using the `uuid6` package."""
         return _uuid7()
 
-except ImportError:  # pragma: no cover - exercised only when uuid6 is absent
+except ImportError: # pragma: no cover - exercised only when uuid6 is absent
     import os
 
     def _fallback_uuid7() -> uuid.UUID:
@@ -31,13 +31,13 @@ except ImportError:  # pragma: no cover - exercised only when uuid6 is absent
         12-bit random | 2-bit variant (10) | 62-bit random.
         """
         unix_ts_ms = int(time.time() * 1000)
-        rand_a = int.from_bytes(os.urandom(2), "big") & 0x0FFF  # 12 random bits
-        rand_b = int.from_bytes(os.urandom(8), "big") & 0x3FFFFFFFFFFFFFFF  # 62 random bits
+        rand_a = int.from_bytes(os.urandom(2), "big") & 0x0FFF # 12 random bits
+        rand_b = int.from_bytes(os.urandom(8), "big") & 0x3FFFFFFFFFFFFFFF # 62 random bits
 
         uuid_int = (unix_ts_ms & 0xFFFFFFFFFFFF) << 80
-        uuid_int |= 0x7 << 76  # version 7
+        uuid_int |= 0x7 << 76 # version 7
         uuid_int |= rand_a << 64
-        uuid_int |= 0b10 << 62  # variant
+        uuid_int |= 0b10 << 62 # variant
         uuid_int |= rand_b
 
         return uuid.UUID(int=uuid_int)

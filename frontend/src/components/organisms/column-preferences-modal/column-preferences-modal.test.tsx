@@ -1,10 +1,10 @@
 /**
- * ADR-0071 (COLPREF-1) — `ColumnPreferencesModal`'s own behaviour: which rows
+ * (COLPREF-1) — `ColumnPreferencesModal`'s own behaviour: which rows
  * it lists, what the checkboxes and Up/Down buttons do to the draft, which
  * controls are disabled and why, and exactly what `onApply` emits.
  *
- * Covers TC-ADMIN-047 (the modal lists every table field), TC-ADMIN-049
- * (reorder + end-of-list disabled state) and TC-ADMIN-052 (locked and
+ * Covers (the modal lists every table field),
+ * (reorder + end-of-list disabled state) and (locked and
  * last-visible checkboxes are disabled). The persistence half of those TCs
  * lives in `lib/columnPreferences.test.ts`; the "does the table actually
  * re-render" half in `entity-table.columnPreferences.test.tsx`.
@@ -40,7 +40,7 @@ function renderModal(props: Partial<React.ComponentProps<typeof ColumnPreference
       {...props}
     />,
   );
-  return { ...view, onApply, onClose, onReset };
+  return {...view, onApply, onClose, onReset };
 }
 
 function renderedOrder(): string[] {
@@ -55,7 +55,7 @@ describe("ColumnPreferencesModal", () => {
     expect(screen.queryByTestId("column-preferences-list")).toBeNull();
   });
 
-  it("lists one row per field, labelled, in the given order (TC-ADMIN-047)", () => {
+  it("lists one row per field, labelled, in the given order ", () => {
     renderModal();
     expect(renderedOrder()).toEqual(["title", "status", "owner"]);
     expect(screen.getByLabelText("Title")).toBeInTheDocument();
@@ -74,14 +74,14 @@ describe("ColumnPreferencesModal", () => {
     expect(screen.getByLabelText("Status")).not.toBeChecked();
   });
 
-  it("emits the full order plus the hidden set on Apply (TC-ADMIN-048)", () => {
+  it("emits the full order plus the hidden set on Apply ", () => {
     const { onApply } = renderModal();
     fireEvent.click(screen.getByLabelText("Status"));
     fireEvent.click(screen.getByTestId("column-preferences-apply"));
     expect(onApply).toHaveBeenCalledWith({ v: 1, order: ["title", "status", "owner"], hidden: ["status"] });
   });
 
-  it("moves a field up and reflects it in the emitted order (TC-ADMIN-049)", () => {
+  it("moves a field up and reflects it in the emitted order ", () => {
     const { onApply } = renderModal();
     fireEvent.click(screen.getByTestId("column-preferences-up-owner"));
     expect(renderedOrder()).toEqual(["title", "owner", "status"]);
@@ -95,7 +95,7 @@ describe("ColumnPreferencesModal", () => {
     expect(renderedOrder()).toEqual(["status", "title", "owner"]);
   });
 
-  it("disables Up on the first row and Down on the last (TC-ADMIN-049)", () => {
+  it("disables Up on the first row and Down on the last ", () => {
     renderModal();
     expect(screen.getByTestId("column-preferences-up-title")).toBeDisabled();
     expect(screen.getByTestId("column-preferences-down-title")).not.toBeDisabled();
@@ -112,7 +112,7 @@ describe("ColumnPreferencesModal", () => {
     expect(screen.getByTestId("column-preferences-up-status")).toBeDisabled();
   });
 
-  it("disables a locked field's checkbox and explains why (TC-ADMIN-052)", () => {
+  it("disables a locked field's checkbox and explains why ", () => {
     renderModal({ rows: [row("name", { locked: true }), row("status"), row("owner")] });
     const locked = screen.getByLabelText("Name");
     expect(locked).toBeDisabled();
@@ -127,7 +127,7 @@ describe("ColumnPreferencesModal", () => {
     expect(renderedOrder()).toEqual(["status", "name", "owner"]);
   });
 
-  it("disables the last remaining visible field's checkbox (TC-ADMIN-052)", () => {
+  it("disables the last remaining visible field's checkbox ", () => {
     renderModal({ rows: [row("title"), row("status", { visible: false }), row("owner", { visible: false })] });
     const last = screen.getByLabelText("Title");
     expect(last).toBeDisabled();

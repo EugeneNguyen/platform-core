@@ -57,7 +57,7 @@ describe("lib/api/members", () => {
       expect(String(url)).toBe(`/api/v1/orgs/${ORG_ID}/members?page=2&page_size=10`);
     });
 
-    it("rejects with ApiError on a 404 (no membership in org_id, NFR-19)", async () => {
+    it("rejects with ApiError on a 404 ", async () => {
       const fetchMock = vi.fn(async (_url: string | URL | Request, _init?: RequestInit) =>
         jsonResponse({ code: "not_found", message: "Organization not found.", field_errors: null }, 404),
       );

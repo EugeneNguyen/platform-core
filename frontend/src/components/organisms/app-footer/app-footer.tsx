@@ -1,11 +1,11 @@
 /**
- * SHELL-2 (ADR-0020) app footer, mounted once inside `AppShell` alongside
+ * app footer, mounted once inside `AppShell` alongside
  * `AppBreadcrumb` so both join `AppSidebar`/`AppHeader` in completing the
- * free-template shell shape (FR-SHELL-2). Renders identically on every
- * `ProtectedRoute` screen (TC-SHELL-009) — smoke-level, static content only,
+ * free-template shell shape. Renders identically on every
+ * `ProtectedRoute` screen — smoke-level, static content only,
  * no per-route/dynamic behavior to branch on.
  *
- * ## Tabler v1.5.1 (ADR-0054, Phase 2) — what changed from AdminLTE v4
+ * ## Tabler v1.5.1 — what changed from AdminLTE v4
  *
  * `.app-footer` → `footer.footer.footer-transparent.d-print-none`, Tabler's
  * own footer markup (the CTO-supplied page-layout doc's "Footer" section).

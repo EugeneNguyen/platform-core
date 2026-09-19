@@ -1,16 +1,16 @@
 /**
- * `components/molecules/` (ADR-0043, superseding ADR-0023's `components/crud/`
+ * `components/molecules/` (, superseding `components/crud/`
  * location). UI Design Document §2/§4 shape C: gates
  * the rest of the page — nothing else renders until a selection is made.
  * For a single `scopeSelector` option (`Attachment`, and the several
  * project-scoped entities whose real backend `scope_field` isn't
- * `project_id` — see e.g. `entityConfigs/test-condition.ts`'s own
- * docstring), renders one `FkAutocomplete`. For an array (`RiskItem`'s own
- * "by Requirement" / "by TestPlan" toggle, UI Design Document §4), renders a
+ * `project_id` — see e.g. `entityConfigs/criterion.ts`'s own
+ * docstring), renders one `FkAutocomplete`. For an array (`RiskNote`'s own
+ * "by Spec" / "by Batch" toggle, UI Design Document §4), renders a
  * button-group toggle first, then the `FkAutocomplete` for whichever
  * option is active.
  *
- * **ADR-0042 (CoreUI -> AdminLTE v4):** `CButtonGroup` -> `<div
+ * ** (CoreUI -> AdminLTE v4):** `CButtonGroup` -> `<div
  * class="btn-group" role="group">` and `CButton` -> `<button type="button"
  * class="btn btn-secondary|btn-outline-secondary">` (`variant="outline"` was
  * the inactive option, no variant the active one — same two classes
@@ -18,36 +18,36 @@
  * `aria-pressed` are written out by hand here, where CoreUI's `active` prop
  * used to supply them.
  *
- * **Bugfix (found writing ADMIN-2 UI E2E coverage):** the picker's own
+ * **Bugfix:** the picker's own
  * `FkAutocomplete` search previously fired with no scope params at all
  * (`extraParams` unset), but every scope-selector `refEntity` used across
- * this surface (`requirement`, `test-plan`, `test-condition`, `test-case`)
- * is itself a scoped entity whose own `GET .../list` route *requires* its
- * scope query param (e.g. `requirement`/`test-plan` both require
+ * this surface (`spec`, `batch`, `criterion`, `item`)
+ * is itself a scoped entity whose own `GET.../list` route *requires* its
+ * scope query param (e.g. `spec`/`batch` both require
  * `project_id`) — see `backend/app/api/crud_factory.py`'s `list_items`,
  * `extract_scope_value`. With no `project_id` on the request the backend
  * 422s, `FkAutocomplete`'s `.catch` swallows it into an empty result set,
- * and the search box could never find anything: `RiskItem`/`TestCondition`/
- * `EntryExitCriteria`/`TestCycle`/the two `Requirement*Link` entities'
+ * and the search box could never find anything: `RiskNote`/`Criterion`/
+ * `EntryExitCriteria`/`Round`/the two `Spec*Link` entities'
  * scope-selectors were unusable end to end. `extraParams` now threads the
  * current route's `project_id` through (`EntityListPage` passes it in) —
  * fixes every *one-hop* case above, where the ref entity's own scope field
  * is literally `project_id`.
  *
- * **ADR-0081 closes the two-hop case this file's own comment used to leave
- * open** (`TestExecution` -> `TestCycle` needs `test_plan_id`, `Defect`/
- * `TestLog` -> `TestExecution` needs `test_case_id`): an option's own `via`
+ * ** closes the two-hop case this file's own comment used to leave
+ * open** (`Run` -> `Round` needs `batch_id`, `Issue`/
+ * `TestLog` -> `Run` needs `item_id`): an option's own `via`
  * (`ScopeSelectorOption.via`, backend-declared) renders as a PRECEDING
  * picker step. Once the via entity is picked, its id feeds into the outer
  * option's own `extraParams` as `{[via.paramName]: viaValue}` — never
  * reported to `onResolved` itself, which still only ever fires for the
- * real scope field this page's list route needs. `TestConditionTestCaseLink`
- * -> `TestCondition` (`requirement_id`) and anything scoped via `TestCase`
- * (`TestStep`, `TestCaseDefectLink`, `Attachment`, still blocked on
- * `test-case.ts`'s own pre-existing "no list route exists" gap) remain
+ * real scope field this page's list route needs. `CriterionItemLink`
+ * -> `Criterion` (`spec_id`) and anything scoped via `Item`
+ * (`TestStep`, `ItemIssueLink`, `Attachment`, still blocked on
+ * `item.ts`'s own pre-existing "no list route exists" gap) remain
  * undeclared — no live config needs them yet, not a limit of this mechanism.
  *
- * **ADR-0089 closes a much older gap in this exact file: neither picker
+ * ** closes a much older gap in this exact file: neither picker
  * below ever received a `labelField` prop, at all, since this component was
  * first written** — every scope-selector picker in the app rendered the
  * referenced row's raw `id` instead of a human-readable label.
@@ -69,10 +69,10 @@ export interface ScopeSelectorProps {
 }
 
 function ScopeSelector({ options, onResolved, extraParams }: ScopeSelectorProps) {
-  const optionList = Array.isArray(options) ? options : [options];
+  const optionList = Array.isArray(options) ? options: [options];
   const [activeIndex, setActiveIndex] = useState(0);
   const [value, setValue] = useState<string | undefined>(undefined);
-  // ADR-0081: the intermediate pick for `active.via`, when the active
+  //: the intermediate pick for `active.via`, when the active
   // option declares one — cleared whenever the active option itself changes.
   const [viaValue, setViaValue] = useState<string | undefined>(undefined);
   const active = optionList[activeIndex];
@@ -102,7 +102,7 @@ function ScopeSelector({ options, onResolved, extraParams }: ScopeSelectorProps)
               <button
                 key={option.paramName}
                 type="button"
-                className={`btn btn-${isActive ? "" : "outline-"}secondary${isActive ? " active" : ""}`}
+                className={`btn btn-${isActive ? "": "outline-"}secondary${isActive ? " active": ""}`}
                 aria-pressed={isActive}
                 onClick={() => selectOption(index)}
               >
@@ -114,7 +114,7 @@ function ScopeSelector({ options, onResolved, extraParams }: ScopeSelectorProps)
       )}
       {needsViaFirst ? (
         (() => {
-          const ViaControl = active.via!.select ? FkSelect : FkAutocomplete;
+          const ViaControl = active.via!.select ? FkSelect: FkAutocomplete;
           return (
             <ViaControl
               id="scope-selector-via-fk"
@@ -127,7 +127,7 @@ function ScopeSelector({ options, onResolved, extraParams }: ScopeSelectorProps)
             />
           );
         })()
-      ) : (
+      ): (
         <>
           {active.via && (
             <p className="text-body-secondary small mb-1">
@@ -144,7 +144,7 @@ function ScopeSelector({ options, onResolved, extraParams }: ScopeSelectorProps)
             </p>
           )}
           {(() => {
-            const ActiveControl = active.select ? FkSelect : FkAutocomplete;
+            const ActiveControl = active.select ? FkSelect: FkAutocomplete;
             return (
               <ActiveControl
                 id="scope-selector-fk"
@@ -153,7 +153,7 @@ function ScopeSelector({ options, onResolved, extraParams }: ScopeSelectorProps)
                 labelField={active.labelField}
                 value={value}
                 onChange={handleChange}
-                extraParams={active.via ? { ...extraParams, [active.via.paramName]: viaValue } : extraParams}
+                extraParams={active.via ? {...extraParams, [active.via.paramName]: viaValue }: extraParams}
               />
             );
           })()}

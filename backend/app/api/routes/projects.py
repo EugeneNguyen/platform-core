@@ -1,11 +1,11 @@
-"""PROJ-1: `Project` create/read/update routes (ADR-0017).
+""": `Project` create/read/update routes.
 
 Source: API Document §3 (`POST /orgs/{org_id}/projects`, `GET`/`PATCH
-/projects/{id}` contracts), ADR-0017 (project creation flow — bespoke
+/projects/{id}` contracts), (project creation flow — bespoke
 org-path-scoped create, row-resolved read/update, `standards_profile`
 inheritance, unconditional creator `test_manager` project-scoped role).
 
-Three routes, two path shapes (ADR-0017's deliberate split, documented there
+Three routes, two path shapes ( deliberate split, documented there
 so it doesn't read as an accidental inconsistency):
 
 - `POST /orgs/{org_id}/projects` mirrors `agents.py`/`organizations.py`
@@ -16,7 +16,7 @@ so it doesn't read as an accidental inconsistency):
 - `GET`/`PATCH /projects/{id}` have no `org_id` path segment at all — the
   `Project` row is fetched first and its own `org_id` used for the
   404-vs-403 boundary, anticipating the eventual generic-CRUD-factory
-  item-route shape (ADR-0017). Since there's no path `org_id` for
+  item-route shape. Since there's no path `org_id` for
   `require_permission`'s `request.path_params` read to find, these two
   routes call `has_permission` directly instead of `require_permission`.
 """
@@ -71,11 +71,11 @@ async def _actor_has_org_standing(db: AsyncSession, org_id: UUID, actor: User | 
 
     `User` actors: unchanged any-status `OrgMembership` check
     (`_org_membership_exists`). `AIAgent` actors never have an
-    `OrgMembership` row at all (ADR-0021/`agents.py`/`role_assignments.py`
+    `OrgMembership` row at all (/`agents.py`/`role_assignments.py`
     precedent — an agent's org relationship is never represented that way),
     so `_org_membership_exists` would always return `False` for one and
     these two routes would 404 every AIAgent caller regardless of any
-    `RoleAssignment` they hold (TC-RBAC-011 gap). Substituting "does this
+    `RoleAssignment` they hold. Substituting "does this
     agent hold ANY RoleAssignment row in this org" (org-wide or
     project-scoped) is the AIAgent-shaped equivalent of "has standing in
     this org" that `OrgMembership` represents for a `User`.
@@ -98,37 +98,37 @@ async def create_project(
     actor: User | AIAgent = Depends(get_current_actor),
     db: AsyncSession = Depends(get_db),
 ) -> ProjectSummary | JSONResponse:
-    """Create a Project in `org_id` (ADR-0017).
+    """Create a Project in `org_id`.
 
     Order of operations (same reasoning as `agents.py`'s `create_agent`):
     1. 404-vs-403: any-status `OrgMembership` existence check on `org_id` —
        a non-member (including a nonexistent `org_id`) never learns whether
-       `project.create` would otherwise have been granted (NFR-1).
+       `project.create` would otherwise have been granted.
     2. `require_permission("project.create")`, invoked directly (not a
        route-level `Depends`) so it runs strictly after step 1.
     3. Resolve `standards_profile`: if the request payload omitted the field
        OR explicitly supplied `null` (`payload.standards_profile is None`),
        inherit `Organization.default_standards_profile` (itself possibly
        `None`) as a one-time copy; otherwise use the supplied value exactly.
-       **Amended ADR-0059** — this collapsed the original ADR-0017 Q3
+       **Amended ** — this collapsed the original Q3
        "omitted vs. explicit null" distinction (which read `payload.
        model_fields_set` to tell the two apart) into one case, because the
-       generic admin surface's `EntityForm` (ADR-0025) cannot express
+       generic admin surface's `EntityForm` cannot express
        "omit this key" — a blank optional field always serializes as an
        explicit `null` (`entity-form.tsx`'s own empty-string-to-`null`
        normalization). Both callers can still ask for a *literal, non-null*
        `standards_profile` value; only "give me nothing" and "give me
        explicit null" are no longer distinguishable, and nothing in this
-       codebase's own product requirements ever needed that distinction —
-       ADR-0017 Q3's own docstring named it as the safer default for a
-       Pydantic-only direct API caller, not a requirement a UI needed to
+       codebase's own product specs ever needed that distinction —
+        Q3's own docstring named it as the safer default for a
+       Pydantic-only direct API caller, not a spec a UI needed to
        expose.
     4. Create the `Project`; flush alone so an `(org_id, name)` collision is
        caught independently (`422`, same shape/posture as `organizations.py`'s
        slug-collision handling — never a raised exception).
     5. Unconditionally give the creator a project-scoped `RoleAssignment`
        against the seeded `test_manager` system `Role` (`org_id IS NULL`),
-       not derived from the creator's own org-level role (ADR-0017 Q2 — the
+       not derived from the creator's own org-level role ( Q2 — the
        one reachable case today is `org_admin` creating; not speculative
        role-mapping logic for roles that can't reach `project.create` yet).
     """
@@ -140,7 +140,7 @@ async def create_project(
     await require_permission("project.create")(request, actor)
 
     # 3. Resolve standards_profile: omitted OR explicit null -> inherit org
-    # default; any other supplied value -> use as given (ADR-0059 amendment,
+    # default; any other supplied value -> use as given ( amendment,
     # see this function's own docstring §3).
     if payload.standards_profile is None:
         organization = await db.get(Organization, org_id)
@@ -185,7 +185,7 @@ async def create_project(
     )
 
 
-# --- API-1 generic-CRUD factory addition (ADR-0022) --------------------------------------------
+# --- API-1 generic-CRUD factory addition --------------------------------------------
 #
 # Registers `GET /projects?org_id=<uuid>` (list) and `DELETE /projects/{id}`
 # — `create`/`read`(single)/`update` above stay this module's own bespoke
@@ -194,10 +194,10 @@ async def create_project(
 # left out of this config entirely (an oversight, not a considered
 # exclusion — no bespoke list route exists for `Project` anywhere in this
 # codebase to defer to, unlike `create`/`get`/`update`) — caught by
-# SHELL-3's dashboard widget (`GET /projects`, `lib/api/dashboard.ts`)
+# dashboard widget (`GET /projects`, `lib/api/dashboard.ts`)
 # actually 404ing against this exact gap at merge-verification time.
 #
-# ADR-0059: `create_schema=CreateProjectRequest` added purely so
+#: `create_schema=CreateProjectRequest` added purely so
 # `derive_entity_schema()` marks `name`/`standards_profile` as writable
 # (and `name` required) in the served `GET /entities/project/schema` — this
 # does NOT register a generic create route (that's separately gated on
@@ -207,7 +207,7 @@ async def create_project(
 # `ROUTE_OVERRIDES.projects.createPath` (`:orgId`-interpolated), the same
 # precedent `Release`'s own nested `createPath` already established.
 #
-# ADR-0060: `search_fields=("name",)` added so the generic surface's `?q=`
+#: `search_fields=("name",)` added so the generic surface's `?q=`
 # box works for `Project` too — `ProjectsPage.tsx` (the bespoke screen this
 # generic surface replaces as of that ADR) had its own client-side name
 # filter; this is the server-side equivalent, reusing `apply_filters_and_search`
@@ -221,13 +221,13 @@ _PROJECT_FACTORY_CONFIG = CrudEntityConfig(
     scope_field="org_id",
     resolve_org_id=chain_resolver([]),
     methods=frozenset({"list", "delete"}),
-    # ADR-0053: get/update exist too — see this config's own comment above.
-    # ADR-0059: create too now (schema-reported only, see this config's own
+    #: get/update exist too — see this config's own comment above.
+    #: create too now (schema-reported only, see this config's own
     # comment above) — the bespoke route it points at was already live.
     full_methods=frozenset({"list", "get", "create", "update", "delete"}),
-    # ADR-0060: `?q=` name search, closing the last gap between this surface
+    #: `?q=` name search, closing the last gap between this surface
     # and `ProjectsPage`'s own (now-retired) client-side name filter.
-    # ADR-0070 adds `standards_profile` — a free-text column (no enum
+    # adds `standards_profile` — a free-text column (no enum
     # constraint) that was simply never listed.
     search_fields=("name", "standards_profile"),
     label="Projects",
@@ -251,12 +251,12 @@ async def get_project(
     actor: User | AIAgent = Depends(get_current_actor),
     db: AsyncSession = Depends(get_db),
 ) -> ProjectSummary | JSONResponse:
-    """Fetch a single Project by id (ADR-0017).
+    """Fetch a single Project by id.
 
     No `org_id` path segment — the row is fetched first and its own
     `org_id` used for the 404-vs-403 boundary: missing row OR caller has no
     `OrgMembership` (any status) in the row's own `org_id` -> `404`
-    (indistinguishable, same NFR-1 existence-hiding posture as every other
+    (indistinguishable, same existence-hiding posture as every other
     cross-tenant boundary in this codebase). Membership present but caller
     lacks `project.read` -> `403`, via `has_permission` called directly
     (there's no path `org_id` for `require_permission`'s dependency to read).
@@ -285,7 +285,7 @@ async def update_project(
     actor: User | AIAgent = Depends(get_current_actor),
     db: AsyncSession = Depends(get_db),
 ) -> ProjectSummary | JSONResponse:
-    """Partially update a Project (ADR-0017).
+    """Partially update a Project.
 
     Same fetch-then-404-vs-403 boundary as `get_project`, gated on
     `project.update`. Only fields present in the request body

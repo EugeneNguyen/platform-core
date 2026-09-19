@@ -8,28 +8,28 @@ import { apiFetch } from "../../../lib/api/client";
 import { createEntity, createViaCompoundRoute, getEntity, listEntities } from "../../../lib/api/entityCrud";
 
 /**
- * ADR-0086 — `child_compound_creates`' own parent-picker generalization,
- * the sibling `EntityListPage.childCompoundCreate.test.tsx` (ADR-0080)
+ * — `child_compound_creates`' own parent-picker generalization,
+ * the sibling `EntityListPage.childCompoundCreate.test.tsx`
  * couldn't exercise: there, the declaration's `farField` always equals the
  * standalone list's own `scope.field` (zero picker, the record being
- * listed already IS the parent). `TestCycle`'s new `project_id` arm
- * (ADR-0084) is the first live case where that's false — the bespoke
- * route needs a `test_plan_id`, which a project-scoped list doesn't carry
+ * listed already IS the parent). `Round`'s new `project_id` arm
+ * is the first live case where that's false — the bespoke
+ * route needs a `batch_id`, which a project-scoped list doesn't carry
  * — so a parent must be picked first, mirroring
- * `EntityDetailPage.compoundCreate.test.tsx`'s own TC-ADMIN-125 picker
+ * `EntityDetailPage.compoundCreate.test.tsx`'s own picker
  * flow, adapted for a standalone list page (no `relation`, no `linkCreate`
  * second call — `links_automatically` is always `true` for the one live
- * case, ADR-0079's own `TestCycle` declaration).
+ * case, own `Round` declaration).
  *
- * ADR-0087: the picker's own widget is now conditional on the declaration's
+ *: the picker's own widget is now conditional on the declaration's
  * `parentSelect` flag (`FkSelect` when `true`, `FkAutocomplete` otherwise —
  * see `EntityListPage.tsx`'s `ParentPickerControl`). This mock's synthetic
  * `widget` parent deliberately leaves `parentSelect` unset (`false`), the
- * same posture the real `requirement`/`test-execution` parents take — a
+ * same posture the real `spec`/`run` parents take — a
  * generic example ref entity isn't a vetted bounded catalog, so this file's
  * own interactions stay `type` + click a dropdown row. See
- * `TestPlanDetail.TestCycles.test.tsx` for the sibling case where the real
- * parent (`test-plan`) *does* set the flag and the interaction is
+ * `BatchDetail.Rounds.test.tsx` for the sibling case where the real
+ * parent (`batch`) *does* set the flag and the interaction is
  * `selectOptions`.
  */
 vi.mock("../../../pages/admin/registry", async (importOriginal) => {
@@ -47,7 +47,7 @@ vi.mock("../../../pages/admin/useEntitySchema", () => {
       resource: "sprocket",
       path: "/sprockets",
       // No `create` — the whole point. Scoped by `project_id` directly
-      // (`TestCycle`'s own real shape after ADR-0084), so `useEntityScope`
+      //, so `useEntityScope`
       // resolves it immediately from the route, zero `ScopeSelector` step.
       methods: ["list", "get", "update", "delete"],
       scopeField: "project_id",
@@ -82,14 +82,14 @@ vi.mock("../../../pages/admin/useEntitySchema", () => {
     // assertions ever names "project" directly.
     projects: { resource: "project", path: "/projects", methods: ["list", "get"], fields: [] },
   };
-  const resolveEntityKey = (key: string) => (key.endsWith("s") || key.includes("-") ? key : `${key}s`);
+  const resolveEntityKey = (key: string) => (key.endsWith("s") || key.includes("-") ? key: `${key}s`);
   return {
     resolveEntityKey,
     useEntitySchema: (key?: string) => {
-      const resolved = key ? resolveEntityKey(key) : undefined;
+      const resolved = key ? resolveEntityKey(key): undefined;
       return {
-        config: resolved ? configs[resolved] : undefined,
-        label: resolved ? "Sprockets" : undefined,
+        config: resolved ? configs[resolved]: undefined,
+        label: resolved ? "Sprockets": undefined,
         isLoading: false,
         isError: false,
       };
@@ -121,7 +121,7 @@ vi.mock("../../../lib/api/entityCrud", async (importOriginal) => {
 
 vi.mock("../../../lib/api/client", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../../lib/api/client")>();
-  return { ...actual, apiFetch: vi.fn() };
+  return {...actual, apiFetch: vi.fn() };
 });
 
 const mockListEntities = vi.mocked(listEntities);
@@ -160,7 +160,7 @@ function renderPage() {
   );
 }
 
-describe("EntityListPage child_compound_creates parent picker (ADR-0086)", () => {
+describe("EntityListPage child_compound_creates parent picker ", () => {
   afterEach(() => {
     vi.clearAllMocks();
   });

@@ -1,7 +1,7 @@
-"""Pydantic v2 schemas for the PROJ-1 `Project` routes.
+"""Pydantic v2 schemas for the `Project` routes.
 
 Source: API Document §3 (`POST /orgs/{org_id}/projects`, `GET`/`PATCH
-/projects/{id}` contracts), ADR-0017 (project creation flow —
+/projects/{id}` contracts), (project creation flow —
 `standards_profile` inheritance, bespoke create route).
 """
 
@@ -14,11 +14,11 @@ class CreateProjectRequest(BaseModel):
     """Body of `POST /orgs/{org_id}/projects`.
 
     `standards_profile` omitted OR explicit `null` triggers
-    `Organization.default_standards_profile` inheritance (ADR-0017 Q3,
-    amended [ADR-0059](../../../docs/adr/0059-project-generic-admin-create.md)):
+    `Organization.default_standards_profile` inheritance ( Q3,
+    amended ):
     the route checks `payload.standards_profile is None`, not
     `model_fields_set` — the original omitted-vs-null distinction was
-    collapsed because `EntityForm` (the generic admin surface, ADR-0025)
+    collapsed because `EntityForm`
     cannot express "omit this key," only "send it as `null`." A non-`null`
     value always wins regardless of source.
     """

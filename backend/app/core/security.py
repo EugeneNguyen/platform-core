@@ -1,8 +1,8 @@
 """Password hashing, JWT issuance/verification, and AI-agent API-key handling.
 
-AUTH-1 implements the human-login half of this module per ADR-0003 (auth &
+ implements the human-login half of this module (auth &
 token strategy): argon2 password hashing, JWT access-token issuance/
-verification, and opaque refresh-token issuance/hashing. AUTH-4 (ADR-0015)
+verification, and opaque refresh-token issuance/hashing.
 adds the other half: the `generate_api_key`/`hash_api_key`/`verify_api_key`
 trio backing `AIAgent` bearer credentials.
 """
@@ -18,10 +18,10 @@ from passlib.context import CryptContext
 from app.core.config import settings
 
 # Argon2id via passlib, with explicit cost params rather than library
-# defaults (NFR-3, AUTH-1 scope plan edge case "Argon2 parameters"). These
+# defaults. These
 # sit inside OWASP's Argon2 cheat-sheet guidance for an interactive login
 # path: time_cost=3, memory_cost=65536 KiB (64 MiB), parallelism=4. AIAgent
-# API-key hashing (AUTH-4, out of scope) is off the request-latency-sensitive
+# API-key hashing is off the request-latency-sensitive
 # login path and may justify a different cost trade-off when implemented.
 _pwd_context = CryptContext(
     schemes=["argon2"],
@@ -34,7 +34,7 @@ _pwd_context = CryptContext(
 # against a nonexistent email (or a user with no `provider=local`
 # AuthIdentity) still pays the same argon2-verify cost as a real one — closes
 # the timing side-channel that would otherwise let an attacker distinguish
-# "no such user" from "wrong password" (AUTH-1 acceptance criteria, Test
+# "no such user" from "wrong password" ( acceptance criteria, Test
 # Design §2, scope plan edge case "User-enumeration timing leak"). Computed
 # once at import time, not per-request.
 _DUMMY_PASSWORD_HASH = _pwd_context.hash("dummy-password-for-timing-safety")
@@ -93,7 +93,7 @@ def create_refresh_token(actor_id: str, expires_days: int | None = None) -> str:
     """Issue a long-lived refresh token (raw value; the DB stores only its hash).
 
     Backed by the `RefreshToken` table (Database Document §auth.py) so it is
-    server-side revocable per ADR-0003. Unlike the access token this is an
+    server-side revocable. Unlike the access token this is an
     opaque, high-entropy random string (`secrets.token_urlsafe`), NOT a JWT —
     it carries no embedded claims, so it can't be decoded/inspected, only
     looked up by its hash. `actor_id`/`expires_days` are accepted to match
@@ -102,7 +102,7 @@ def create_refresh_token(actor_id: str, expires_days: int | None = None) -> str:
     `user_id`/`expires_at` columns — the token string itself does not encode
     either.
     """
-    del actor_id, expires_days  # not encoded in the opaque token itself; see docstring
+    del actor_id, expires_days # not encoded in the opaque token itself; see docstring
     return secrets.token_urlsafe(32)
 
 
@@ -125,7 +125,7 @@ def hash_refresh_token(raw_token: str) -> str:
     human password guessable via brute force — a fast cryptographic hash is
     sufficient to prevent recovering the raw token from a leaked hash, and
     running the deliberately-slow argon2 KDF here would just be needless CPU
-    cost on every refresh (AUTH-1 scope plan edge case "Refresh token
+    cost on every refresh ( scope plan edge case "Refresh token
     storage"). The raw token is never persisted, only this hash.
     """
     return hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
@@ -134,7 +134,7 @@ def hash_refresh_token(raw_token: str) -> str:
 def generate_api_key() -> tuple[str, str]:
     """Generate a new opaque AIAgent API key.
 
-    Returns `(raw_key, key_prefix)`. Raw key format (ADR-0015):
+    Returns `(raw_key, key_prefix)`. Raw key format:
     `pcore_agent_<key_prefix>_<secret>` where:
     - `pcore_agent_` is a fixed literal prefix so `get_current_actor`
       (`app/core/rbac.py`) can cheaply discriminate an agent key from a human
@@ -143,7 +143,7 @@ def generate_api_key() -> tuple[str, str]:
       6 random bytes base64url-encode to exactly 8 characters with no
       padding to strip (6 is a multiple of 3), so the length is exact, not
       just "approximately 8". Stored in `AIAgent.key_prefix` and doubles as
-      a lookup-narrowing index (see module docstring / ADR-0015): argon2
+      a lookup-narrowing index: argon2
       hashes are salted and non-deterministic, so `AIAgent.key_hash` can't
       be looked up by equality — the presented key's prefix narrows a
       `SELECT` to (in practice) zero or one candidate row before paying the
@@ -155,7 +155,7 @@ def generate_api_key() -> tuple[str, str]:
     The raw key is shown once at creation (GitHub-PAT-style) and never
     stored; only its argon2 hash (`AIAgent.key_hash`, via `hash_api_key`) and
     the plaintext `key_prefix` are persisted. Callers must never log the
-    returned `raw_key` (same discipline as AUTH-1's plaintext-password rule).
+    returned `raw_key`.
     """
     key_prefix = secrets.token_urlsafe(6)
     secret = secrets.token_urlsafe(32)
@@ -167,7 +167,7 @@ def hash_api_key(raw_key: str) -> str:
     """Hash a raw AIAgent API key with argon2 for storage in `AIAgent.key_hash`.
 
     Reuses the same `_pwd_context` (and cost params) as human password
-    hashing — the raw key is high-entropy like a refresh token, but ADR-0003
+    hashing — the raw key is high-entropy like a refresh token, but
     explicitly calls for "argon2-hashed at rest" for agent credentials too
     (unlike `hash_refresh_token`, which deliberately uses a fast SHA-256
     digest instead — see that function's docstring for why refresh tokens
@@ -177,7 +177,7 @@ def hash_api_key(raw_key: str) -> str:
 
 
 def generate_invite_token() -> str:
-    """Generate a raw, high-entropy invite token (RBAC-2, ADR-0017).
+    """Generate a raw, high-entropy invite token.
 
     `secrets.token_urlsafe(32)` — the same entropy budget
     `create_refresh_token`'s raw refresh token and `generate_api_key`'s
@@ -199,7 +199,7 @@ def hash_invite_token(raw_token: str) -> str:
     a low-entropy human secret an attacker could brute-force from a leaked
     hash — so the deliberately-slow argon2 KDF `hash_password`/`hash_api_key`
     use would just be needless CPU cost here (Database Document §3.1,
-    ADR-0017).
+    ).
     """
     return hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
 

@@ -1,10 +1,10 @@
 /**
- * ADR-0072 (ENTITY-FILTER-1) — `FilterModal` rendering/interaction tests.
+ * (ENTITY-FILTER-1) — `FilterModal` rendering/interaction tests.
  *
- * Covers TC-ADMIN-053 (add a condition, remove a condition), TC-ADMIN-054
+ * Covers (add a condition, remove a condition),
  * (two conditions Apply as one AND-ed map; a field in use is not offered
- * twice), TC-ADMIN-055 (Cancel/ESC discard the draft, and a reopen shows the
- * applied state rather than the abandoned one), and TC-ADMIN-056 (typed value
+ * twice), (Cancel/ESC discard the draft, and a reopen shows the
+ * applied state rather than the abandoned one), and (typed value
  * controls per field type; a `text` field is never offered).
  *
  * `useEntitySchema` is mocked because `FkSelect`/`FkAutocomplete` call it
@@ -18,7 +18,7 @@ import { FilterModal } from "./filter-modal";
 import type { EntityConfig } from "../../../entityConfigs/types";
 
 vi.mock("../../../pages/admin/useEntitySchema", () => ({
-  resolveEntityKey: (key: string) => (key.endsWith("s") ? key : `${key}s`),
+  resolveEntityKey: (key: string) => (key.endsWith("s") ? key: `${key}s`),
   useEntitySchema: () => ({ config: undefined, isLoading: false }),
   useEntitySchemas: () => ({}),
 }));
@@ -51,7 +51,7 @@ function renderModal(overrides: Partial<React.ComponentProps<typeof FilterModal>
       {...overrides}
     />,
   );
-  return { ...utils, onApply, onClose };
+  return {...utils, onApply, onClose };
 }
 
 describe("FilterModal — closed state", () => {
@@ -61,7 +61,7 @@ describe("FilterModal — closed state", () => {
   });
 });
 
-describe("FilterModal — adding and removing conditions (TC-ADMIN-053)", () => {
+describe("FilterModal — adding and removing conditions ", () => {
   it("starts with no conditions and an explicit empty state", () => {
     renderModal();
     expect(screen.getByTestId("filter-empty")).toBeInTheDocument();
@@ -96,7 +96,7 @@ describe("FilterModal — adding and removing conditions (TC-ADMIN-053)", () => 
   });
 });
 
-describe("FilterModal — AND-combination (TC-ADMIN-054)", () => {
+describe("FilterModal — AND-combination ", () => {
   it("Apply emits every condition as one map, which the backend ANDs", () => {
     const { onApply } = renderModal();
 
@@ -130,7 +130,7 @@ describe("FilterModal — AND-combination (TC-ADMIN-054)", () => {
   });
 });
 
-describe("FilterModal — draft discard semantics (TC-ADMIN-055)", () => {
+describe("FilterModal — draft discard semantics ", () => {
   it("Cancel closes without applying anything", () => {
     const { onApply, onClose } = renderModal();
     fireEvent.click(screen.getByTestId("filter-add-condition"));
@@ -167,7 +167,7 @@ describe("FilterModal — draft discard semantics (TC-ADMIN-055)", () => {
         onApply={vi.fn()}
       />,
     );
-    // ...and reopen: the abandoned "draft" edit is gone, "approved" is back.
+    //...and reopen: the abandoned "draft" edit is gone, "approved" is back.
     rerender(
       <FilterModal
         visible
@@ -189,7 +189,7 @@ describe("FilterModal — draft discard semantics (TC-ADMIN-055)", () => {
   });
 });
 
-describe("FilterModal — typed value controls (TC-ADMIN-056)", () => {
+describe("FilterModal — typed value controls ", () => {
   it("never offers a `text` field, even though it is a real served column", () => {
     renderModal();
     fireEvent.click(screen.getByTestId("filter-add-condition"));
@@ -225,7 +225,7 @@ describe("FilterModal — typed value controls (TC-ADMIN-056)", () => {
   });
 
   it("explains itself when the entity has no filterable fields at all", () => {
-    renderModal({ config: { ...CONFIG, filterFields: [] } });
+    renderModal({ config: {...CONFIG, filterFields: [] } });
     expect(screen.getByTestId("filter-no-fields")).toBeInTheDocument();
     expect(screen.queryByTestId("filter-add-condition")).toBeNull();
   });

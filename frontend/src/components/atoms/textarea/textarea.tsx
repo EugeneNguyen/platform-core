@@ -7,7 +7,7 @@
  * for a field with no length limit.
  *
  * `forwardRef` so callers can bind it via React Hook Form's `register()`
- * spread (ADR-0009), same convention as `TextInput`.
+ * spread, same convention as `TextInput`.
  */
 import { forwardRef, TextareaHTMLAttributes } from "react";
 
@@ -27,10 +27,10 @@ export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElemen
 }
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function Textarea(
-  { invalid = false, size = "sm", className, rows = 3, ...rest },
+  { invalid = false, size = "sm", className, rows = 3,...rest },
   ref,
 ) {
-  const classNames = ["form-control", SIZE_CLASS[size], invalid ? "is-invalid" : "", className]
+  const classNames = ["form-control", SIZE_CLASS[size], invalid ? "is-invalid": "", className]
     .filter(Boolean)
     .join(" ");
 

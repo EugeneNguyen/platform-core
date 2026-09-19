@@ -7,7 +7,7 @@ import { apiFetch } from "../../../lib/api/client";
 import { listEntities } from "../../../lib/api/entityCrud";
 
 /**
- * ADR-0053 (sort): `EntityListPage` owns the click-header-to-sort toggle
+ * (sort): `EntityListPage` owns the click-header-to-sort toggle
  * state (unsorted -> ascending -> descending -> unsorted) and turns it into
  * the `sort` query param `listEntities` puts on the wire — mirrors
  * `EntityListPage.test.tsx`'s own mocking setup verbatim (same fixture
@@ -38,14 +38,14 @@ vi.mock("../../../pages/admin/useEntitySchema", () => {
     },
   };
   const labels: Record<string, string> = { widgets: "Widgets" };
-  const resolveEntityKey = (key: string) => (key.endsWith("s") ? key : `${key}s`);
+  const resolveEntityKey = (key: string) => (key.endsWith("s") ? key: `${key}s`);
   return {
     resolveEntityKey,
     useEntitySchema: (key?: string) => {
-      const resolved = key ? resolveEntityKey(key) : undefined;
+      const resolved = key ? resolveEntityKey(key): undefined;
       return {
-        config: resolved ? configs[resolved] : undefined,
-        label: resolved ? labels[resolved] : undefined,
+        config: resolved ? configs[resolved]: undefined,
+        label: resolved ? labels[resolved]: undefined,
         isLoading: false,
         isError: false,
       };
@@ -56,12 +56,12 @@ vi.mock("../../../pages/admin/useEntitySchema", () => {
 
 vi.mock("../../../lib/api/entityCrud", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../../lib/api/entityCrud")>();
-  return { ...actual, listEntities: vi.fn(), getEntity: vi.fn(), createEntity: vi.fn(), deleteEntity: vi.fn() };
+  return {...actual, listEntities: vi.fn(), getEntity: vi.fn(), createEntity: vi.fn(), deleteEntity: vi.fn() };
 });
 
 vi.mock("../../../lib/api/client", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../../lib/api/client")>();
-  return { ...actual, apiFetch: vi.fn() };
+  return {...actual, apiFetch: vi.fn() };
 });
 
 const mockListEntities = vi.mocked(listEntities);
@@ -86,7 +86,7 @@ function renderPage() {
   );
 }
 
-describe("EntityListPage — click-header-to-sort (ADR-0053)", () => {
+describe("EntityListPage — click-header-to-sort ", () => {
   afterEach(() => {
     vi.clearAllMocks();
   });

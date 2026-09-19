@@ -1,7 +1,7 @@
-"""Pydantic v2 schemas for the AUTH-1 login route and AUTH-2 session routes.
+"""Pydantic v2 schemas for the login route and session routes.
 
 Source: API Document §2 (`POST /auth/login`, `POST /auth/refresh`,
-`GET /auth/me` request/response contracts), ADR-0013 (refresh rotation policy).
+`GET /auth/me` request/response contracts), (refresh rotation policy).
 """
 
 from typing import Literal
@@ -17,7 +17,7 @@ class LoginRequest(BaseModel):
     password: str
 
 
-# RBAC-1 / ADR-0016: same `slug` pattern `CreateOrgRequest` (`app/schemas/
+# /: same `slug` pattern `CreateOrgRequest` (`app/schemas/
 # organizations.py`) validates — kept as a private literal here (not
 # imported from that module) to avoid a schemas-importing-schemas cycle;
 # `app/schemas/organizations.py` imports `OrgSummary` *from* this module,
@@ -26,11 +26,11 @@ _SLUG_PATTERN = r"^[a-z0-9-]+$"
 
 
 class SignupRequest(BaseModel):
-    """Body of `POST /auth/signup` (RBAC-1, ADR-0016).
+    """Body of `POST /auth/signup`.
 
     Bootstrap-only: creates a brand-new `User` + the deployment's first
     `Organization` in one call. `org_slug` is user-supplied, never
-    server-derived from `org_name` (ADR-0016 decision Q5).
+    server-derived from `org_name`.
     """
 
     name: str
@@ -49,11 +49,11 @@ class OrgSummary(BaseModel):
 
 
 class MeOrgsResponse(BaseModel):
-    """Response of `GET /auth/me/orgs` (SHELL-6, ADR-0036, API Document §2).
+    """Response of `GET /auth/me/orgs`.
 
     A plain envelope around the **exact same** `OrgSummary` entries
     `LoginResponse.orgs` already returns — deliberately no new per-org
-    schema (ADR-0036: "reusing the exact `OrgSummary {id, name, slug}`
+    schema (: "reusing the exact `OrgSummary {id, name, slug}`
     schema `LoginResponse` already returns — no new schema"), so the
     frontend can share one type across the login response and this route.
 
@@ -70,7 +70,7 @@ class LoginResponse(BaseModel):
     """Response of `POST /auth/login`.
 
     The refresh token is never included here — it is set as an httpOnly
-    cookie on the response (API Document §2, ADR-0003).
+    cookie on the response.
     """
 
     access_token: str
@@ -79,7 +79,7 @@ class LoginResponse(BaseModel):
 
 
 class RefreshResponse(BaseModel):
-    """Response of `POST /auth/refresh` (API Document §2, ADR-0013).
+    """Response of `POST /auth/refresh`.
 
     Deliberately does NOT include `org_context`/`orgs` — the frontend already
     holds those from login; refresh's only job is renewing the access token.
@@ -91,13 +91,13 @@ class RefreshResponse(BaseModel):
 
 
 class MeResponse(BaseModel):
-    """Response of `GET /auth/me` (API Document §2, ADR-0013, ADR-0015).
+    """Response of `GET /auth/me`.
 
     Identity-only — no resolved permission codes yet (deferred until an RBAC
     story exists to resolve them).
 
-    AUTH-4 extends this to a second actor shape: `get_current_actor` can now
-    resolve to either a `User` or an `AIAgent` (ADR-0015), and `GET /auth/me`
+     extends this to a second actor shape: `get_current_actor` can now
+    resolve to either a `User` or an `AIAgent`, and `GET /auth/me`
     branches on `actor_type` to serialize the right one. Rather than a
     `Union` of two separate response models, this is kept as a single model
     with `email`/`agent_name` both optional (Pydantic-v2-idiomatic, simpler

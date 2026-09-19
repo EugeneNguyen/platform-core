@@ -88,7 +88,7 @@ describe("apiFetch", () => {
     const originalLocation = window.location;
     Object.defineProperty(window, "location", {
       configurable: true,
-      value: { ...originalLocation, assign: assignMock },
+      value: {...originalLocation, assign: assignMock },
     });
 
     const fetchMock = vi.fn(async (url: string | URL | Request) => {
@@ -189,7 +189,7 @@ describe("apiFetch", () => {
     // authenticated apiFetch call hitting a 401 and recovering via the same
     // requestRefresh()) -- must collapse into exactly one real
     // POST /auth/refresh call, never two presentations of the same
-    // single-use refresh cookie (ADR-0013).
+    // single-use refresh cookie.
     setAccessToken("expired-token");
     let refreshCallCount = 0;
     let widgetCallCount = 0;

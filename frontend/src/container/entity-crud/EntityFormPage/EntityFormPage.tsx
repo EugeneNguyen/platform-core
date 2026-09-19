@@ -13,9 +13,9 @@
  * `useAdminRouteContext`. Every other mount omits it and behaves exactly as
  * before.
  *
- * A downstream app that needs a per-entity read-only detail section (the
- * TestNexa fork this was extracted from had one for its `TestCase` entity —
- * a "Defects" list + a "Requirement" link picker) adds it the same way:
+ * A downstream app that needs a per-entity read-only detail section (an
+ * earlier fork of this pattern had one for a domain entity — a linked
+ * "Issues" list + a "Spec" link picker) adds it the same way:
  * gate a block on `entityKey === "<your-entity>"`, fetch via its own
  * `lib/api/<entity>.ts` module. Keep it out of this file if it's genuinely
  * one entity's own concern — this component stays fully generic otherwise.
@@ -61,7 +61,7 @@ function EntityFormPage({ entityKeyOverride }: { entityKeyOverride?: string } = 
       if (errors) {
         setFieldErrors(errors);
       } else {
-        setSubmitError(error instanceof ApiError ? error.message : "Something went wrong. Please try again.");
+        setSubmitError(error instanceof ApiError ? error.message: "Something went wrong. Please try again.");
       }
     },
   });
@@ -110,11 +110,11 @@ function EntityFormPage({ entityKeyOverride }: { entityKeyOverride?: string } = 
           <Card.Body>
             <Spinner wrapperClassName="py-4" />
           </Card.Body>
-        ) : itemQuery.isError ? (
+        ): itemQuery.isError ? (
           <Card.Body>
             <Alert color="danger">Something went wrong loading this record.</Alert>
           </Card.Body>
-        ) : (
+        ): (
           <EntityForm
             config={config}
             mode="edit"

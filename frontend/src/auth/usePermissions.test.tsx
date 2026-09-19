@@ -6,13 +6,13 @@ import { usePermissions } from "./usePermissions";
 import { apiFetch } from "../lib/api/client";
 
 /**
- * ADR-0025 / UI Design Document §5: `usePermissions(orgId).has(code, projectId)`
+ * / UI Design Document §5: `usePermissions(orgId).has(code, projectId)`
  * — an org-wide grant row (`project_id: null`) satisfies every project; a
  * project-scoped row only satisfies its own project.
  */
 vi.mock("../lib/api/client", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../lib/api/client")>();
-  return { ...actual, apiFetch: vi.fn() };
+  return {...actual, apiFetch: vi.fn() };
 });
 
 const mockApiFetch = vi.mocked(apiFetch);
@@ -37,34 +37,34 @@ describe("usePermissions", () => {
   });
 
   it("has() returns true for an org-wide grant (project_id: null), regardless of which project is asked about", async () => {
-    mockApiFetch.mockResolvedValue({ codes: [{ code: "test_case.update", project_id: null }] });
+    mockApiFetch.mockResolvedValue({ codes: [{ code: "item.update", project_id: null }] });
     const { result } = renderHook(() => usePermissions("org-1"), { wrapper });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    expect(result.current.has("test_case.update")).toBe(true);
-    expect(result.current.has("test_case.update", "project-a")).toBe(true);
-    expect(result.current.has("test_case.update", "project-b")).toBe(true);
+    expect(result.current.has("item.update")).toBe(true);
+    expect(result.current.has("item.update", "project-a")).toBe(true);
+    expect(result.current.has("item.update", "project-b")).toBe(true);
   });
 
   it("has() returns true only for its own project for a project-scoped grant", async () => {
-    mockApiFetch.mockResolvedValue({ codes: [{ code: "defect.update", project_id: "project-a" }] });
+    mockApiFetch.mockResolvedValue({ codes: [{ code: "issue.update", project_id: "project-a" }] });
     const { result } = renderHook(() => usePermissions("org-1"), { wrapper });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    expect(result.current.has("defect.update", "project-a")).toBe(true);
-    expect(result.current.has("defect.update", "project-b")).toBe(false);
-    expect(result.current.has("defect.update")).toBe(false);
+    expect(result.current.has("issue.update", "project-a")).toBe(true);
+    expect(result.current.has("issue.update", "project-b")).toBe(false);
+    expect(result.current.has("issue.update")).toBe(false);
   });
 
   it("has() returns false for a code the actor doesn't hold at all", async () => {
-    mockApiFetch.mockResolvedValue({ codes: [{ code: "defect.update", project_id: "project-a" }] });
+    mockApiFetch.mockResolvedValue({ codes: [{ code: "issue.update", project_id: "project-a" }] });
     const { result } = renderHook(() => usePermissions("org-1"), { wrapper });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    expect(result.current.has("defect.delete", "project-a")).toBe(false);
+    expect(result.current.has("issue.delete", "project-a")).toBe(false);
   });
 
   it("has() fails closed (false) while the query is still loading", () => {
@@ -72,6 +72,6 @@ describe("usePermissions", () => {
     const { result } = renderHook(() => usePermissions("org-1"), { wrapper });
 
     expect(result.current.isLoading).toBe(true);
-    expect(result.current.has("test_case.update")).toBe(false);
+    expect(result.current.has("item.update")).toBe(false);
   });
 });

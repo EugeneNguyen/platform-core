@@ -1,6 +1,6 @@
 /**
- * RBAC-1 `POST /orgs` call — an existing authenticated actor mints a further
- * Organization (ADR-0016).
+ * `POST /orgs` call — an existing authenticated actor mints a further
+ * Organization.
  *
  * Source: API Document §2 (`POST /orgs` request/response contract).
  *

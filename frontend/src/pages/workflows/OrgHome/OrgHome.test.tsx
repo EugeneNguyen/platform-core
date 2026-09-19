@@ -6,8 +6,8 @@ import OrgHome from "./OrgHome";
 import { listRoleAssignments, listRoles } from "../../../lib/api/roleAssignments";
 
 /**
- * PROJ-4 (ADR-0047): `OrgHome`'s own Project-CRUD tests (New Project modal,
- * Edit/Delete modals, search/sort/pagination, TC-PROJ-019..024, the
+ *: `OrgHome`'s own Project-CRUD tests (New Project modal,
+ * Edit/Delete modals, search/sort/pagination,..024, the
  * unmount/remount persistence regression test) all moved verbatim to
  * `ProjectsPage.test.tsx` — the component they exercise moved too. What's
  * left here is what's left on the page itself: the "Dashboard" heading, the
@@ -56,7 +56,7 @@ function renderOrgHome(orgId = ORG_ID) {
   );
 }
 
-describe("OrgHome — Dashboard (widgets + RoleAssignmentsPanel only, PROJ-4)", () => {
+describe("OrgHome — Dashboard ", () => {
   afterEach(() => {
     vi.clearAllMocks();
   });
@@ -72,7 +72,7 @@ describe("OrgHome — Dashboard (widgets + RoleAssignmentsPanel only, PROJ-4)", 
   });
 
   /**
-   * TC-PROJ-026's negative half.
+   * negative half.
    *
    * The row's literal expected result names four separate absences: no "New
    * Project" button, **no Project table**, and neither of the table's two
@@ -84,10 +84,10 @@ describe("OrgHome — Dashboard (widgets + RoleAssignmentsPanel only, PROJ-4)", 
    *
    * "No Project table" is asserted against the Project table's own signature
    * column header rather than `queryByRole("table")`: `RoleAssignmentsPanel`
-   * legitimately renders its own table on this page (ADR-0047 Decision §3
+   * legitimately renders its own table on this page ( Decision §3
    * keeps it here), so a blanket no-table assertion would be wrong.
    */
-  it("no longer renders a Project table or a New Project action (moved to ProjectsPage, PROJ-4)", () => {
+  it("no longer renders a Project table or a New Project action ", () => {
     renderOrgHome();
 
     expect(screen.queryByRole("button", { name: /^new project$/i })).not.toBeInTheDocument();
