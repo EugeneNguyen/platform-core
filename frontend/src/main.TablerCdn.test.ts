@@ -129,11 +129,15 @@ describe(": package.json declares no Tabler npm package", () => {
     expect(declared.filter((name) => name.startsWith("@tabler/"))).toEqual([]);
   });
 
-  it("still declares admin-lte and bootstrap — Phase 1 removes nothing", () => {
-    // Consequences: AdminLTE remains the live design
-    // system in full; this phase is install-only. A Tabler install that also
-    // dropped either package would be a Phase 2 change smuggled in here.
-    expect(pkg.dependencies ?? {}).toHaveProperty("admin-lte");
-    expect(pkg.dependencies ?? {}).toHaveProperty("bootstrap");
+  it("no longer declares admin-lte or bootstrap — AdminLTE is fully removed", () => {
+    // Phase 1 (this file's other assertions, unchanged) installed Tabler
+    // alongside AdminLTE. Phase 2 flipped the cascade so Tabler won shared
+    // classes while AdminLTE stayed loaded for not-yet-migrated widgets.
+    // This is the completion: every AdminLTE-only widget (InfoBox was the
+    // last one — see its own file header) has a Tabler-native replacement,
+    // so the AdminLTE and Bootstrap dependencies (Bootstrap was only ever
+    // installed to satisfy AdminLTE's peerDependencies entry) are gone.
+    expect(pkg.dependencies ?? {}).not.toHaveProperty("admin-lte");
+    expect(pkg.dependencies ?? {}).not.toHaveProperty("bootstrap");
   });
 });

@@ -29,8 +29,10 @@ written from scratch as a toy scaffold. Ships:
     you'll actually reuse day-to-day.
 
 - **Frontend** (Vite + React + TypeScript):
-  - AdminLTE v4 + Bootstrap 5 + Font Awesome design system, raw HTML/JSX
-    against the shipped CSS — no component-library wrapper.
+  - Tabler + Font Awesome design system (Tabler bundles Bootstrap 5 itself),
+    raw HTML/JSX against the shipped CSS — no component-library wrapper.
+    Loaded via a pinned CDN `<link>`/`<script>` in `index.html`, not an npm
+    package (see `frontend/src/main.TablerCdn.test.ts`).
   - An atomic-design component library (`components/{atoms,molecules,
     organisms,templates}`) — Button, Card, Modal, Table with sort/filter/
     columns, FkAutocomplete, generic admin List/Add/Edit/Delete pages.
@@ -64,7 +66,7 @@ directory) before writing any of that from scratch.
   bespoke admin table.
 - A design-system primitive (button, card, modal, table, autocomplete,
   form field) — check `frontend/src/components/{atoms,molecules,organisms,
-  templates}` for an existing one before hand-rolling AdminLTE/Bootstrap
+  templates}` for an existing one before hand-rolling Tabler/Bootstrap
   markup. Confirmed repeatedly (see the design-system's own history) that
   skipping this check produces near-duplicate hand-rolled components.
 
@@ -92,7 +94,7 @@ logic from scratch is exactly the class of mistake this kit exists to avoid.
 |---|---|
 | Backend | FastAPI, SQLAlchemy 2.0 (async), Alembic, Postgres, argon2, PyJWT |
 | Frontend | Vite, React 18, TypeScript, React Router, TanStack Query, React Hook Form + Zod |
-| Design system | AdminLTE v4 + Bootstrap 5 + Font Awesome |
+| Design system | Tabler (bundles Bootstrap 5) + Font Awesome |
 | Infra | Docker Compose (dev + prod profiles), nginx single-entrypoint topology |
 
 ## Running it
@@ -165,7 +167,7 @@ git commit` to pull in updates.
   catalog alone only affects a fresh DB's initial seed).
 - **New design-system component:** check
   `frontend/src/components/{atoms,molecules,organisms,templates}` for an
-  existing primitive before hand-rolling Bootstrap/AdminLTE markup — this is
+  existing primitive before hand-rolling Bootstrap/Tabler markup — this is
   the single biggest source of drift in a codebase built on raw HTML against
   a design system instead of a component library.
 

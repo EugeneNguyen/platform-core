@@ -3,14 +3,14 @@
 Guidance for Claude Code (and any agent) working in this repo. This is a
 starter kit extracted from a larger production app — the gotchas below are
 the ones that survived extraction because they're about the *mechanism*
-(FastAPI/SQLAlchemy/Docker/AdminLTE), not about any specific product domain.
+(FastAPI/SQLAlchemy/Docker/Tabler), not about any specific product domain.
 
 ## Repo layout
 
 | Path | What |
 |---|---|
 | `backend/` | FastAPI + SQLAlchemy 2.0 (async) + Alembic. Auth, orgs, RBAC, generic CRUD factory. |
-| `frontend/` | Vite + React + TypeScript. AdminLTE v4 design system, generic admin CRUD surface. |
+| `frontend/` | Vite + React + TypeScript. Tabler design system, generic admin CRUD surface. |
 | `nginx/` | dev/prod reverse-proxy configs, single external entrypoint. |
 | `docker-compose.yml` | dev/prod profiles, nginx is the only service exposing a host port. |
 
@@ -59,18 +59,22 @@ backfill the new permission onto already-seeded system roles.
   silently overwrites the image's freshly-`npm ci`'d `node_modules` with
   whatever's on the host, if a host checkout happens to have one.
 
-## Frontend design system (AdminLTE v4 + Bootstrap 5)
+## Frontend design system (Tabler, bundles Bootstrap 5)
 
 - Raw HTML/JSX against the shipped CSS — no component-library wrapper. Check
   `frontend/src/components/{atoms,molecules,organisms,templates}` for an
   existing primitive before hand-rolling a `.card`/`.btn`/`.alert`/`.modal`
   block.
-- CSS import order in `frontend/src/main.tsx` matters: `bootstrap` →
-  `admin-lte` → `@fortawesome/fontawesome-free` → `./index.css`. AdminLTE's
-  rules are authored to override Bootstrap's, not the reverse.
-- No AdminLTE JS/jQuery is vendored — every interactive behavior (sidebar
-  collapse, treeview, color mode) is plain React state/effects toggling
-  AdminLTE's own literal classes.
+- Tabler is loaded from `frontend/index.html` as a pinned CDN
+  `<link>`/`<script>` pair (currently `1.5.1`), not an npm package — asserted
+  by `frontend/src/main.TablerCdn.test.ts`. `frontend/src/main.tsx` imports
+  only Font Awesome and `./index.css`; there is no AdminLTE/Bootstrap npm
+  dependency or CSS import anywhere in this repo.
+- No Tabler JS bundle drives any interactive state — every interactive
+  behavior (sidebar collapse, org switcher, color mode) is plain React
+  state/effects toggling Tabler's own literal classes (`.navbar-collapse` +
+  `show`, `.dropdown` + `show`, etc.), same convention the AdminLTE version
+  used before it.
 - Badges use `bg-*`, not Bootstrap 5.3's `text-bg-*` — existing assertions
   check the exact class.
 

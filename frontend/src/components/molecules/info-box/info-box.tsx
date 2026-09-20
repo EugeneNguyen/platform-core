@@ -1,154 +1,71 @@
 /**
- * `InfoBox` shared presentational primitive — AdminLTE v4's own documented
- * **Info Box** widget (https://adminlte.io/themes/v4/widgets/info-box.html),
- * /.
+ * `InfoBox` shared presentational primitive — a Tabler-native stat tile.
  *
- * Replaces **two** independently hand-rolled stat tiles that predated
- * 's design-system swap and
- * were carried forward by its markup-only reclass rather than replaced:
- * `WidgetStatsTile` (`OrgHome`'s 2 count widgets, a CoreUI-free-template card
- * composition) and `RoundDetail`'s local `StatTile` (its 4
- * execution-dashboard tiles, a different card composition). Both are deleted by
- * this story; neither shape survives anywhere in `frontend/src`.
+ * Replaces AdminLTE's Info Box widget (`.info-box`/`.info-box-icon`/
+ * `.info-box-content`/`.info-box-text`/`.info-box-number`) now that AdminLTE
+ * is removed from this project entirely. The AdminLTE version had no direct
+ * Tabler equivalent by that name — Tabler's own documented pattern for this
+ * exact use case (a small labeled metric with an optional colored icon) is a
+ * `.card` containing a `.row.align-items-center` with the icon in an
+ * `.avatar` inside a `.col-auto`, and the label/value in a sibling `.col`.
  *
- * ## Markup provenance — where every class string below came from
+ * Markup provenance: `.avatar` and every `bg-{color}-lt` utility class below
+ * are confirmed against `@tabler/core`'s own built CSS (`dist/css/
+ * tabler.css`) — `.avatar` is a real documented Tabler UI component
+ * (`scss/ui/_avatars.scss`), and all eight `bg-{color}-lt` variants
+ * (`scss/utils/_colors.scss`) are present in the compiled stylesheet. `-lt`
+ * ("light") tints the icon's background instead of filling it solid, which
+ * is Tabler's own convention for a stat-tile icon badge — a solid
+ * `bg-{color}` fill (AdminLTE's own choice) reads as heavier than Tabler's
+ * other card-based widgets and would look inconsistent next to them.
  *
- * Raw HTML/JSX against the shipped CSS, the repo-wide rule as of. The
- * structural classes (`.info-box`, `.info-box-icon`, `.info-box-content`,
- * `.info-box-text`, `.info-box-number`) are the five AdminLTE actually defines —
- * confirmed by direct grep of `admin-lte/dist/css/adminlte.css` (the block at
- * `:14857`), which yields exactly six `.info-box*` selectors: those five plus
- * `.info-box-more` (a "read more" link slot neither call site uses).
- *
- * The **contextual color** on the icon block was the open item and the
- * UI Design Document §4 both deferred to implementation, precisely because
- * it is *not* derivable from the CSS: `src/scss/_info-box.scss` bakes in no
- * color at all (verified — the only color-ish declarations in the whole file are
- * `--bs-body-color`/`--bs-body-bg` on the root and `--lte-card-variant-color` on
- * the optional `.progress` slot), so the demo must be supplying it via a utility
- * class in *markup*, which no amount of reading the stylesheet can reveal.
- * Resolved empirically per root `CLAUDE.md`'s "dump the real DOM, don't invent a
- * class name" rule, by fetching the demo page's own served HTML and extracting
- * every `.info-box-icon` element's literal `class` attribute:
- *
- * info-box-icon text-bg-primary shadow-sm (x2)
- * info-box-icon text-bg-success shadow-sm (x2)
- * info-box-icon text-bg-warning shadow-sm (x2)
- * info-box-icon text-bg-danger shadow-sm (x2)
- * info-box-icon (x8)
- *
- * So the answer is **`text-bg-{color}` + `shadow-sm`**, and the eight uncolored
- * occurrences are not a competing convention for this element — they belong to
- * the demo's separate "Info Box With `bg-*`" section, where the color moves to
- * the *root* (`div.info-box.text-bg-primary`) and the icon inherits it. That's a
- * whole-box-colored variant neither of this story's call sites uses, and it is
- * explicitly out of scope (UI Design Document §5).
- *
- * Note this is a genuine, deliberate divergence from the badge convention root
- * `CLAUDE.md` documents (badges use `bg-*`, **not** Bootstrap 5.3's `text-bg-*`,
- * and 8+ assertions check that exact class). AdminLTE is simply not uniform
- * here — which is exactly why the UI Design Document forbade guessing from the
- * Bootstrap convention and required a real DOM read instead. `.text-bg-*` is
- * defined for all eight `CWidgetStatsColor` members in both
- * `bootstrap/dist/css/bootstrap.min.css` and `admin-lte/dist/css/adminlte.min.css`
- * (grepped: eight each, no ninth), so every member of the union is renderable.
- *
- * The demo's own `<i>` uses Bootstrap Icons (`bi bi-gear-fill`). We do **not**
- * follow it there: this repo ships exactly one icon library, Font Awesome
- *, so the `icon` prop takes an FA
- * class string and the surrounding `<span>` is what's copied verbatim.
- *
- * ## Tier placement
- *
- * `frontend/src/components/molecules/`
- * (which superseded 's
- * `components/shared/` location while this component was mid-flight — rebased
- * onto the new convention rather than shipped at a now-dead path) — the same
- * tier `FeaturedCard`/`FormField` and the retired `WidgetStatsTile` occupy.
- * Deliberately **not** `container/` (where `Table` lives, an axis
- * left untouched): this component owns no state, no actions, and no
- * data fetching. Every value it renders is a prop. A sibling container here
- * would be a forwarding shim with no internal logic.
- *
- * ## Sentinel conventions are the caller's, not this component's
- *
- * `number` is a bare `ReactNode` and this component makes no assumption about
- * what a caller puts in it. Two different conventions coexist through it today
- * and neither leaks into the other's call site:
- *
- * - `OrgHome`'s `widgetValue()` tri-state — `"Loading…"` / `"Unable to load"` /
- * the real count, so a still-in-flight or failed fetch never renders a false
- * `0`.
- * - `RoundDetail`'s `null` → `"—"` sentinel for a cycle with zero
- * executions of a given `result`.
- *
- * This looseness is inherited from `WidgetStatsTile`'s own `value` prop, not
- * introduced here — Consequences names it explicitly as a
- * trade-off worth watching if a third caller ever invents a third convention.
+ * The props API is unchanged from the AdminLTE version on purpose — `OrgHome`
+ * and every other call site need zero changes, only this component's
+ * internal markup moved design systems.
  */
 import { ReactNode } from "react";
 import type { CWidgetStatsColor } from "./types";
 
 /**
- * Icon-block contextual color, looked up by `color` at render time.
+ * Icon-badge contextual color, looked up by `color` at render time.
  *
- * Exported so tests can assert against the same source of truth the component
- * renders from, rather than re-hardcoding the class strings (which is how the
- * retired `WidgetStatsTile`'s own `tileBgClassName` was used).
+ * Exported so tests assert against the same source of truth the component
+ * renders from, rather than re-hardcoding the class strings.
  */
 export const infoBoxIconColorClassName: Record<CWidgetStatsColor, string> = {
-  primary: "text-bg-primary",
-  secondary: "text-bg-secondary",
-  success: "text-bg-success",
-  danger: "text-bg-danger",
-  warning: "text-bg-warning",
-  info: "text-bg-info",
-  light: "text-bg-light",
-  dark: "text-bg-dark",
+  primary: "bg-primary-lt",
+  secondary: "bg-secondary-lt",
+  success: "bg-success-lt",
+  danger: "bg-danger-lt",
+  warning: "bg-warning-lt",
+  info: "bg-info-lt",
+  light: "bg-light-lt",
+  dark: "bg-dark-lt",
 };
 
 export interface InfoBoxProps {
-  /**
-   * Contextual color for the icon block. Has no effect when `icon` is omitted —
-   * AdminLTE's Info Box colors the *icon block*, not the label or the number
-   * (unlike the retired `StatTile`, which colored the number text via
-   * `text-{color}`; see this file's own migration note in ).
-   */
+  /** Contextual color for the icon badge. Has no effect when `icon` is omitted. */
   color: CWidgetStatsColor;
-  /** Small label, rendered in `.info-box-text` above the number. Plain string — callers own any localization. */
+  /** Small label, rendered under the number. Plain string — callers own any localization. */
   text: string;
   /**
-   * The metric itself, rendered in `.info-box-number`. `ReactNode` so callers
-   * pass pre-formatted strings, counts, or their own sentinels — see this
-   * file's header on why the component stays agnostic to which convention.
+   * The metric itself, rendered as the tile's headline value. `ReactNode` so
+   * callers pass pre-formatted strings, counts, or their own sentinels (e.g.
+   * a "Loading…"/"Unable to load" tri-state, or a `null` → "—" fallback) —
+   * this component stays agnostic to which convention a caller uses.
    */
   number: ReactNode;
   /**
-   * Optional **Font Awesome class string**, e.g. `"fa-solid fa-folder"`.
-   * When supplied, renders the leading colored `.info-box-icon` block; when
-   * omitted, the element is **not rendered at all** — not rendered empty
-   *. AdminLTE's demo never showcases omitting it, but the block is
-   * structurally optional in the CSS and `RoundDetail`'s 4 tiles use that
-   * path (no natural icon exists for a bare pass/fail/blocked/skipped count).
+   * Optional Font Awesome class string, e.g. `"fa-solid fa-folder"`. When
+   * supplied, renders the leading colored icon badge; when omitted, the
+   * badge column is not rendered at all — not rendered empty.
    */
   icon?: string;
-  /** Forwarded to the `.info-box` root as `data-testid`. */
+  /** Forwarded to the root `.card` element as `data-testid`. */
   testId?: string;
-  /**
-   * Forwarded to the `.info-box-number` element as `data-testid`.
-   *
-   * Not in the UI Design Document §2 prop list — added during implementation
-   * because requires `RoundDetail`'s existing
-   * `dashboard-tile-{pass,fail,blocked,skipped}-count` testids to keep resolving
-   * to **the number element specifically**, and four existing Vitest assertions
-   * check `.textContent` is exactly `"12"`/`"3"`/`"0"` etc. Wrapping the value
-   * in a caller-supplied `<span data-testid=...>` instead would nest an extra
-   * node inside `.info-box-number` and diverge from the demo's markup, so the
-   * testid goes on AdminLTE's own element via this prop. See the completion
-   * report for this being flagged rather than silently absorbed.
-   */
+  /** Forwarded to the number element as `data-testid`, distinct from `testId` on the root. */
   numberTestId?: string;
-  /** Appended last to the root's class list, for callers needing layout/spacing tweaks. Matches the `FeaturedCard`/`Button` precedent. */
+  /** Appended last to the root's class list, for callers needing layout/spacing tweaks. */
   className?: string;
 }
 
@@ -161,20 +78,26 @@ export function InfoBox({
   numberTestId,
   className,
 }: InfoBoxProps) {
-  const rootClassName = className ? `info-box ${className}`: "info-box";
+  const rootClassName = className ? `card ${className}` : "card";
 
   return (
     <div className={rootClassName} data-testid={testId}>
-      {icon !== undefined && (
-        <span className={`info-box-icon ${infoBoxIconColorClassName[color]} shadow-sm`}>
-          <i className={icon} aria-hidden="true" />
-        </span>
-      )}
-      <div className="info-box-content">
-        <span className="info-box-text">{text}</span>
-        <span className="info-box-number" data-testid={numberTestId}>
-          {number}
-        </span>
+      <div className="card-body">
+        <div className="row align-items-center">
+          {icon !== undefined && (
+            <div className="col-auto">
+              <span className={`avatar ${infoBoxIconColorClassName[color]}`}>
+                <i className={icon} aria-hidden="true" />
+              </span>
+            </div>
+          )}
+          <div className="col">
+            <div className="font-weight-medium" data-testid={numberTestId}>
+              {number}
+            </div>
+            <div className="text-secondary">{text}</div>
+          </div>
+        </div>
       </div>
     </div>
   );
