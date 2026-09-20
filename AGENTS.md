@@ -1,6 +1,8 @@
-# CLAUDE.md
+# AGENTS.md
 
-Guidance for Claude Code (and any agent) working in this repo. This is a
+Guidance for AI coding agents (Claude Code and others — this repo follows
+the cross-tool `AGENTS.md` convention, not a Claude-specific file) working
+in this repo. This is a
 starter kit extracted from a larger production app — the gotchas below are
 the ones that survived extraction because they're about the *mechanism*
 (FastAPI/SQLAlchemy/Docker/Tabler), not about any specific product domain.
