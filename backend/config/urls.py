@@ -16,8 +16,9 @@ Including another URLconf
 """
 from django.urls import path
 
-from core_api.views import HealthView
+from core_api.views import HealthView, ModulesView
 
 urlpatterns = [
     path('health', HealthView.as_view(), name='health'),
+    path('modules', ModulesView.as_view(), name='modules'),
 ]

@@ -18,7 +18,13 @@ auth, no product logic of its own. Ships:
   module's own models should use `generate_uuid7` as their PK default and
   inherit `TimestampedModel`, for id/timestamp consistency across modules
   with independent databases.
-- One real route: `GET /health`.
+- **`GET /modules`** — reads the consuming platform's `modules.yaml` (path
+  from the `MODULES_MANIFEST_PATH` env var, since this repo doesn't know
+  where a given platform keeps its own manifest) and lists the enabled
+  modules. Returns `{"modules": []}` if the env var is unset — this is
+  read-only registry groundwork for a future gateway, not a hard
+  requirement to boot.
+- One other real route: `GET /health`.
 
 That's it. Auth lives in its own module
 ([`platform-auth`](https://github.com/EugeneNguyen/platform-auth)); orgs,
@@ -43,8 +49,9 @@ cd backend
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 python manage.py migrate   # only auth/contenttypes tables; nothing queries them yet
-python manage.py runserver
+MODULES_MANIFEST_PATH=/path/to/your/platform/modules.yaml python manage.py runserver
 curl http://localhost:8000/health
+curl http://localhost:8000/modules
 ```
 
 ## License
