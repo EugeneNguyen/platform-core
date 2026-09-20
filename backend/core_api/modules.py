@@ -26,11 +26,13 @@ class ModuleConfig(BaseModel):
     path: str
     repo: str
     enabled: bool = True
-    # Where that module's own frontend dev server/deployment lives - the
-    # platform-core frontend shell links out to this rather than trying to
-    # render the module's UI itself (no module federation yet). Optional:
-    # a backend-only module (or platform-core itself) has none.
-    frontend_url: str | None = None
+    # Path this module is mounted at behind the single-port gateway
+    # (nginx proxies "{url_prefix}/" to the module's frontend and
+    # "{url_prefix}/api/" to its backend) - the platform-core frontend
+    # shell links to this rather than trying to render the module's UI
+    # itself (no module federation). Optional: a backend-only module (or
+    # platform-core itself, served at the root "/") has none.
+    url_prefix: str | None = None
 
 
 def _manifest_path() -> Path | None:

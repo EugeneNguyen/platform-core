@@ -19,16 +19,28 @@ way, not get added back here.
 
 | Path | What |
 |---|---|
-| `backend/` | Django + DRF. `config/` (settings/urls/wsgi/asgi), `core_api/` (errors, exceptions, pagination, filters, uuid7 utils — a library, not a Django app; no models). Real routes: `GET /health`, `GET /modules`. |
-| `frontend/` | React + Vite + TS + react-router-dom only — no design system, no admin CRUD surface (that's gone, see history note below). Fetches `GET /modules` and routes `/:moduleName/*` to that module's own `frontend_url` (a redirect, not module federation). |
+| `backend/` | Django + DRF. `config/` (settings/urls/wsgi/asgi), `core_api/` (errors, exceptions, pagination, filters, uuid7 utils — a library, not a Django app; no models). Real routes: `GET /api/health`, `GET /api/modules` — under `/api`, same convention every module in this platform follows. |
+| `frontend/` | React + Vite + TS + react-router-dom only — no design system, no admin CRUD surface (that's gone, see history note below). Fetches `GET /api/modules` and lists each module's `url_prefix` as a plain link — no client-side cross-module routing, the gateway (parent platform's nginx) handles that. |
 
 `core_api/modules.py` reads `MODULES_MANIFEST_PATH` (an env var, not a
 hardcoded path) to find the consuming platform's `modules.yaml` — this
 repo is reused across platforms and must never assume where a given one
 keeps its manifest. Unset var / missing file -> empty list, not an error.
-`ModuleConfig.frontend_url` is optional (a backend-only module, or
-platform-core itself, has none) — the frontend must handle `null` rather
-than assuming every module has one.
+`ModuleConfig.url_prefix` is optional (a backend-only module, or
+platform-core itself at the gateway root, has none) — the frontend must
+handle `null` rather than assuming every module has one.
+
+## Single-port composition
+
+The parent platform composes every module behind one nginx port
+(`nginx/default.conf` in that platform's own repo), path-prefixed per
+`modules.yaml`'s `url_prefix`. If you add a route here, it's reachable
+both directly (`platform-core-backend:8000/api/...`) and through the
+gateway (`<gateway>/api/...`, no rewriting needed since platform-core
+itself has no prefix). A module WITH a prefix (like `platform-auth` at
+`/platform-auth`) needs its own frontend served with a matching Vite
+`base` and any absolute cookie paths built from an env-configured prefix
+— see `platform-auth`'s `URL_PREFIX` setting for the pattern.
 
 ## History note
 

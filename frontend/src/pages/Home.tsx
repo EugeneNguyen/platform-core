@@ -14,7 +14,7 @@ function Home() {
         {modules.map((module) => (
           <li key={module.name}>
             {module.name} ({module.kind}){" "}
-            {module.frontend_url ? <a href={`/${module.name}/`}>open</a> : "— no frontend"}
+            {module.url_prefix ? <a href={module.url_prefix}>open</a> : "— no frontend"}
           </li>
         ))}
       </ul>

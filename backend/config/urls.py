@@ -18,7 +18,10 @@ from django.urls import path
 
 from core_api.views import HealthView, ModulesView
 
+# Under /api - same convention platform-auth's own urls.py uses (its
+# routes live at /api/v1/auth/...) - so hitting this backend directly
+# (bypassing the gateway) shows the same paths the gateway forwards.
 urlpatterns = [
-    path('health', HealthView.as_view(), name='health'),
-    path('modules', ModulesView.as_view(), name='modules'),
+    path('api/health', HealthView.as_view(), name='health'),
+    path('api/modules', ModulesView.as_view(), name='modules'),
 ]

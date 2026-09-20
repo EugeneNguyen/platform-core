@@ -18,13 +18,15 @@ auth, no product logic of its own. Ships:
   module's own models should use `generate_uuid7` as their PK default and
   inherit `TimestampedModel`, for id/timestamp consistency across modules
   with independent databases.
-- **`GET /modules`** — reads the consuming platform's `modules.yaml` (path
-  from the `MODULES_MANIFEST_PATH` env var, since this repo doesn't know
-  where a given platform keeps its own manifest) and lists the enabled
-  modules. Returns `{"modules": []}` if the env var is unset — this is
-  read-only registry groundwork for a future gateway, not a hard
+- **`GET /api/modules`** — reads the consuming platform's `modules.yaml`
+  (path from the `MODULES_MANIFEST_PATH` env var, since this repo doesn't
+  know where a given platform keeps its own manifest) and lists the
+  enabled modules. Returns `{"modules": []}` if the env var is unset —
+  this is read-only registry groundwork for a future gateway, not a hard
   requirement to boot.
-- One other real route: `GET /health`.
+- One other real route: `GET /api/health`. Both live under `/api` on this
+  same port, the same convention every module in this platform follows
+  (see `platform-auth`'s own `/api/v1/auth/...`).
 
 That's it. Auth lives in its own module
 ([`platform-auth`](https://github.com/EugeneNguyen/platform-auth)); orgs,
@@ -35,12 +37,13 @@ again.
 ## Frontend
 
 `frontend/` is a thin React Router shell, not a design system or admin
-UI — it fetches `GET /modules` from this repo's own backend and, for each
-module that has a `frontend_url`, either lists it on the home page or
-hands off the browser to it on `/:moduleName/*` (`/platform-auth/login`
-redirects to `${frontend_url}/login`). There is no module federation yet
-— composing another module's UI in-process is future work, this is just
-routing between separately-deployed frontends.
+UI — it fetches `GET /api/modules` from this repo's own backend and lists
+each module with a `url_prefix` as a plain same-origin link. There is no
+client-side cross-module routing: the single-port gateway (the parent
+platform's `nginx/default.conf`) is what actually routes
+`/platform-auth/*` to that module's own frontend/backend containers —
+this frontend never needs to know how to reach another module, only that
+it exists and what path it lives at.
 
 ## Using this in your own module
 
@@ -60,8 +63,8 @@ python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 python manage.py migrate   # only auth/contenttypes tables; nothing queries them yet
 MODULES_MANIFEST_PATH=/path/to/your/platform/modules.yaml python manage.py runserver
-curl http://localhost:8000/health
-curl http://localhost:8000/modules
+curl http://localhost:8000/api/health
+curl http://localhost:8000/api/modules
 ```
 
 Frontend:
@@ -69,9 +72,13 @@ Frontend:
 ```
 cd frontend
 npm install
-echo "VITE_API_BASE_URL=http://localhost:8000" > .env
-npm run dev
+npm run dev   # VITE_API_BASE_URL defaults to "" (same-origin) - only
+              # override it if the backend isn't on this same port
 ```
+
+See the parent platform's own root `docker-compose.yml`/`nginx/
+default.conf` for how this actually runs composed with other modules
+behind one port.
 
 ## License
 
