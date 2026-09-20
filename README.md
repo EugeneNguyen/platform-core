@@ -32,6 +32,16 @@ RBAC, and any product feature are expected to become their own modules
 the same way — this repo deliberately does not grow entity-specific code
 again.
 
+## Frontend
+
+`frontend/` is a thin React Router shell, not a design system or admin
+UI — it fetches `GET /modules` from this repo's own backend and, for each
+module that has a `frontend_url`, either lists it on the home page or
+hands off the browser to it on `/:moduleName/*` (`/platform-auth/login`
+redirects to `${frontend_url}/login`). There is no module federation yet
+— composing another module's UI in-process is future work, this is just
+routing between separately-deployed frontends.
+
 ## Using this in your own module
 
 There's no submodule/import coupling expected between modules in this
@@ -52,6 +62,15 @@ python manage.py migrate   # only auth/contenttypes tables; nothing queries them
 MODULES_MANIFEST_PATH=/path/to/your/platform/modules.yaml python manage.py runserver
 curl http://localhost:8000/health
 curl http://localhost:8000/modules
+```
+
+Frontend:
+
+```
+cd frontend
+npm install
+echo "VITE_API_BASE_URL=http://localhost:8000" > .env
+npm run dev
 ```
 
 ## License
