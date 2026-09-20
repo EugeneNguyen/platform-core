@@ -32,3 +32,20 @@ _ALL_CONFIGS: tuple[CrudEntityConfig, ...] = (
 )
 
 ALL_ENTITY_CONFIGS: dict[str, CrudEntityConfig] = {_resource_path(config.resource): config for config in _ALL_CONFIGS}
+
+
+def register_entity_config(config: CrudEntityConfig) -> None:
+    """Register an additional `CrudEntityConfig` from a downstream app that
+    consumes this repo as a git submodule ("consume in place" — importing
+    these modules directly rather than copying them), without editing this
+    file.
+
+    Mutates `ALL_ENTITY_CONFIGS` in place (never reassigns it) so
+    `app/api/routes/entity_schema.py`'s already-bound `from ... import
+    ALL_ENTITY_CONFIGS` sees the addition immediately, regardless of import
+    order — call this once, at app startup, before the first request (e.g.
+    right after `from app.main import app` in the downstream app's own
+    entrypoint, alongside its own `app.include_router(make_crud_router(...))`
+    call for the same entity).
+    """
+    ALL_ENTITY_CONFIGS[_resource_path(config.resource)] = config

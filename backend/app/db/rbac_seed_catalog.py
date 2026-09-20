@@ -7,12 +7,22 @@ migration (`alembic/versions/0002_seed_rbac_system_roles.py`) so:
   these structures, and
 - the shape is unit-testable without a DB.
 
-Downstream projects extending this platform with their own entities should
-add their resource(s) to `CRUD_RESOURCES`/`READ_ONLY_RESOURCES` here and
-grant the new permission codes to whichever system role(s) should hold them
-via a new data migration (never by editing this catalog alone — that only
-affects a fresh DB's initial seed, an already-seeded DB needs its own
-idempotent backfill migration, same shape as `0002_seed_rbac_system_roles.py`).
+Downstream projects that own a copy of this code (the "copy the pieces"
+integration shape) extend it by adding their resource(s) to
+`CRUD_RESOURCES`/`READ_ONLY_RESOURCES` here and granting the new permission
+codes to whichever system role(s) should hold them via a new data migration
+(never by editing this catalog alone — that only affects a fresh DB's
+initial seed, an already-seeded DB needs its own idempotent backfill
+migration, same shape as `0002_seed_rbac_system_roles.py`).
+
+A downstream project consuming this repo as a git submodule instead
+("consume in place") doesn't need to touch this file at all: `Permission`/
+`Role`/`RolePermission` are ordinary rows, not code, so its own idempotent
+Alembic data migration can insert new `Permission` rows and grant them to
+this catalog's already-seeded system roles (looked up by name) directly —
+same existence-check-then-insert shape as `0002_seed_rbac_system_roles.py`,
+just issued from the downstream project's own migration chain against the
+same database, with its own `version_table` so the two chains don't collide.
 """
 
 from __future__ import annotations

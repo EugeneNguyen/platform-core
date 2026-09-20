@@ -137,13 +137,17 @@
  * is the structural rule §4.4 sets.
  */
 import { Link, matchPath, useLocation } from "react-router-dom";
-import { allEntities } from "../../../pages/admin/registry";
+import { entityLabelByKey } from "../../../pages/admin/registry";
 import { useResolvedOrgId } from "../../../hooks/useResolvedOrgId";
 
-const entityLabelByKey: Record<string, string> = Object.fromEntries(
-  allEntities.map((e) => [e.key, e.label]),
-);
-
+// Imports the registry's own map directly rather than re-deriving one from
+// `allEntities` at module load — a local re-derivation would snapshot
+// `allEntities` at whatever point this module first evaluates, which can run
+// before a downstream app's `registerOrgScopedEntity` call (ES module
+// bodies execute in dependency order, not the importing file's own textual
+// order), silently missing any entity registered that way. Reading the
+// registry's live object here has no such ordering hazard: only property
+// lookups happen at render time, after registration has long since run.
 function entityLabel(entity: string | undefined): string {
   return entity && entityLabelByKey[entity] ? entityLabelByKey[entity]: "Admin";
 }
