@@ -1,0 +1,18 @@
+# Modules composed into this platform, alongside platform-core itself.
+#
+# Static for now - a human/tooling-readable list of what's wired in via
+# GoalNexa's apps/ submodules. See docs/architecture/microservices-design.md
+# (in the GoalNexa repo) for the planned dynamic version of this
+# (POST /internal/modules/register at runtime); this file is today's
+# stand-in, read by app.core.modules.
+
+modules:
+  - name: platform-core
+    kind: kernel
+    repo: https://github.com/EugeneNguyen/platform-core.git
+    enabled: true
+
+  - name: platform-auth
+    kind: module
+    repo: https://github.com/EugeneNguyen/platform-auth.git
+    enabled: true
