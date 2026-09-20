@@ -20,7 +20,12 @@ way, not get added back here.
 | Path | What |
 |---|---|
 | `backend/` | Django + DRF. `config/` (settings/urls/wsgi/asgi), `core_api/` (errors, exceptions, pagination, filters, uuid7 utils — a library, not a Django app; no models). One real route: `GET /health`. |
-| `frontend/`, `nginx/`, `docker-compose.yml` | **Stale** — built against the old FastAPI backend's auth/org/RBAC/CRUD-factory routes, all of which are now gone. Nothing here currently talks to a working backend. Don't extend these until they're either rebuilt against the new minimal backend or removed — check with whoever's driving this repo before assuming either direction. |
+
+This repo is backend-only now — the old `frontend/`/`nginx/`/
+`docker-compose.yml` (built against the removed FastAPI auth/org/RBAC/
+CRUD-factory routes) were deleted rather than rebuilt against the new
+minimal backend. A design-system/admin-shell frontend can come back later
+as its own module if a real need for one shows up.
 
 ## Adding a shared convention
 
