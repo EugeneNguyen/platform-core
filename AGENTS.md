@@ -34,7 +34,7 @@ default `docker-compose.yml` - this change is backend-only.
 | Path | What |
 |---|---|
 | `backend/` | Django + DRF. `config/` (settings/urls/wsgi/asgi), `core_api/` (errors, exceptions, pagination, filters, uuid7 utils, `BaseSerializer`/`BaseViewSet` — a library, not a Django app; no models). Real routes: `GET /api/health`, `GET /api/modules` — under `/api`, same convention every module in this platform follows. |
-| `frontend/` | React + Vite + TS + react-router-dom only — no design system, no admin CRUD surface (that's gone, see history note below). Fetches `GET /api/modules`, loads a module's `remote_entry` via Module Federation and renders it inline when present, falls back to a plain `url_prefix` link otherwise. |
+| `frontend/` | Two things sharing one package: (1) its own React + Vite + TS + react-router-dom Module Federation shell — no design system, no admin CRUD surface (that's gone, see history note below); fetches `GET /api/modules`, loads a module's `remote_entry` and renders it inline when present, falls back to a plain `url_prefix` link otherwise; and (2) the `platform-core` npm package (`src/index.ts`, `exports` in `package.json`) that `apps/main` imports as a `file:` dependency for `AppShell` (sidemenu + sticky header) — see "AppShell" below. |
 
 `core_api/modules.py` reads `MODULES_MANIFEST_PATH` (an env var, not a
 hardcoded path) to find the consuming platform's `modules.yaml` — this
@@ -62,6 +62,46 @@ dev server has no bundling step to emit a `remoteEntry.js` from. This
 repo's own frontend (the host) stays on `vite dev` fine; it's only the
 remote side (`platform-auth`, etc.) that needs `vite build --watch` +
 `vite preview` instead — see root `docker-compose.yml`.
+
+## AppShell (`src/atoms`/`molecules`/`organisms`/`templates`)
+
+Absorbed from the former `platform-ui` module — that repo was frontend-
+only (no backend, no models), so it had nothing else to justify its own
+git submodule once this platform's convention became "packaged frontend
++ Django app together" per module. Same "frontend npm package, main
+imports it" rule as `platform-auth`/`platform-org`'s frontend halves
+(see root `AGENTS.md`), just living inside this repo's `frontend/`
+alongside the Module Federation shell above rather than in its own repo
+— the two don't share code, they just happen to be packaged together
+now.
+
+`AppShell` (`templates/DashboardLayout`, exported from `src/index.ts`)
+is pure presentation: sidemenu + sticky header, built from Tabler's own
+vertical-navbar page layout, composed atomic-design style (`atoms/` →
+`molecules/` → `organisms/` → `templates/`, each level only importing
+from levels below it — `types.tsx` holds the shared prop types every
+level imports from). Zero react-router dependency of its own (every
+level that renders a link takes a `linkComponent` prop instead of
+calling a router hook) and zero auth-state of its own (`user`/`onLogout`
+are passed in) — same conventions as this platform's other module
+frontends. See `apps/main/frontend/app/routes/app-shell.tsx` for the
+reference consumer.
+
+**`Header` must never carry a `navbar-expand-*` class** — Tabler's CSS
+treats any `.page` child matching `[class*=navbar-expand]` that isn't
+`.navbar-vertical` as "the other navigation" and hides one of the two
+navbars depending on `data-bs-navbar-position`; an earlier version of
+`Header` had `navbar-expand-md` leftover from copying Tabler's
+single-navbar sample, which made `Sidebar` invisible unconditionally at
+every viewport width, not just mobile (the element still reports
+`position: fixed` from `getComputedStyle` even while `display:none`,
+which is what made an earlier check wrongly conclude only mobile was
+broken). Keep checking this if you ever add a class to `Header`.
+
+**The sidebar's mobile toggler needs Bootstrap's JS** (`data-bs-toggle=
+"collapse"`) — inert without it. The host loads Tabler's JS bundle (see
+`apps/main/frontend/app/root.tsx`'s `<script>` tag), same "host loads
+the design system" convention as Tabler's CSS.
 
 ## Single-port composition
 
