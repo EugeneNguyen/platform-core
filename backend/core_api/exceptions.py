@@ -1,9 +1,12 @@
 """The shared `{code, message, field_errors}` error contract as a DRF
-`EXCEPTION_HANDLER` - every module wires this into its own
+`EXCEPTION_HANDLER` - every module wires
+`"core_api.exceptions.platform_exception_handler"` into its own
 `REST_FRAMEWORK["EXCEPTION_HANDLER"]` so all of this platform's APIs
-respond with the same error shape (see platform-auth's own settings.py for
-the pattern this is copied from, since modules don't import each other's
-code - see this file's own module-level comment on why not).
+respond with the same error shape. platform-auth and platform-org used to
+each vendor their own near-identical copy of this file (with their own
+`platform_auth_exception_handler`/`platform_org_exception_handler` names)
+- now that both depend on this package instead, there's exactly one
+handler function every module's settings.py points at.
 """
 
 from rest_framework import exceptions as drf_exceptions

@@ -10,16 +10,30 @@ platform-core used to be a starter kit bundling auth, orgs, RBAC, and a
 generic CRUD factory (FastAPI + SQLAlchemy + Alembic). That's gone: the
 backend was rewritten on Django + DRF and stripped down to a pure
 **kernel with no models of its own** — shared conventions other modules
-build on (error contract, pagination, filters, uuid7/timestamp utils),
-nothing else. Auth now lives in its own module (`platform-auth`); orgs/
-RBAC/product features are expected to become their own modules the same
-way, not get added back here.
+build on (error contract, pagination, filters, uuid7/timestamp utils,
+`BaseSerializer`/`BaseViewSet`), nothing else. Auth now lives in its own
+module (`platform-auth`); orgs/RBAC/product features are expected to
+become their own modules the same way, not get added back here.
+
+**No longer just "kept for reference".** `platform-auth` and
+`platform-org` both depend on this repo's `core_api` for real now (see
+their own AGENTS.md) - each used to vendor its own near-identical copy of
+`errors.py`/`exceptions.py`/`utils.py` (a deliberate "modules share
+nothing at source level" choice from when this repo was still the
+Module-Federation-era kernel, not in active use). That copy-per-module
+approach doesn't scale once a module needs `BaseSerializer`/`BaseViewSet`
+(real, nontrivial code, not three small files worth re-vendoring
+everywhere) - so this is now a genuine shared dependency, installed
+editable alongside every module that needs it (see
+`apps/main`'s root `AGENTS.md` and `docker-compose.yml`). The frontend
+half (Module Federation shell) is unaffected and still not part of the
+default `docker-compose.yml` - this change is backend-only.
 
 ## Repo layout
 
 | Path | What |
 |---|---|
-| `backend/` | Django + DRF. `config/` (settings/urls/wsgi/asgi), `core_api/` (errors, exceptions, pagination, filters, uuid7 utils — a library, not a Django app; no models). Real routes: `GET /api/health`, `GET /api/modules` — under `/api`, same convention every module in this platform follows. |
+| `backend/` | Django + DRF. `config/` (settings/urls/wsgi/asgi), `core_api/` (errors, exceptions, pagination, filters, uuid7 utils, `BaseSerializer`/`BaseViewSet` — a library, not a Django app; no models). Real routes: `GET /api/health`, `GET /api/modules` — under `/api`, same convention every module in this platform follows. |
 | `frontend/` | React + Vite + TS + react-router-dom only — no design system, no admin CRUD surface (that's gone, see history note below). Fetches `GET /api/modules`, loads a module's `remote_entry` via Module Federation and renders it inline when present, falls back to a plain `url_prefix` link otherwise. |
 
 `core_api/modules.py` reads `MODULES_MANIFEST_PATH` (an env var, not a
@@ -69,14 +83,66 @@ org/RBAC/CRUD-factory routes — the current `frontend/` is a from-scratch,
 much smaller replacement (a router shell, not a UI), not a continuation
 of that one.
 
+## `BaseSerializer` / `BaseViewSet` - dynamic fields, sideloading, filtering
+
+`core_api/serializers.py`/`viewsets.py`/`filters.py` add DRF base classes
+inspired by django-rest-framework's `dynamic-rest` package - reimplemented
+against this platform's own conventions (`?sort=`/`?q=` naming,
+`EnvelopePageNumberPagination`) rather than vendored, since dynamic-rest
+bakes in its own opinions on both of those. A module's own serializer/
+viewset subclasses these instead of plain `ModelSerializer`/`ModelViewSet`
+to get, for free:
+
+- **Dynamic fields**: `?include[]=field`/`?exclude[]=field` control which
+  declared fields serialize. List a field in `Meta.deferred_fields` to
+  leave it out unless explicitly included - useful for anything expensive
+  (a relation, a computed field) that most callers don't need.
+- **Relation sideloading**: `DynamicRelationField(serializer_class,
+  many=False)` wraps another `BaseSerializer` for a relation. Renders as
+  a bare id (or list of ids) by default; naming the field in
+  `?include[]=` swaps in the full nested representation instead.
+  `serializer_class` accepts a zero-arg callable that does its own
+  deferred import instead of the class directly - needed the moment two
+  serializers reference each other (see `platform-org`'s `Organization`/
+  `OrgMembership` serializers for the actual pattern: a plain lambda
+  capturing a name from module scope reintroduces the circular-import
+  deadlock a naive fix looks like it solves, since the OTHER module still
+  needs a working name to capture *from* - a function that imports inside
+  its own body, only ever called later at render time, is what actually
+  breaks the cycle).
+- **Filtering**: `?filter{field}=value` (exact), `?filter{field.lookup}=
+  value` (`icontains`/`gt`/`gte`/`lt`/`lte`/`in`/`isnull`), a leading `-`
+  on the field name negates. See `filters.py`'s own docstring for the
+  field-vs-lookup-name ambiguity this accepts as a limitation.
+- `BaseViewSet.get_queryset()` auto-`prefetch_related`s any sideloaded
+  `many=True` relation, so using `?include[]=` against a real dataset
+  doesn't quietly turn into an N+1.
+
+**Every process that installs this package must point its OWN
+`REST_FRAMEWORK["EXCEPTION_HANDLER"]` at
+`"core_api.exceptions.platform_exception_handler"`** - this is easy to
+miss because each module's OWN `settings.py` (used only for its
+standalone deployment) already has this right, but a HOST importing the
+module (e.g. `apps/main`) has its own separate `settings.py` with its own
+copy of this setting, which doesn't automatically follow along. Hit this
+for real while building `BaseSerializer`/`BaseViewSet`: `apps/main`'s
+`config/settings.py` had a copy-pasted `EXCEPTION_HANDLER` still pointing
+at a module-specific handler name (`platform_auth_exception_handler`)
+that got removed from this consolidation - every request that errored
+then 500'd on `ImportError` INSIDE DRF's own exception handling, instead
+of returning the error it was actually trying to report. Grep every
+`settings.py` across the platform for `EXCEPTION_HANDLER` after touching
+this file's exception handler name.
+
 ## Adding a shared convention
 
 Only add something here if it's genuinely reusable with **zero model
 coupling** — `core_api/` should stay a library other Django apps import
-(error classes, a pagination class, uuid7), never grow entity-specific
-code again. A new capability (even something as central-feeling as orgs
-or RBAC) belongs in its own module/repo, following `platform-auth`'s
-shape (own backend, own frontend, own repo), not back in this kernel.
+(error classes, a pagination class, uuid7, the dynamic serializer/viewset
+base classes above), never grow entity-specific code. A new capability
+(even something as central-feeling as orgs or RBAC) belongs in its own
+module/repo, following `platform-auth`'s shape (own backend, own
+frontend, own repo), not back in this kernel.
 
 ## Testing
 
