@@ -29,10 +29,14 @@ class ModuleConfig(BaseModel):
     # Path this module is mounted at behind the single-port gateway
     # (nginx proxies "{url_prefix}/" to the module's frontend and
     # "{url_prefix}/api/" to its backend) - the platform-core frontend
-    # shell links to this rather than trying to render the module's UI
-    # itself (no module federation). Optional: a backend-only module (or
-    # platform-core itself, served at the root "/") has none.
+    # shell links to this as a fallback when it can't (or chooses not to)
+    # render the module inline via remote_entry. Optional: a backend-only
+    # module (or platform-core itself, served at the root "/") has none.
     url_prefix: str | None = None
+    # Module Federation remote entry URL - lets platform-core's frontend
+    # load this module's exposed components at runtime and render them
+    # inline. Optional: not every module exposes a federated component.
+    remote_entry: str | None = None
 
 
 def _manifest_path() -> Path | None:

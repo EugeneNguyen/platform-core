@@ -20,15 +20,34 @@ way, not get added back here.
 | Path | What |
 |---|---|
 | `backend/` | Django + DRF. `config/` (settings/urls/wsgi/asgi), `core_api/` (errors, exceptions, pagination, filters, uuid7 utils — a library, not a Django app; no models). Real routes: `GET /api/health`, `GET /api/modules` — under `/api`, same convention every module in this platform follows. |
-| `frontend/` | React + Vite + TS + react-router-dom only — no design system, no admin CRUD surface (that's gone, see history note below). Fetches `GET /api/modules` and lists each module's `url_prefix` as a plain link — no client-side cross-module routing, the gateway (parent platform's nginx) handles that. |
+| `frontend/` | React + Vite + TS + react-router-dom only — no design system, no admin CRUD surface (that's gone, see history note below). Fetches `GET /api/modules`, loads a module's `remote_entry` via Module Federation and renders it inline when present, falls back to a plain `url_prefix` link otherwise. |
 
 `core_api/modules.py` reads `MODULES_MANIFEST_PATH` (an env var, not a
 hardcoded path) to find the consuming platform's `modules.yaml` — this
 repo is reused across platforms and must never assume where a given one
 keeps its manifest. Unset var / missing file -> empty list, not an error.
-`ModuleConfig.url_prefix` is optional (a backend-only module, or
-platform-core itself at the gateway root, has none) — the frontend must
-handle `null` rather than assuming every module has one.
+`ModuleConfig.url_prefix`/`remote_entry` are both optional (a backend-only
+module, or platform-core itself at the gateway root, has neither) — the
+frontend must handle `null` rather than assuming every module has them.
+
+## Module Federation (frontend composing another module's UI inline)
+
+`src/lib/remoteComponents.tsx`'s `loadRemoteComponent(module, exposedName)`
+registers a module as a runtime remote (`registerRemotes`, idempotent)
+and loads one exposed component (`loadRemote`) from `@module-federation/
+runtime`. `vite.config.ts` declares `shared: { react, 'react-dom' }` as
+singletons - **this must match the remote's own shared config exactly**
+(same packages, `singleton: true`, compatible `requiredVersion` ranges)
+or you get two React instances loaded and a genuinely confusing "invalid
+hook call" crash from inside the remote's own component, not this repo's
+code. If you add a new shared dependency here, add it to every remote's
+`vite.config.ts` too.
+
+A remote must be built (`vite build`), not served via `vite dev` — Vite's
+dev server has no bundling step to emit a `remoteEntry.js` from. This
+repo's own frontend (the host) stays on `vite dev` fine; it's only the
+remote side (`platform-auth`, etc.) that needs `vite build --watch` +
+`vite preview` instead — see root `docker-compose.yml`.
 
 ## Single-port composition
 

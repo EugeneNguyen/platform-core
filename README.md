@@ -37,13 +37,20 @@ again.
 ## Frontend
 
 `frontend/` is a thin React Router shell, not a design system or admin
-UI — it fetches `GET /api/modules` from this repo's own backend and lists
-each module with a `url_prefix` as a plain same-origin link. There is no
-client-side cross-module routing: the single-port gateway (the parent
-platform's `nginx/default.conf`) is what actually routes
-`/platform-auth/*` to that module's own frontend/backend containers —
-this frontend never needs to know how to reach another module, only that
-it exists and what path it lives at.
+UI — it fetches `GET /api/modules` and, for a module with a `remote_entry`,
+loads its exposed component via Module Federation and renders it inline
+(`src/lib/remoteComponents.tsx`'s `loadRemoteComponent`); for a module
+with only a `url_prefix`, it falls back to a plain same-origin link. The
+single-port gateway (parent platform's `nginx/default.conf`) still
+handles full-page cross-module navigation (`/platform-auth/*`) - this
+frontend's federation loading is for composing a module's UI *into its
+own page*, a different thing.
+
+`vite.config.ts`'s `federation()` plugin declares `shared: { react,
+'react-dom' }` as singletons with no static `remotes` - which remote(s)
+to load is entirely runtime data from `modules.yaml`, registered via
+`@module-federation/runtime`'s `registerRemotes`/`loadRemote` as each
+module's data arrives.
 
 ## Using this in your own module
 

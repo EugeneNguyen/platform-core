@@ -10,6 +10,7 @@ export interface ModuleConfig {
   repo: string;
   enabled: boolean;
   url_prefix: string | null;
+  remote_entry: string | null;
 }
 
 export async function fetchModules(): Promise<ModuleConfig[]> {
