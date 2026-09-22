@@ -63,7 +63,68 @@ repo's own frontend (the host) stays on `vite dev` fine; it's only the
 remote side (`platform-auth`, etc.) that needs `vite build --watch` +
 `vite preview` instead — see root `docker-compose.yml`.
 
-## AppShell (`src/atoms`/`molecules`/`organisms`/`templates`)
+## Design system (`src/components/`)
+
+Every reusable UI piece this package exports — `AppShell`, `Table`,
+`Checkbox`, everything below — lives under `src/components/`, atomic-
+design style (`atoms/` → `molecules/` → `organisms/` → `templates/`,
+each level only importing from levels below it — `components/types.tsx`
+holds the shared prop types every level imports from). `src/App.tsx`/
+`main.tsx`/`pages/` next to it are this repo's OWN Module Federation
+shell (see above), unrelated.
+
+`src/containers/` sits next to `components/` for the layer above it -
+stateful, feature-level compositions (owns state/effects/data-fetching,
+wires several `components/` pieces into one real feature) as opposed to
+`components/`'s pure presentation. Empty so far; same folder-per-piece +
+barrel + colocated test convention below once something lands there.
+
+**One folder per component**: `components/<level>/<Name>/` holds
+`<Name>.tsx` (the implementation), `index.ts` (a barrel: `export {
+default } from "./<Name>"; export * from "./<Name>";` — `Table`, which
+has no default export, is just `export * from "./Table"`), and
+`<Name>.test.tsx` (Vitest + Testing Library, colocated rather than in a
+parallel `__tests__` tree). A sibling still imports the file directly
+(e.g. `organisms/Sidebar/Sidebar.tsx` does `import Brand from
+"../../atoms/Brand"`) — that path resolves to the folder's `index.ts`
+same as it would from outside the package, so moving a flat `X.tsx` into
+`X/X.tsx` never touches any OTHER file's imports, only `X.tsx`'s own
+(everything it imports is now one directory deeper, so every `../` in
+it gains one more `../`).
+
+**Two barrels, not one**: `components/index.ts` re-exports every
+component by name (the whole design system, one place); `src/index.ts`
+(the actual package entry point `apps/main` imports) is just `export *
+from "./components"`. A component never imports through either barrel
+itself — only straight to the sibling file it needs — since
+`components/index.ts` importing, say, `organisms/Sidebar`, which
+imports `atoms/Brand`, which imported BACK through the barrel would be
+a real import cycle the moment two components reference each other.
+
+**Running the tests**: `npm test` (`vitest run`) / `npm run test:watch`.
+`vitest.config.ts` is deliberately its own file, not a `test` block
+added to `vite.config.ts` — that file configures the Module Federation
+host app (federation plugin, `chrome89` build target), neither of which
+component tests need. `src/vitest.d.ts` (`/// <reference types=
+"@testing-library/jest-dom/vitest" />`) is what makes matchers like
+`.toBeInTheDocument()`/`.toHaveClass()` type-check — TS project
+references build each `tsconfig.*.json` as its own isolated program, so
+a module augmentation only takes effect inside whichever program
+actually includes the file that declares it; `vitest.setup.ts` (which
+does the equivalent *runtime* import) lives outside `src/` entirely,
+under `tsconfig.node.json`'s program, so it doesn't reach `src/**/*
+.test.tsx`'s program at all - hence the separate ambient `.d.ts` inside
+`src/`. **`vitest.config.ts`'s `plugins: react() as unknown as
+Plugin[]` cast is load-bearing, not stylistic**: installed Vitest 3's
+peer range tops out at vite `^7`, one major behind this repo's vite 8,
+so npm resolves a second, nested vite copy just for Vitest - `defineConfig`
+from `vitest/config` then type-checks `plugins` against THAT copy's
+`Plugin` type, which `@vitejs/plugin-react` (built against the
+top-level vite 8) doesn't structurally satisfy, even though both copies
+agree on the actual plugin shape at runtime. Remove the cast once
+Vitest publishes a release with vite 8 in its peer range - a plain
+`plugins: [react()]` failing to type-check again is the signal that
+day's arrived.
 
 Absorbed from the former `platform-ui` module — that repo was frontend-
 only (no backend, no models), so it had nothing else to justify its own
@@ -75,13 +136,38 @@ alongside the Module Federation shell above rather than in its own repo
 — the two don't share code, they just happen to be packaged together
 now.
 
-`AppShell` (`templates/DashboardLayout`, exported from `src/index.ts`)
-is pure presentation: sidemenu + sticky header, built from Tabler's own
-vertical-navbar page layout, composed atomic-design style (`atoms/` →
-`molecules/` → `organisms/` → `templates/`, each level only importing
-from levels below it — `types.tsx` holds the shared prop types every
-level imports from). Zero react-router dependency of its own (every
-level that renders a link takes a `linkComponent` prop instead of
+### Button (`components/atoms/Button/Button.tsx`)
+
+Tabler's `.btn` family - `variant` (`primary`/`secondary`/`success`/
+`danger`/`warning`/`info`/`light`/`dark`/`link`), `outline` (solid vs
+`.btn-outline-{variant}`), `size` (`@default "sm"` - this design system
+stays compact throughout, `Table`/`Pagination`/`ColumnPicker` were all
+already hand-writing `.btn-sm`), and `icon` (`.btn-icon`, square). Every
+raw `<button className="btn ...">` in `containers/` routes through this
+now (`CrudCreateScreen`'s Create, `CrudEditScreen`'s Save/Delete,
+`CrudListScreen`'s row Delete, `ColumnPicker`'s trigger and move-up/
+down) - a hand-rolled `className` string per button was drifting (some
+`btn-sm`, some not) before this existed.
+
+**`variant` has no default - unset renders Tabler's own plain,
+colorless `.btn`**, not a silently-chosen color. That's not a gap, it's
+correct: `ColumnPicker`'s move-up/down buttons genuinely want the plain
+neutral `.btn` Tabler ships when no color modifier is added, same as
+they did before this component existed - defaulting `variant` to e.g.
+`"primary"` would have turned those blue by accident. Every colored use
+(a submit button, a destructive action) states its color explicitly.
+
+**`type` defaults to `"button"`, not the native `"submit"`** - a plain
+action button (e.g. a row's own Delete, sitting inside the same `<form>`
+as the Create/Save submit button) that forgot to say `type="button"`
+would otherwise silently submit the form on click. A real submit button
+still passes `type="submit"` itself; nothing here changes that.
+
+### AppShell (`components/templates/DashboardLayout`)
+
+Pure presentation: sidemenu + sticky header, built from Tabler's own
+vertical-navbar page layout. Zero react-router dependency of its own
+(every level that renders a link takes a `linkComponent` prop instead of
 calling a router hook) and zero auth-state of its own (`user`/`onLogout`
 are passed in) — same conventions as this platform's other module
 frontends. See `apps/main/frontend/app/routes/app-shell.tsx` for the
@@ -102,6 +188,371 @@ broken). Keep checking this if you ever add a class to `Header`.
 "collapse"`) — inert without it. The host loads Tabler's JS bundle (see
 `apps/main/frontend/app/root.tsx`'s `<script>` tag), same "host loads
 the design system" convention as Tabler's CSS.
+
+**`page-body` wraps `children` in a `.container-xl`** — Tabler's
+`.page-body` only ever adds vertical padding; the horizontal gutter (and
+the max-width that stops content stretching edge to edge on a wide
+viewport) comes from `.container-xl` being an explicit child, which
+Tabler leaves to the page rather than baking into `.page-body` itself
+(not every page wants the same container width). Missing this looked
+like "the whole app has no left/right padding," not obviously a missing
+class one level up.
+
+### Breadcrumb (`components/organisms/Breadcrumb/Breadcrumb.tsx`)
+
+Tabler's `.breadcrumb` (docs.tabler.io/ui/components/breadcrumb) -
+`items: BreadcrumbItem[]` (`label`, optional `icon`, optional `to`),
+`separator` (`dots`/`arrows`/`bullets` - Tabler's default is a plain
+slash, drawn in CSS either way, never typed into the DOM since a
+literal separator character would be read out between every item by a
+screen reader), `muted`. Zero react-router dependency of its own, same
+`linkComponent` convention as `Sidebar`/`Brand`.
+
+**The LAST item is always the current page, whether or not it has a
+`to`** - Tabler's own accessibility note is explicit that the current
+page "should not be a link," and a breadcrumb only ever has one current
+page, always the trail's end. Renders as a plain `<li aria-current=
+"page">`, never a link, even if the caller accidentally passed `to` on
+it.
+
+### Card (`components/organisms/Card/Card.tsx`)
+
+Tabler's `.card` family (docs.tabler.io/ui/components/cards), composable
+the same way as `Table` - `Card`/`CardHeader`/`CardTitle`/
+`CardSubtitle`/`CardImage`/`CardBody`/`CardFooter` all live in one file
+(same "a compound family stays together, not one file per sub-piece"
+precedent `Table`/`TableHead`/`TableRow`/etc. set), assembled the same
+shape as the plain HTML (`<Card><CardHeader><CardTitle>...`).
+`CardTitle`'s `as` prop (`@default "h3"`, matching Tabler's own docs'
+most common example) is the only real decision any of these make -
+everything else is a 1:1 class-name mapping, no owned state.
+
+### Table (`components/organisms/Table/Table.tsx`)
+
+Composable pieces over Tabler's `.table` family (docs.tabler.io/ui/
+components/table) — `Table`/`TableHead`/`TableBody`/`TableRow`/
+`TableHeaderCell`/`TableCell`, assembled the same shape as a plain HTML
+table (`<Table><TableHead>...<TableBody>...`). Each just renders the
+class name/attribute a `Table` prop (`vcenter`/`nowrap`/`borderless`/
+`center`/`transparent`/`responsive`/`selectable`/`mobileBreakpoint`) or
+cell prop (`variant`, `sort`/`onSort`/`sortKey`, `label`, `truncate`)
+maps to — same "props in, no owned state" rule as `AppShell`: sort order
+and row selection are the CALLER's state (a `sort`/`onSort` pair per
+`TableHeaderCell`, a controlled `components/atoms/Checkbox` with
+`tableSelect` per row), these components never decide what "sorted" or
+"selected" means, only how it's styled.
+`components/atoms/Checkbox/Checkbox.tsx` (`tableSelect` prop →
+`.table-selectable-check`) is what pairs with `Table`'s `selectable`
+prop — Tabler's selected-row highlight is pure
+CSS, no JS needed once that class is on the checkbox.
+
+### Form / Fieldset (`components/{atoms,molecules,organisms}/Form*`, `Fieldset`)
+
+Tabler's form primitives (docs.tabler.io/ui/forms/fieldset) as separate
+pieces, not one do-everything `Form` component - a caller composes them
+the same way they'd write the plain HTML: `FormLabel` (`.form-label`,
+`required` prop → `.required`, same convention `FormCheck`'s label and
+`Table`'s sortable header share for "the caller says what's required/
+sorted, the component only renders the class"), `FormControl` (a plain
+`<input class="form-control">` - every native `input` prop, ONE
+component instead of one per `type`, since Tabler styles `text`/
+`email`/`tel`/... identically and React's own `type` prop already picks
+the right one, `size` `@default "sm"` same as `Button` - this design
+system stays compact throughout, so every `FormControl` everywhere
+(search boxes, CRUD form fields) is small unless a caller opts into
+`"md"`/`"lg"`; named `size` like `Button`'s, not the
+native HTML `size` attribute, which is omitted here since the two would
+collide on the same prop name), `FormCheck` (`.form-check` - a checkbox
+OR radio, `type` prop defaults to `"checkbox"`, and its `label` renders
+inside the SAME `<label>` as the input so clicking the text toggles it
+too), and `Fieldset` (`.form-fieldset` + a `legend` - see below).
+
+**`Fieldset`'s `legend` prop is required for a reason, not just typed
+that way**: docs.tabler.io/ui/forms/fieldset is explicit that a
+`fieldset` with no `legend` (or a heading placed above a plain `div`
+instead) LOOKS grouped but isn't connected to its fields for a screen
+reader - there is no legitimate `Fieldset` usage without one, so the
+component doesn't offer the option. It's the only correct way to group
+a set of `FormCheck` radios/checkboxes that all answer one question
+(share a `name` for radios); don't reach for it around a handful of
+unrelated text fields just to draw a box - use a plain `div` (a
+`Fieldset` with no real name is noise for a screen reader, same
+complaint as a missing `legend`).
+
+**`disabled` vs `readonly`**: `Fieldset`'s `disabled` prop (forwarded
+straight to the native `fieldset` element) takes every control inside
+out of the tab order AND out of the submitted form data at once - that
+second part is what makes it wrong for "show this value but don't let
+it be edited" (the value silently stops submitting). Put `readOnly` on
+the individual `FormControl` instead when the value should still be
+sent.
+
+### Pagination (`components/organisms/Pagination/Pagination.tsx`)
+
+Bootstrap/Tabler's `.pagination` nav markup, `<button>`s instead of
+`<a href="#">`s - this is JS-driven (`onPageChange`), not real hrefs a
+host's router should ever see, so a `button` gets the right disabled/
+keyboard/focus behavior for free instead of needing `preventDefault`
+plus manual `aria-disabled`. `page`/`pageCount` are the CALLER's state,
+same rule as everything else in `components/`. The page-size `<select>`
+is optional and all-or-nothing - `pageSize`/`pageSizeOptions`/
+`onPageSizeChange` are only rendered together, since a size select with
+nothing wired to change it (or vice versa) isn't a real option, just a
+partially-built one. `containers/DataTable` is the reference consumer.
+
+## Containers (`src/containers/`)
+
+The layer above `components/` - stateful, feature-level compositions.
+Where `components/` owns no state and does no data-fetching (every
+piece there takes everything as props), a container OWNS state/effects
+and wires several `components/` pieces into one real feature. Same
+folder-per-piece + barrel + colocated test convention as `components/`
+(see its own section above); `containers/index.ts` re-exports every
+container the same way `components/index.ts` does, and `src/index.ts`
+re-exports both barrels.
+
+### DataTable (`containers/DataTable/`)
+
+A real, fetched, paginated, sortable, searchable list from one
+`DataTableConfig` - `Table`/`Pagination`/`FormControl`/`FormCheck` (all
+`components/`) wired to a `useDataTable` hook that owns page/pageSize/
+sort/search/column-visibility/column-order state and the one effect
+that refetches when any of it changes. Same `lib/` + one-folder-per-piece
+split as `CrudRouter` (see its own section) - this one grew a
+`ColumnPicker` the same way that one grew `CrudFormFields`:
+
+- `lib/` - `types.ts` (`DataTableColumn<T>` - a column's `key` doubles
+  as its `?sort=` field name and its stacked-mobile `data-label`, unless
+  overridden per-feature via `sortKey` - and `DataTableConfig<T>`:
+  `endpoint`, `columns`, `rowKey`, plus an overridable `fetcher`,
+  defaults to plain `fetch(url).then(r => r.json())`, override for auth
+  headers or a non-`fetch` client). Had a per-column `filterable`/
+  `filterLookup` (`?filter{field}=`) feature too, until it was removed
+  wholesale - see below.
+  `query.ts` - `buildDataTableUrl` (state -> URL) and the sort-cycling
+  helpers, as PURE functions with no React in them at all - this is
+  where the server contract actually lives, so it's the thing tested in
+  isolation, independent of any rendering. `useDataTable.ts` - the
+  state machine, independently testable via `renderHook` with no table
+  mounted.
+- `ColumnPicker/` - the "Columns" button + its show/hide/reorder
+  dropdown, own folder (`ColumnPicker.tsx`/`index.ts`/
+  `ColumnPicker.test.tsx`) since it's a real, independently-testable
+  piece of UI, not a one-off inline block. Owns only its open/closed
+  flag; which columns are hidden/in what order is still
+  `useDataTable`'s state, passed in as props and reported back through
+  `onToggleColumn`/`onMoveColumn` - same rule as everything else here.
+- `DataTable.tsx` (container root, alongside `index.ts`) - renders the
+  hook's state with `Table`/`ColumnPicker`/`Pagination`; owns no state
+  of its own at all now that `ColumnPicker`'s open/closed flag moved
+  with it.
+
+**Two ways to use it - `config` (owns its own `useDataTable`) or `table`
+(a `useDataTable` instance the CALLER already owns)**, mutually
+exclusive via a discriminated union on `DataTableProps`. The `table`
+form exists for `CrudListScreen`, which owns this card's ENTIRE chrome -
+search + `ColumnPicker` in `CardHeader`, `Pagination` in `CardFooter`
+(Tabler's own "toolbar in the header, table full-bleed below" card shape
+- see its own section below) - and needs every piece reading/writing the
+SAME state this component renders, not independent `useDataTable`
+instances silently drifting out of sync. Passing `table` also switches
+rendering to BARE mode: no toolbar, no `Pagination`, just the `<Table>`
+itself (plus loading/error/no-results, which are data-dependent content,
+not chrome) - the assumption is that a caller lifting the hook this way
+is already taking over that chrome. `config` mode stays fully self-
+contained (bundled toolbar + table + pagination) for a simpler consumer
+that doesn't want a `Card` at all. `useDataTable` can't be called
+conditionally on which prop was passed (rules of hooks), so the dispatch
+is two tiny components (`DataTableWithOwnState` calls the hook,
+`DataTableView` just renders a `DataTableState`, taking a `bare` flag),
+not an `if` inside one.
+
+**`useDataTable` exposes a real `refetch()`** - the "revisit if a second
+consumer wants a manual refetch" this repo's own history predicted:
+`CrudListScreen` used to force a refresh after a delete by remounting
+`<DataTable key={refreshNonce}>`, which only worked because it owned no
+state of its own; once it started calling `useDataTable` itself (to
+share state with the header's search box, above), remounting `DataTable`
+no longer resets ITS OWN hook call. `refetch` just bumps an internal
+nonce that's in the fetch effect's dependency array but NOT in the built
+URL, so it forces exactly one more fetch of the current page/sort/
+search, nothing else.
+
+**Matches `core_api`'s list-endpoint contract exactly, not a generic
+"call any API" client**: `?page=`/`?page_size=` (`EnvelopePageNumberPagination`),
+`?sort=`/`-field` (`SortParamOrderingFilter`), `?q=` (`QParamSearchFilter`)
+- see `platform-core/backend/core_api/pagination.py`/`filters.py`'s
+`SortParamOrderingFilter`/`QParamSearchFilter`. Point `endpoint` at any
+`BaseViewSet`-backed list route on any module and it works with zero
+server-side glue; it will NOT work against an endpoint using DRF's own
+default `?ordering=`/`?search=`/pagination shape.
+
+**Per-column filtering (`filterable`/`filterLookup`, a filter-row
+`<input>` under each filterable column's header, `?filter{field}=`) was
+removed wholesale, not just disabled for one module** - it existed
+across `DataTableColumn`, `useDataTable`'s `filters` state/`setFilter`,
+`buildDataTableUrl`'s `?filter{}=` building, and the filter-row rendering
+in `DataTable.tsx`, and every one of those is gone now, not left dormant
+behind a flag. `core_api.filters.DynamicFilterBackend`'s own `?filter{}=`
+support is UNRELATED and still very much alive (any `BaseViewSet` still
+accepts it directly, e.g. via a URL a caller builds by hand) - this was
+specifically `DataTable`'s own UI for it, which nothing here uses
+anymore. Re-add from scratch (rather than un-deleting) if a future
+module genuinely needs per-column filtering again - re-implementing a
+demonstrated, unwanted-until-now feature is cheaper than carrying its
+weight (type surface, tests, docs) indefinitely on the chance it returns.
+
+**`defaultPageSize` defaults to `25`, independent of `pageSizeOptions`**
+- matches `EnvelopePageNumberPagination.page_size`'s own server-side
+default. This hook always sends `?page_size=` explicitly (never omits
+it to fall back to the server's default), so picking anything other
+than 25 would make an unconfigured `DataTable` request a different page
+size than every other client of the same endpoint - a real bug caught
+by its own tests expecting `page_size=25` and getting `page_size=10`
+(`pageSizeOptions[0]`) instead.
+
+**The `useDataTable` fetch effect's `oxlint-disable-next-line
+react/set-state-in-effect`s are intentional, not suppressed noise**:
+the rule's own hint says effects should synchronize with external
+systems, which is exactly what a fetch is - `setLoading(true)`/
+`setError(null)` reset synchronously at the start of every refetch (not
+just the first) because skipping that reset would leave a stale error
+(or a stale "not loading") on screen for the whole round-trip after a
+page/sort/search change.
+
+**Column show/hide/reorder has no drag-and-drop** - move-up/move-down
+buttons in the column picker instead, deliberately, to avoid pulling in
+a DnD dependency (`dnd-kit`, etc.) this repo has never needed before for
+one feature. Revisit if a second consumer actually wants dragging.
+
+**`ColumnPicker`'s trigger is icon-only** (`aria-label="Columns"`, a
+small inline SVG - not a new icon-library dependency, same "plain
+Unicode/hand-drawn glyph over pulling in a package" call the move-up/
+down buttons' `↑`/`↓` already made) - the visible "Columns" text label
+was dropped once the button started sharing a `Card`'s header row with
+other controls. `aria-label` carries the accessible name now that
+there's no visible text to derive it from; don't drop that if you ever
+touch this button again.
+
+### CrudRouter (`containers/CrudRouter/`)
+
+The three CRUD screens (`CrudListScreen`/`CrudCreateScreen`/`CrudEditScreen`)
+plus the path segments they expect, bundled by `createCrudRouter(config)`
+into `{ paths, screens: { List, Create, Edit } }`. Two subfolders, split
+by concern rather than left flat (this container outgrew a flat file
+list once it had five non-screen files alongside four screens):
+
+- `lib/` - everything that isn't itself a screen. `types.ts` -
+  `CrudField<T>` (one form field: `key`/`label`/`type`/`required`),
+  `CrudApi<T>` (`create`/`read`/`update`/`remove`), and `CrudConfig<T>`
+  (`resource`, `endpoint`, `columns` - reuses `DataTableColumn<T>` -
+  `fields`, `rowKey`, optional `api` overrides and `fetcher`). `api.ts` -
+  `createDefaultCrudApi` - plain `fetch` calls against exactly the
+  routes any `BaseViewSet`'s `router.register` gives you (`POST
+  endpoint`, `GET`/`PATCH`/`DELETE endpoint/:id`); `CrudConfig.api`
+  overrides individual calls, anything left out falls back to this.
+  `paths.ts` - `createCrudPaths(resource)`, computed instead of static
+  since the resource name varies per config (see its own docstring for
+  how this compares to `platform-auth-frontend`'s static `BASE_PATH`).
+  `useCrudForm.ts` / `fields.ts` - the Create/Edit screens' shared form
+  state and `pickFieldValues` (strips a submit payload down to exactly
+  `config.fields` - without it, `CrudEditScreen`'s form, prefilled
+  wholesale from `api.read`'s full record, would submit every extra
+  property - `id`, timestamps, computed fields - right back to
+  `api.update`; a real bug this container's own tests caught).
+  `pickFieldValues` lives in its OWN file (`fields.ts`), not alongside
+  `CrudFormFields.tsx` where it started - a plain function exported next
+  to a component breaks `react/only-export-components`'s fast-refresh
+  assumption (caught by this repo's own `oxlint` config).
+- `screens/` - one folder per screen, same folder-per-component + barrel
+  + colocated test convention as `components/` (`<Name>/<Name>.tsx` +
+  `index.ts` + `<Name>.test.tsx`): `CrudListScreen`, `CrudCreateScreen`,
+  `CrudEditScreen`, and `CrudFormFields` (one `FormLabel`+`FormControl`,
+  or `FormCheck` for a `checkbox` field, per `CrudField`, shared by
+  Create/Edit - not re-exported from `CrudRouter/index.ts`, an
+  implementation detail of those two screens, not a `components/`
+  design-system piece on its own). See `CrudRouter.ts`'s own docstring
+  for what each screen does.
+
+**`createCrudRouter` returns plain data (paths + component references),
+never an actual `<Routes>`/`<Route>` tree** - see `CrudRouter.ts`'s own
+docstring. Every frontend package in this platform is router-agnostic on
+purpose (root `AGENTS.md`'s "no react-router dependency of its own"
+rule, applied here the same way `AppShell`/`Table`/`DataTable` apply it
+elsewhere in this repo) - a host wires `paths`/`screens` into its OWN
+router the same three-line way it already wires up
+`platform-auth-frontend`'s `LoginScreen`/`SignupScreen` +
+`BASE_PATH`/`LOGIN_PATH`/`SIGNUP_PATH`. `CrudEditScreen` takes `id` as a
+plain prop rather than reading a router param itself - same rule
+`platform-org-frontend`'s `OrgsScreen` follows for `accessToken`.
+
+**`CrudListScreen` calls `useDataTable` itself and passes the instance
+to `<DataTable table={...}>`, rather than handing `DataTable` a `config`
+and letting it own the hook** - it owns this card's whole chrome (New
+link + search + `ColumnPicker` in `CardHeader`, `Pagination` in
+`CardFooter`; `DataTable` itself renders BARE, no chrome of its own -
+see `DataTable`'s own section for the `config`-vs-`table` split this
+required), all of it reading/writing the SAME state. After a delete, it
+calls the shared instance's `table.refetch()` to get the list back in
+sync with the server - an earlier version forced this by remounting
+`<DataTable key={refreshNonce}>`, which stopped being an option the
+moment `CrudListScreen` started owning the hook (remounting `DataTable`
+no longer resets a hook call that lives one level up).
+
+**Every DATA cell in a row opens the edit screen, not just the "Edit"
+link text** (the actions cell, deliberately, is the one exception - see
+below) - via a per-CELL invisible decoy `Link` (`tabIndex={-1}`,
+`aria-hidden`, `.stretched-link`, no visible content), not a synthetic
+`onClick`-driven navigation: this platform's screens never navigate
+imperatively (the "host owns routing" rule - see root `AGENTS.md`), and
+`.stretched-link` gets the effect entirely through a real anchor - no
+`navigate` call, no new dependency. The one visible, labeled "Edit" link
+is still what keyboard/screen-reader users actually reach; the decoys
+are `aria-hidden` and out of the tab order specifically so they don't
+add N indistinguishable extra stops per row.
+
+**Deliberately per-CELL, not one stretched-link spanning the whole
+`<tr>`** - verified against a real browser (this whole feature is
+exactly the kind of thing that passes every unit test and every
+`tsc`/lint check while being silently broken, or silently breaking
+something ELSE, in an actual page - nothing about it was trusted without
+a real click in a real browser): `position: relative` on a `<tr>` does
+not reliably act as the containing block for an absolutely-positioned
+descendant in real browser engines, `<td>` does. It's also why the
+VISIBLE "Edit" link can't just carry `.stretched-link` itself (the
+simpler-looking fix, tried first, and wrong): `.btn` (which `Edit` needs
+anyway, for the alignment fix below) sets `position: relative` on
+itself, which becomes the `::after`'s containing block INSTEAD of the
+`<td>` — same failure, one ancestor level closer, not obvious from
+Bootstrap's own docs. The fix: `.stretched-link` lives on a SEPARATE,
+unstyled decoy anchor per cell (`position: relative` only on the `<td>`,
+never on the decoy itself).
+
+**The ACTIONS cell (Edit/Delete) does NOT get a decoy, unlike every
+other cell** - tried first, also verified against a real browser, also
+wrong: "a later, `position`-having sibling paints over an earlier one's
+`::after` overlay" (the rule that lets `Button`'s `.btn` sit correctly
+above other things elsewhere in this design system) turned out NOT to
+reliably hold for THIS specific case - a real click on Delete hit the
+same-cell decoy underneath it instead of the button. Rather than fight
+that stacking interaction further, the actions cell just has no decoy at
+all: a small, mostly-full-of-controls cell, so losing "click blank space
+here too" costs little next to Delete definitely still working.
+
+**`LinkComponentProps` grew `tabIndex`/`aria-hidden` (and `children`
+became optional) to support these decoys** - a small, deliberately
+additive widening (every existing `LinkComponent` implementation across
+this platform - `DefaultLink` here, `apps/main`'s `ShellLink`,
+`platform-org-frontend`'s `OrgsLink` - needed a one-line `...rest`
+spread added to actually forward them, otherwise the widened prop type
+would type-check but silently do nothing). Grep for `LinkComponentProps`
+across the platform if you add a new `LinkComponent` implementation -
+matching this shape is what makes the decoy pattern (or any future use
+of passthrough anchor attributes) work through it.
+
+Edit and Delete also share the exact same `.btn.btn-link.btn-sm`
+classes now (previously Edit was a bare, unstyled `<a>`, which put it
+visibly out of alignment with Delete's `Button`-rendered `.btn`).
 
 ## Single-port composition
 
