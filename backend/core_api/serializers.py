@@ -22,6 +22,7 @@ Two behaviors:
 from __future__ import annotations
 
 from rest_framework import serializers
+from rest_framework.utils import model_meta
 
 
 def _query_param_set(request, param: str) -> set[str]:
@@ -75,14 +76,69 @@ class BaseSerializer(serializers.ModelSerializer):
     every field this serializer CAN emit, same as plain DRF; the optional
     `Meta.deferred_fields` (a subset of `Meta.fields`) lists the ones left
     out unless explicitly named in `?include[]=`.
+
+    `Meta.fields` is optional - omit it (and `Meta.exclude`) and every
+    model field is emitted (DRF's own `fields = "__all__"`), same as
+    declaring nothing at all. Still overridable: name `Meta.fields`
+    explicitly to whitelist a subset.
+
+    In that same auto-fields mode, every relation on the model - forward
+    (FK/O2O/M2M) or reverse (the "_set" side) - is also auto-added, each
+    wrapped as a `DynamicRelationField` and auto-deferred, exactly as if
+    hand-declared and listed in `Meta.deferred_fields`. This only fires
+    for a related model that itself has a registered `BaseSerializer`
+    (keyed by `Meta.model` as subclasses are defined); a relation with no
+    serializer to sideload is left as DRF's plain default (bare pk for a
+    forward relation, absent for a reverse one), same as before.
+
+    `Meta.auto_exclude` drops named fields outright, permanently - unlike
+    `?exclude[]=`, which is a per-request opt-out a caller can undo simply
+    by not passing it. Only meaningful alongside auto-fields mode (plain
+    `Meta.fields`/`Meta.exclude` already whitelist/blacklist directly).
     """
+
+    _model_registry: dict = {}
+    _auto_fields = False
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        meta = cls.__dict__.get("Meta")
+        if meta is None:
+            return
+        model = getattr(meta, "model", None)
+        if model is not None:
+            BaseSerializer._model_registry[model] = cls
+        if not hasattr(meta, "fields") and not hasattr(meta, "exclude"):
+            meta.fields = "__all__"
+            cls._auto_fields = True
+
+    def get_fields(self):
+        fields = super().get_fields()
+        self._auto_deferred: set[str] = set()
+        if self._auto_fields:
+            declared = set(self._declared_fields)
+            info = model_meta.get_field_info(self.Meta.model)
+            relations = {**info.forward_relations, **info.reverse_relations}
+            for name, relation_info in relations.items():
+                if name in declared or self._model_registry.get(relation_info.related_model) is None:
+                    continue
+                related_model = relation_info.related_model
+                fields[name] = DynamicRelationField(
+                    lambda m=related_model: self._model_registry.get(m),
+                    many=relation_info.to_many,
+                )
+                self._auto_deferred.add(name)
+        for name in getattr(self.Meta, "auto_exclude", ()):
+            fields.pop(name, None)
+        return fields
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         request = self.context.get("request")
-        deferred = set(getattr(self.Meta, "deferred_fields", ()))
+        fields = self.fields  # first access - runs get_fields(), fills self._auto_deferred
+        deferred = set(getattr(self.Meta, "deferred_fields", ())) | self._auto_deferred
         included = _query_param_set(request, "include[]")
         excluded = _query_param_set(request, "exclude[]")
-        for name in list(self.fields):
+        for name in list(fields):
             if name in excluded or (name in deferred and name not in included):
-                del self.fields[name]
+                del fields[name]
