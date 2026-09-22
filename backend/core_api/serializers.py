@@ -83,13 +83,21 @@ class BaseSerializer(serializers.ModelSerializer):
     explicitly to whitelist a subset.
 
     In that same auto-fields mode, every relation on the model - forward
-    (FK/O2O/M2M) or reverse (the "_set" side) - is also auto-added, each
-    wrapped as a `DynamicRelationField` and auto-deferred, exactly as if
-    hand-declared and listed in `Meta.deferred_fields`. This only fires
-    for a related model that itself has a registered `BaseSerializer`
-    (keyed by `Meta.model` as subclasses are defined); a relation with no
-    serializer to sideload is left as DRF's plain default (bare pk for a
-    forward relation, absent for a reverse one), same as before.
+    (FK/O2O) or reverse/many (the "_set" side, or M2M either direction) -
+    is also auto-added, each wrapped as a `DynamicRelationField`. Only the
+    to-many ones are auto-deferred too (as if hand-declared and listed in
+    `Meta.deferred_fields`) - fetching those is an extra query per row
+    (the N+1 `BaseViewSet.get_queryset` prefetches against), same
+    "expensive, opt in" reasoning `Organization.memberships` was hand-
+    deferred for originally. A to-one forward relation (a plain FK/O2O
+    column already sitting on this row) stays un-deferred, rendering as
+    a bare id by default same as `DynamicRelationField`'s own docstring
+    describes - no reason to hide a column that's already there. This
+    only fires for a related model that itself has a registered
+    `BaseSerializer` (keyed by `Meta.model` as subclasses are defined); a
+    relation with no serializer to sideload is left as DRF's plain
+    default (bare pk for a forward relation, absent for a reverse one),
+    same as before.
 
     `Meta.auto_exclude` drops named fields outright, permanently - unlike
     `?exclude[]=`, which is a per-request opt-out a caller can undo simply
@@ -142,7 +150,8 @@ class BaseSerializer(serializers.ModelSerializer):
                 lambda m=related_model: self._model_registry.get(m),
                 many=relation_info.to_many,
             )
-            self._auto_deferred.add(name)
+            if relation_info.to_many:
+                self._auto_deferred.add(name)
         for name in getattr(self.Meta, "auto_exclude", ()):
             fields.pop(name, None)
         return fields

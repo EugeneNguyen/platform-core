@@ -2,7 +2,12 @@ import type { ReactNode } from "react";
 import type { LinkComponent } from "../../../components";
 import type { DataTableColumn, DataTableFetcher } from "../../DataTable";
 
-export type CrudFieldType = "text" | "email" | "tel" | "password" | "number" | "checkbox";
+export type CrudFieldType = "text" | "email" | "tel" | "password" | "number" | "checkbox" | "select";
+
+export interface CrudFieldOption {
+  value: string;
+  label: string;
+}
 
 export interface CrudField<T> {
   key: keyof T & string;
@@ -11,6 +16,8 @@ export interface CrudField<T> {
   type?: CrudFieldType;
   required?: boolean;
   autoComplete?: string;
+  /** Only meaningful when `type === "select"` - the `<option>` list. Static (a fixed set of choices, e.g. a status enum) or built by the config's own caller from data it fetched itself (e.g. "which goal" - see goalnexa-frontend's `metricsCrudConfig.ts`); `CrudConfig` has no fetching of its own to do that for you. */
+  options?: CrudFieldOption[];
 }
 
 export interface CrudApi<T> {
