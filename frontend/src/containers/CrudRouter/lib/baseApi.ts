@@ -1,0 +1,43 @@
+import type { DataTablePage } from "../../DataTable";
+import type { Schema } from "./schema";
+
+/** A caller's own authenticated-fetch-and-parse function (this platform's `apiFetch` convention: Bearer token injection, error shaping into `ApiError`) - `createBaseApi` only owns the URL-building/method wiring, never the fetch mechanism itself. */
+export type BaseApiRequest = <R>(path: string, init?: RequestInit) => Promise<R>;
+
+/**
+ * One `BaseViewSet`-backed resource's whole client surface, mirroring
+ * the backend abstraction 1:1: `schema` (the resource's own field
+ * description), `list`/`read` (GET), `create` (POST), `update` (PATCH -
+ * a partial update, not a full PUT replace), `remove` (DELETE).
+ * `CrudListScreen`/`CrudCreateScreen`/`CrudEditScreen` all build one of
+ * these internally (`useMemo`, from just `baseUrl`/`accessToken`) - see
+ * their own docstrings.
+ */
+export interface BaseApi<T> {
+  /** The resource's own base URL, e.g. `"/api/v1/goals"` - `CrudListScreen` derives its OWN "New"/edit link paths from this (its last `/`-segment), and `list`'s caller (`DataTable`) appends `?page=`/`?sort=`/etc directly onto it. */
+  endpoint: string;
+  /** `GET <endpoint>/schema` - see `core_api.viewsets.BaseViewSet.schema`. */
+  schema: () => Promise<Schema>;
+  /** `GET <url>` - `url` arrives fully built (`endpoint` + `?page=`/`?sort=`/`?q=`), same shape `DataTableFetcher` already expects, since this IS what gets passed as one. */
+  list: (url: string) => Promise<DataTablePage<T>>;
+  /** `GET <endpoint>/<id>` - a single row. */
+  read: (id: string | number) => Promise<T>;
+  /** `POST <endpoint>`. */
+  create: (values: Partial<T>) => Promise<T>;
+  /** `PATCH <endpoint>/<id>` - partial, not a full PUT replace. */
+  update: (id: string | number, values: Partial<T>) => Promise<T>;
+  /** `DELETE <endpoint>/<id>`. */
+  remove: (id: string | number) => Promise<void>;
+}
+
+export function createBaseApi<T>(endpoint: string, request: BaseApiRequest): BaseApi<T> {
+  return {
+    endpoint,
+    schema: () => request<Schema>(`${endpoint}/schema`),
+    list: (url) => request<DataTablePage<T>>(url),
+    read: (id) => request<T>(`${endpoint}/${id}`),
+    create: (values) => request<T>(endpoint, { method: "POST", body: JSON.stringify(values) }),
+    update: (id, values) => request<T>(`${endpoint}/${id}`, { method: "PATCH", body: JSON.stringify(values) }),
+    remove: (id) => request<void>(`${endpoint}/${id}`, { method: "DELETE" }),
+  };
+}

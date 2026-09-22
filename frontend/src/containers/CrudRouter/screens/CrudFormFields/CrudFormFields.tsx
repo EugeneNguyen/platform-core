@@ -11,9 +11,10 @@ export interface CrudFormFieldsProps<T> {
 
 /**
  * Shared by `CrudCreateScreen`/`CrudEditScreen` - one `FormField` per
- * `CrudField`, not exported (an implementation detail of those two, not
- * a `components/` design-system piece: it has no meaning without a
- * `CrudConfig`'s field list). A `checkbox` field renders as `FormCheck`
+ * `CrudField` (auto-built from a `Schema` - see `schemaFields.ts`), not
+ * exported (an implementation detail of those two, not a `components/`
+ * design-system piece: it has no meaning without a field list). A
+ * `checkbox` field renders as `FormCheck`
  * (label INSIDE the clickable control); a `select` field renders a plain
  * native `<select>` (Tabler's `form-select` class, same `sm`-by-default
  * convention as `FormControl`) from `field.options` - no design-system

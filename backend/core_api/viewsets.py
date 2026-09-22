@@ -20,6 +20,7 @@ from rest_framework.viewsets import ModelViewSet
 
 from core_api.filters import DynamicFilterBackend, QParamSearchFilter, SortParamOrderingFilter
 from core_api.pagination import EnvelopePageNumberPagination
+from core_api.registry import model_endpoint
 from core_api.serializers import DynamicRelationField
 
 _FIELD_TYPES = (
@@ -45,7 +46,7 @@ def _field_type(field) -> str:
     return "string"
 
 
-def _describe_field(name: str, field, *, deferred: bool) -> dict:
+def _describe_field(name: str, field, *, deferred: bool, cross_module_endpoint: str | None = None) -> dict:
     description = {
         "name": name,
         "type": _field_type(field),
@@ -60,11 +61,27 @@ def _describe_field(name: str, field, *, deferred: bool) -> dict:
         related_model = getattr(getattr(related_serializer_class, "Meta", None), "model", None)
         description["many"] = field.many
         description["related_model"] = related_model.__name__ if related_model else None
+        description["related_endpoint"] = model_endpoint(related_model) if related_model else None
         # Only a to-many relation is ever actually deferred (see
         # BaseSerializer.get_fields()) - carried through here anyway,
         # explicitly, rather than left to be inferred from "many", so a
         # schema consumer doesn't have to know that rule itself.
         description["deferred"] = deferred
+    elif cross_module_endpoint:
+        # A bare id field (e.g. Goal.org_id) pointing at ANOTHER module's
+        # model - never a real FK/`DynamicRelationField` (see root
+        # AGENTS.md's "no cross-module DB access" rule and `Goal.org_id`'s
+        # own docstring), so `_field_type` above already reported it as a
+        # plain "string". A serializer's own `Meta.related_endpoints`
+        # (see `BaseViewSet.schema`) is what tags it as a relation anyway,
+        # purely for the frontend picker's sake - `related_model` stays
+        # `None` (there's no local model class to name; a cross-module
+        # import here is exactly what the rule forbids), `many` is always
+        # `False` (a bare cross-module id is never a list).
+        description["type"] = "relation"
+        description["many"] = False
+        description["related_model"] = None
+        description["related_endpoint"] = cross_module_endpoint
     return description
 
 
@@ -107,10 +124,18 @@ class BaseViewSet(ModelViewSet):
         applies to, rather than hiding them from the schema entirely.
         No auth/permission bypass here - this action still goes through
         the viewset's own `permission_classes` like any other.
+
+        A serializer's own `Meta.related_endpoints` (`{field_name: url}`,
+        e.g. `GoalSerializer`'s `{"org_id": "/api/v1/orgs"}`) tags a bare
+        cross-module id field as a relation too, same picker treatment a
+        real `DynamicRelationField` gets - see `_describe_field`'s own
+        `cross_module_endpoint` branch for why that field can never just
+        BE one.
         """
         serializer = self.get_serializer_class()()
         fields = serializer.get_fields()
         deferred = getattr(serializer, "_auto_deferred", set())
+        related_endpoints = getattr(getattr(serializer, "Meta", None), "related_endpoints", {})
         for name, field in fields.items():
             # `get_fields()` returns fresh, UNBOUND field instances - only
             # `Field.bind()` (normally triggered by `BindingDict.__setitem__`,
@@ -118,4 +143,11 @@ class BaseViewSet(ModelViewSet):
             # this method's own docstring) fills in `label`'s humanized
             # default ("Target date", not "target_date").
             field.bind(field_name=name, parent=serializer)
-        return Response({"fields": [_describe_field(name, field, deferred=name in deferred) for name, field in fields.items()]})
+        return Response(
+            {
+                "fields": [
+                    _describe_field(name, field, deferred=name in deferred, cross_module_endpoint=related_endpoints.get(name))
+                    for name, field in fields.items()
+                ]
+            }
+        )

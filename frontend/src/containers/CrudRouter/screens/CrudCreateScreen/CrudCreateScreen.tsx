@@ -1,31 +1,97 @@
-import type { SubmitEvent } from "react";
+import { useEffect, useMemo, useState, type SubmitEvent } from "react";
 import { Button, Card, CardBody, CardFooter } from "../../../../components";
-import { createDefaultCrudApi } from "../../lib/api";
+import { createBaseApi } from "../../lib/baseApi";
+import type { BaseApi, BaseApiRequest } from "../../lib/baseApi";
 import { pickFieldValues } from "../../lib/fields";
-import type { CrudConfig } from "../../lib/types";
+import { useRelationFields } from "../../lib/relationOptions";
+import { createRequest } from "../../lib/request";
+import type { Schema } from "../../lib/schema";
+import { createSchemaFields } from "../../lib/schemaFields";
 import { useCrudForm } from "../../lib/useCrudForm";
 import CrudFormFields from "../CrudFormFields";
 
 export interface CrudCreateScreenProps<T> {
-  config: CrudConfig<T>;
+  /** The resource's own base URL, e.g. `"/api/v1/goals"` - see `CrudListScreen`'s own docstring on `baseApi` being built internally from this plus `accessToken`. */
+  baseUrl: string;
+  accessToken: string;
   /** Fires after a successful create - typically the host navigates back to the list. Router-agnostic on purpose (see `createCrudRouter`'s docstring): this screen never navigates itself. */
   onCreated?: (row: T) => void;
 }
 
 /**
- * The "C" of `CrudRouter`'s three screens - `config.fields` rendered via
- * `CrudFormFields`, submitting to `config.api.create`/the default REST
- * call. The `<form>` wraps the whole `Card` (fields in `CardBody`,
- * submit in `CardFooter`) rather than living inside it, so the submit
- * button in the footer still triggers the same native form submission.
+ * Loads the resource's OWN schema first (`baseApi.schema()`), same
+ * "schema before anything else" rule `CrudListScreen` follows (see its
+ * own docstring) - split into this outer component (owns only the
+ * schema fetch) and `CrudCreateForm` (mounted only once schema is
+ * ready), same shape as `CrudListScreen`/`CrudListScreenTable`, for the
+ * same reason: a screen shouldn't render a form with the WRONG fields
+ * (none, until schema arrives) even briefly.
  */
-function CrudCreateScreen<T>({ config, onCreated }: CrudCreateScreenProps<T>) {
-  const api = { ...createDefaultCrudApi<T>(config.endpoint), ...config.api };
+function CrudCreateScreen<T>({ baseUrl, accessToken, onCreated }: CrudCreateScreenProps<T>) {
+  const request = useMemo(() => createRequest(accessToken), [accessToken]);
+  const baseApi = useMemo(() => createBaseApi<T>(baseUrl, request), [baseUrl, request]);
+  const [schema, setSchema] = useState<Schema | null>(null);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    baseApi
+      .schema()
+      .then((result) => {
+        if (!cancelled) setSchema(result);
+      })
+      .catch((thrown: unknown) => {
+        if (!cancelled) setError(thrown instanceof Error ? thrown : new Error(String(thrown)));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [baseApi]);
+
+  if (error)
+    return (
+      <Card>
+        <CardBody>
+          <p className="text-danger mb-0" role="alert">
+            {error.message}
+          </p>
+        </CardBody>
+      </Card>
+    );
+  if (!schema)
+    return (
+      <Card>
+        <CardBody>
+          <p className="text-secondary mb-0">Loading…</p>
+        </CardBody>
+      </Card>
+    );
+
+  return <CrudCreateForm baseApi={baseApi} schema={schema} request={request} onCreated={onCreated} />;
+}
+
+interface CrudCreateFormProps<T> extends Omit<CrudCreateScreenProps<T>, "baseUrl" | "accessToken"> {
+  baseApi: BaseApi<T>;
+  schema: Schema;
+  request: BaseApiRequest;
+}
+
+/**
+ * The "C" of `CrudRouter`'s three screens - `createSchemaFields(schema)`
+ * (plus `useRelationFields`, filling in a relation field's own picker
+ * options) rendered via `CrudFormFields`, submitting to `baseApi.create`.
+ * The `<form>` wraps the whole `Card` (fields in `CardBody`, submit in
+ * `CardFooter`) rather than living inside it, so the submit button in
+ * the footer still triggers the same native form submission.
+ */
+function CrudCreateForm<T>({ baseApi, schema, request, onCreated }: CrudCreateFormProps<T>) {
+  const baseFields = useMemo(() => createSchemaFields<T>(schema), [schema]);
+  const fields = useRelationFields(baseFields, request);
   const form = useCrudForm<T>();
 
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    const row = await form.submit((values) => api.create(pickFieldValues(values, config.fields)));
+    const row = await form.submit((values) => baseApi.create(pickFieldValues(values, fields)));
     if (row) onCreated?.(row);
   }
 
@@ -33,7 +99,7 @@ function CrudCreateScreen<T>({ config, onCreated }: CrudCreateScreenProps<T>) {
     <form onSubmit={handleSubmit} noValidate>
       <Card>
         <CardBody>
-          <CrudFormFields fields={config.fields} values={form.values} onChange={form.setValue} />
+          <CrudFormFields fields={fields} values={form.values} onChange={form.setValue} />
           {form.error && (
             <p className="text-danger mb-0" role="alert">
               {form.error.message}

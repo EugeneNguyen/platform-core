@@ -4,9 +4,18 @@ export type { CrudRouter } from "./CrudRouter";
 export { createCrudPaths } from "./lib/paths";
 export type { CrudPaths } from "./lib/paths";
 
-export { createDefaultCrudApi } from "./lib/api";
-
 export * from "./lib/types";
+
+export { createBaseApi } from "./lib/baseApi";
+export type { BaseApi, BaseApiRequest } from "./lib/baseApi";
+
+export { createRequest } from "./lib/request";
+
+export * from "./lib/schema";
+
+export { createSchemaColumns } from "./lib/schemaColumns";
+
+export { createSchemaFields } from "./lib/schemaFields";
 
 export { useCrudForm } from "./lib/useCrudForm";
 

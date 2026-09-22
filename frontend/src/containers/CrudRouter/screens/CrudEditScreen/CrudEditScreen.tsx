@@ -1,13 +1,19 @@
 import { useEffect, useMemo, useState, type SubmitEvent } from "react";
 import { Button, Card, CardBody, CardFooter } from "../../../../components";
-import { createDefaultCrudApi } from "../../lib/api";
+import { createBaseApi } from "../../lib/baseApi";
+import type { BaseApi, BaseApiRequest } from "../../lib/baseApi";
 import { pickFieldValues } from "../../lib/fields";
-import type { CrudConfig } from "../../lib/types";
+import { useRelationFields } from "../../lib/relationOptions";
+import { createRequest } from "../../lib/request";
+import type { Schema } from "../../lib/schema";
+import { createSchemaFields } from "../../lib/schemaFields";
 import { useCrudForm } from "../../lib/useCrudForm";
 import CrudFormFields from "../CrudFormFields";
 
 export interface CrudEditScreenProps<T> {
-  config: CrudConfig<T>;
+  /** The resource's own base URL, e.g. `"/api/v1/goals"` - see `CrudListScreen`'s own docstring on `baseApi` being built internally from this plus `accessToken`. */
+  baseUrl: string;
+  accessToken: string;
   /** The record's id - a prop, not read from a router param: same "routing-dependent value passed in" rule as `platform-org-frontend`'s `OrgsScreen` taking `accessToken`. The host reads its own `:id` param and passes it here. */
   id: string | number;
   onUpdated?: (row: T) => void;
@@ -15,9 +21,72 @@ export interface CrudEditScreenProps<T> {
   onDeleted?: () => void;
 }
 
-/** The "U" (and an optional "D") of `CrudRouter`'s three screens - loads the record via `config.api.read`, then the same `Card`-framed field form `CrudCreateScreen` uses, prefilled (Save + Delete both in `CardFooter`). */
-function CrudEditScreen<T>({ config, id, onUpdated, onDeleted }: CrudEditScreenProps<T>) {
-  const api = useMemo(() => ({ ...createDefaultCrudApi<T>(config.endpoint), ...config.api }), [config.endpoint, config.api]);
+/**
+ * Loads the resource's OWN schema first (`baseApi.schema()`), same
+ * "schema before anything else" rule `CrudListScreen`/`CrudCreateScreen`
+ * follow - split into this outer component (owns only the schema fetch)
+ * and `CrudEditForm` (mounted only once schema is ready, and which THEN
+ * loads the record itself via `baseApi.read(id)` - schema, then record,
+ * never the other way or in parallel).
+ */
+function CrudEditScreen<T>({ baseUrl, accessToken, id, onUpdated, onDeleted }: CrudEditScreenProps<T>) {
+  const request = useMemo(() => createRequest(accessToken), [accessToken]);
+  const baseApi = useMemo(() => createBaseApi<T>(baseUrl, request), [baseUrl, request]);
+  const [schema, setSchema] = useState<Schema | null>(null);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    baseApi
+      .schema()
+      .then((result) => {
+        if (!cancelled) setSchema(result);
+      })
+      .catch((thrown: unknown) => {
+        if (!cancelled) setError(thrown instanceof Error ? thrown : new Error(String(thrown)));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [baseApi]);
+
+  if (error)
+    return (
+      <Card>
+        <CardBody>
+          <p className="text-danger mb-0" role="alert">
+            {error.message}
+          </p>
+        </CardBody>
+      </Card>
+    );
+  if (!schema)
+    return (
+      <Card>
+        <CardBody>
+          <p className="text-secondary mb-0">Loading…</p>
+        </CardBody>
+      </Card>
+    );
+
+  return <CrudEditForm baseApi={baseApi} schema={schema} request={request} id={id} onUpdated={onUpdated} onDeleted={onDeleted} />;
+}
+
+interface CrudEditFormProps<T> extends Omit<CrudEditScreenProps<T>, "baseUrl" | "accessToken"> {
+  baseApi: BaseApi<T>;
+  schema: Schema;
+  request: BaseApiRequest;
+}
+
+/**
+ * The "U" (and an optional "D") of `CrudRouter`'s three screens - loads
+ * the record via `baseApi.read(id)`, then the same `Card`-framed field
+ * form `CrudCreateForm` uses (`createSchemaFields(schema)` +
+ * `useRelationFields`), prefilled (Save + Delete both in `CardFooter`).
+ */
+function CrudEditForm<T>({ baseApi, schema, request, id, onUpdated, onDeleted }: CrudEditFormProps<T>) {
+  const baseFields = useMemo(() => createSchemaFields<T>(schema), [schema]);
+  const fields = useRelationFields(baseFields, request);
   const form = useCrudForm<T>();
   const { setValues } = form;
   const [loading, setLoading] = useState(true);
@@ -33,7 +102,7 @@ function CrudEditScreen<T>({ config, id, onUpdated, onDeleted }: CrudEditScreenP
     // oxlint-disable-next-line react/set-state-in-effect
     setLoadError(null);
 
-    api
+    baseApi
       .read(id)
       .then((row) => {
         if (!cancelled) setValues(row);
@@ -48,11 +117,11 @@ function CrudEditScreen<T>({ config, id, onUpdated, onDeleted }: CrudEditScreenP
     return () => {
       cancelled = true;
     };
-  }, [api, id, setValues]);
+  }, [baseApi, id, setValues]);
 
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    const row = await form.submit((values) => api.update(id, pickFieldValues(values, config.fields)));
+    const row = await form.submit((values) => baseApi.update(id, pickFieldValues(values, fields)));
     if (row) onUpdated?.(row);
   }
 
@@ -60,7 +129,7 @@ function CrudEditScreen<T>({ config, id, onUpdated, onDeleted }: CrudEditScreenP
     if (!window.confirm("Delete this item?")) return;
     setDeleting(true);
     try {
-      await api.remove(id);
+      await baseApi.remove(id);
       onDeleted?.();
     } finally {
       setDeleting(false);
@@ -90,7 +159,7 @@ function CrudEditScreen<T>({ config, id, onUpdated, onDeleted }: CrudEditScreenP
     <form onSubmit={handleSubmit} noValidate>
       <Card>
         <CardBody>
-          <CrudFormFields fields={config.fields} values={form.values} onChange={form.setValue} />
+          <CrudFormFields fields={fields} values={form.values} onChange={form.setValue} />
           {form.error && (
             <p className="text-danger mb-0" role="alert">
               {form.error.message}

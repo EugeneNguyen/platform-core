@@ -1,6 +1,4 @@
 import type { ReactNode } from "react";
-import type { LinkComponent } from "../../../components";
-import type { DataTableColumn, DataTableFetcher } from "../../DataTable";
 
 export type CrudFieldType = "text" | "email" | "tel" | "password" | "number" | "checkbox" | "select";
 
@@ -9,6 +7,11 @@ export interface CrudFieldOption {
   label: string;
 }
 
+/**
+ * One form field for `CrudFormFields` (`CrudCreateScreen`/`CrudEditScreen`).
+ * Auto-built from a `Schema` field now, not hand-written - see
+ * `schemaFields.ts`'s `createSchemaFields` for what maps to what.
+ */
 export interface CrudField<T> {
   key: keyof T & string;
   label: ReactNode;
@@ -16,31 +19,8 @@ export interface CrudField<T> {
   type?: CrudFieldType;
   required?: boolean;
   autoComplete?: string;
-  /** Only meaningful when `type === "select"` - the `<option>` list. Static (a fixed set of choices, e.g. a status enum) or built by the config's own caller from data it fetched itself (e.g. "which goal" - see goalnexa-frontend's `metricsCrudConfig.ts`); `CrudConfig` has no fetching of its own to do that for you. */
+  /** Only meaningful when `type === "select"` - the `<option>` list. Populated synchronously from a `SchemaField`'s own `choices` (an enum) by `createSchemaFields`; for a relation field (see `relatedEndpoint`) it starts empty and is filled in asynchronously by `CrudCreateForm`/`CrudEditForm` once `fetchRelationOptions` resolves. */
   options?: CrudFieldOption[];
-}
-
-export interface CrudApi<T> {
-  create: (values: Partial<T>) => Promise<T>;
-  read: (id: string | number) => Promise<T>;
-  update: (id: string | number, values: Partial<T>) => Promise<T>;
-  remove: (id: string | number) => Promise<void>;
-}
-
-export interface CrudConfig<T> {
-  /** URL segment this resource lives under, e.g. `"orgs"` - `createCrudPaths` builds every path from this. */
-  resource: string;
-  /** List/detail REST base, e.g. `"/api/v1/orgs"` - list/create at this exact path, retrieve/update/destroy at `${endpoint}/${id}`, same routes any `BaseViewSet`'s `router.register` gives you. */
-  endpoint: string;
-  columns: DataTableColumn<T>[];
-  fields: CrudField<T>[];
-  rowKey: (row: T) => string | number;
-  /** Overrides individual CRUD calls - anything left out falls back to the plain-fetch defaults in `api.ts`, built from `endpoint`. */
-  api?: Partial<CrudApi<T>>;
-  /** Forwarded straight to `CrudListScreen`'s `DataTable` - `DataTableConfig`'s own escape hatch for auth headers/a non-`fetch` client, kept separate from `api` above since listing is `DataTable`'s concern, not a CRUD mutation. @default DataTable's own plain-fetch default */
-  fetcher?: DataTableFetcher<T>;
-  /** Shows `CrudListScreen`'s `CardHeader` search box, wired to the same `DataTable` state as everything else on the list. @default true */
-  searchable?: boolean;
-  /** Same convention as every other `components`/`containers` piece - defaults to a plain `<a>` (`DefaultLink`) when the host doesn't pass its own router's `Link`. */
-  linkComponent?: LinkComponent;
+  /** Only present on a relation `select` field - the related resource's own base URL (`SchemaField.related_endpoint`) `fetchRelationOptions` fetches `options` from. Its absence on a relation field (a related model with no `core_api.registry` entry) is why that field falls back to a bare text input instead - see `schemaFields.ts`. */
+  relatedEndpoint?: string;
 }

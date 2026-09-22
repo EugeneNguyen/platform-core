@@ -1,49 +1,53 @@
+import { createElement, type ReactElement } from "react";
 import { createCrudPaths, type CrudPaths } from "./lib/paths";
-import type { CrudConfig } from "./lib/types";
 import CrudCreateScreen from "./screens/CrudCreateScreen";
+import type { CrudCreateScreenProps } from "./screens/CrudCreateScreen";
 import CrudEditScreen from "./screens/CrudEditScreen";
+import type { CrudEditScreenProps } from "./screens/CrudEditScreen";
 import CrudListScreen from "./screens/CrudListScreen";
+import type { CrudListScreenProps } from "./screens/CrudListScreen";
 
 export interface CrudRouter<T> {
   paths: CrudPaths;
-  screens: {
-    List: typeof CrudListScreen<T>;
-    Create: typeof CrudCreateScreen<T>;
-    Edit: typeof CrudEditScreen<T>;
-  };
+  List: (props: Omit<CrudListScreenProps<T>, "baseUrl">) => ReactElement;
+  Create: (props: Omit<CrudCreateScreenProps<T>, "baseUrl">) => ReactElement;
+  Edit: (props: Omit<CrudEditScreenProps<T>, "baseUrl">) => ReactElement;
 }
 
 /**
- * NOT a React Router `<Routes>`/`<Route>` tree - every frontend package
- * in this platform is router-agnostic on purpose (a host may be on a
- * different react-router major version, or a different router
- * altogether; see root `AGENTS.md`'s "no react-router dependency of its
- * own" rule and this package's own `AppShell`/`Table`/`DataTable`
- * docstrings for the same rule applied elsewhere). React Router's own
- * framework mode needs literal route FILES at build time anyway, so even
- * the host couldn't consume a runtime route tree here if this exported
- * one.
+ * One resource's worth of wiring, from just its own base URL - `paths`
+ * (`createCrudPaths`, built from the URL's own last `/`-segment, e.g.
+ * `"/api/v1/goals"` -> `"goals"` -> `{listPath: "goals", ...}`) plus
+ * `List`/`Create`/`Edit`, each `CrudListScreen`/`CrudCreateScreen`/
+ * `CrudEditScreen` with `baseUrl` already bound - a caller only ever
+ * passes the REST (`accessToken`, `linkComponent`, `id`, `onDeleted`,
+ * ...), never `baseUrl` again once the router itself is built.
  *
- * What this actually bundles: the three CRUD screens plus the path
- * segments they expect (`createCrudPaths`, built from `config.resource`)
- * - a host wires the two together in its own `routes.ts`/router the same
- * three-line way it already does for `platform-auth-frontend`'s
- * `LoginScreen`/`SignupScreen` + `BASE_PATH`/`LOGIN_PATH`/`SIGNUP_PATH`:
- *
+ * A route file (react-router framework mode) reaches for `.List`/
+ * `.Create`/`.Edit` directly:
  * ```ts
- * const orgsRouter = createCrudRouter(orgsConfig);
- * route(orgsRouter.paths.listPath, "routes/orgs.tsx");       // renders <orgsRouter.screens.List config={orgsConfig} />
- * route(orgsRouter.paths.createPath, "routes/orgs-new.tsx"); // renders <orgsRouter.screens.Create config={orgsConfig} onCreated={...} />
- * route(orgsRouter.paths.editPath(":id"), "routes/orgs-edit.tsx"); // reads :id itself, passes it as the `id` prop
+ * // some module's own lib/goalsRouter.ts
+ * export const GoalsRouter = createCrudRouter<Goal>("/api/v1/goals");
+ *
+ * // routes/goals.tsx
+ * import { GoalsRouter } from "../lib/goalsRouter";
+ * export default function GoalsRoute() {
+ *   const accessToken = useOutletContext<string>();
+ *   return <GoalsRouter.List accessToken={accessToken} linkComponent={GoalsLink} />;
+ * }
  * ```
+ * Built fresh on every `createCrudRouter` call (not memoized/cached) -
+ * cheap (three closures + a `createCrudPaths` call, no network of its
+ * own), so a module calls it once at its own top level (as above) and
+ * reuses the same router value everywhere, rather than needing this
+ * function itself to dedupe repeated calls for the same `baseUrl`.
  */
-export function createCrudRouter<T>(config: CrudConfig<T>): CrudRouter<T> {
+export function createCrudRouter<T>(baseUrl: string): CrudRouter<T> {
+  const resource = baseUrl.split("/").filter(Boolean).pop() ?? baseUrl;
   return {
-    paths: createCrudPaths(config.resource),
-    screens: {
-      List: CrudListScreen<T>,
-      Create: CrudCreateScreen<T>,
-      Edit: CrudEditScreen<T>,
-    },
+    paths: createCrudPaths(resource),
+    List: (props) => createElement(CrudListScreen<T>, { baseUrl, ...props }),
+    Create: (props) => createElement(CrudCreateScreen<T>, { baseUrl, ...props }),
+    Edit: (props) => createElement(CrudEditScreen<T>, { baseUrl, ...props }),
   };
 }

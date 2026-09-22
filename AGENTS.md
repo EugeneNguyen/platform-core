@@ -436,55 +436,174 @@ touch this button again.
 
 ### CrudRouter (`containers/CrudRouter/`)
 
-The three CRUD screens (`CrudListScreen`/`CrudCreateScreen`/`CrudEditScreen`)
-plus the path segments they expect, bundled by `createCrudRouter(config)`
-into `{ paths, screens: { List, Create, Edit } }`. Two subfolders, split
-by concern rather than left flat (this container outgrew a flat file
-list once it had five non-screen files alongside four screens):
+**Fully schema-driven now - a resource needs zero hand-written frontend
+config.** `CrudListScreen`/`CrudCreateScreen`/`CrudEditScreen` each take
+just `baseUrl`/`accessToken` (plus routing-agnostic callbacks -
+`onDeleted`/`onCreated`/`onUpdated`, `id` for Edit) and build their own
+`BaseApi<T>` internally (`useMemo`, `createBaseApi(baseUrl,
+createRequest(accessToken))`). Every screen loads that resource's OWN
+`GET <baseUrl>/schema` (`core_api.viewsets.BaseViewSet.schema` - see
+this repo's own backend AGENTS.md-equivalent section) FIRST, then
+derives columns (`createSchemaColumns`) or form fields
+(`createSchemaFields`) from it, THEN loads the list/record. There is no
+more hand-written `CrudConfig`/`columns`/`fields` array anywhere in this
+platform - a module adding a new `BaseViewSet`-backed resource gets a
+full list/create/edit UI for free, from the backend's own schema alone.
+(`CrudConfig`/`CrudApi`/`createDefaultCrudApi` existed briefly during
+this migration and were deleted once nothing read them anymore - don't
+resurrect that shape.)
 
-- `lib/` - everything that isn't itself a screen. `types.ts` -
-  `CrudField<T>` (one form field: `key`/`label`/`type`/`required`),
-  `CrudApi<T>` (`create`/`read`/`update`/`remove`), and `CrudConfig<T>`
-  (`resource`, `endpoint`, `columns` - reuses `DataTableColumn<T>` -
-  `fields`, `rowKey`, optional `api` overrides and `fetcher`). `api.ts` -
-  `createDefaultCrudApi` - plain `fetch` calls against exactly the
-  routes any `BaseViewSet`'s `router.register` gives you (`POST
-  endpoint`, `GET`/`PATCH`/`DELETE endpoint/:id`); `CrudConfig.api`
-  overrides individual calls, anything left out falls back to this.
-  `paths.ts` - `createCrudPaths(resource)`, computed instead of static
-  since the resource name varies per config (see its own docstring for
-  how this compares to `platform-auth-frontend`'s static `BASE_PATH`).
-  `useCrudForm.ts` / `fields.ts` - the Create/Edit screens' shared form
-  state and `pickFieldValues` (strips a submit payload down to exactly
-  `config.fields` - without it, `CrudEditScreen`'s form, prefilled
-  wholesale from `api.read`'s full record, would submit every extra
-  property - `id`, timestamps, computed fields - right back to
-  `api.update`; a real bug this container's own tests caught).
-  `pickFieldValues` lives in its OWN file (`fields.ts`), not alongside
-  `CrudFormFields.tsx` where it started - a plain function exported next
-  to a component breaks `react/only-export-components`'s fast-refresh
-  assumption (caught by this repo's own `oxlint` config).
+**Why schema-first, not parallel with the list/record fetch**:
+`useDataTable`'s `columnOrder`/`hiddenColumns` state is a LAZY `useState`
+initializer, computed ONCE from `columns` at mount - a `columns` array
+that changed on a later render (once an async schema fetch resolved)
+would leave that initial state stale, silently hiding/misordering
+columns that didn't exist the first time. Every screen is split into an
+OUTER component (owns only the schema fetch, renders "Loading…"/an error
+until it resolves) and an INNER one (`CrudListScreenTable`/
+`CrudCreateForm`/`CrudEditForm`, mounted only once schema is ready, so
+`useDataTable`/`useCrudForm` are each called exactly once with their
+FINAL shape from the start) - see `CrudListScreen.tsx`'s own docstring
+for the fullest version of this reasoning.
+
+Known gaps in the schema-driven mapping, left as documented gaps rather
+than solved: a relation field (`type: "relation"` in the schema) has no
+lookup UI - a list column shows the bare related id, and a form field is
+a plain text input expecting that id typed in, not a `select` built from
+the related resource's own rows (that needs a SECOND fetch this generic
+code has no way to know it should make). A `date`/`datetime` schema
+field also has no dedicated `CrudField` type yet - falls back to plain
+text. See `schemaColumns.ts`/`schemaFields.ts`'s own docstrings.
+
+Two subfolders, split by concern rather than left flat:
+
+- `lib/` - everything that isn't itself a screen or a route file.
+  `schema.ts` - `Schema`/`SchemaField`, the shape `BaseViewSet.schema`
+  returns. `baseApi.ts` - `BaseApi<T>`/`createBaseApi` (schema/list/read/
+  create/update/remove, mirroring the backend resource 1:1) and
+  `BaseApiRequest` (a caller's own authenticated-fetch-and-parse
+  function - this platform's `apiFetch` convention). `request.ts` -
+  `createRequest(accessToken)`, the one concrete `BaseApiRequest` this
+  platform ships (axios-backed under the hood, but the NAME stays
+  transport-neutral on purpose - a caller shouldn't have to know or care
+  which HTTP client built the one it got). `schemaColumns.ts`/
+  `schemaFields.ts` - `Schema` -> `DataTableColumn<T>[]`/`CrudField<T>[]`
+  (list columns / form fields respectively - see their own docstrings
+  for exactly what's included/excluded and why). `types.ts` -
+  `CrudField<T>` itself (what `CrudFormFields` actually renders one of),
+  now just the OUTPUT shape `schemaFields.ts` builds, not a hand-written
+  input anymore. `paths.ts` - `createCrudPaths(resource)`, computed from
+  a resource's own name (see its own docstring for how this compares to
+  `platform-auth-frontend`'s static `BASE_PATH`). `routes.ts` -
+  `createCrudRoutes`, see below - lives here but is NOT part of the
+  `"."` export (see its own docstring on the separate `"./routes"`
+  subpath and why). `useCrudForm.ts` / `fields.ts` - the Create/Edit
+  screens' shared form state and `pickFieldValues` (strips a submit
+  payload down to exactly the field list schemaFields.ts built - without
+  it, `CrudEditScreen`'s form, prefilled wholesale from `api.read`'s
+  full record, would submit every extra property - `id`, timestamps,
+  computed fields - right back to `api.update`; a real bug this
+  container's own tests caught). `pickFieldValues` lives in its OWN file
+  (`fields.ts`), not alongside `CrudFormFields.tsx` where it started - a
+  plain function exported next to a component breaks
+  `react/only-export-components`'s fast-refresh assumption (caught by
+  this repo's own `oxlint` config).
 - `screens/` - one folder per screen, same folder-per-component + barrel
   + colocated test convention as `components/` (`<Name>/<Name>.tsx` +
   `index.ts` + `<Name>.test.tsx`): `CrudListScreen`, `CrudCreateScreen`,
-  `CrudEditScreen`, and `CrudFormFields` (one `FormLabel`+`FormControl`,
-  or `FormCheck` for a `checkbox` field, per `CrudField`, shared by
-  Create/Edit - not re-exported from `CrudRouter/index.ts`, an
-  implementation detail of those two screens, not a `components/`
-  design-system piece on its own). See `CrudRouter.ts`'s own docstring
-  for what each screen does.
+  `CrudEditScreen` (each internally split into an outer schema-loading
+  component and an inner table/form component - see above), and
+  `CrudFormFields` (one `FormLabel`+`FormControl`, or `FormCheck` for a
+  `checkbox` field, or a native `<select>` for `type: "select"`, per
+  `CrudField` - not re-exported from `CrudRouter/index.ts`, an
+  implementation detail of Create/Edit, not a `components/` design-
+  system piece on its own).
 
-**`createCrudRouter` returns plain data (paths + component references),
-never an actual `<Routes>`/`<Route>` tree** - see `CrudRouter.ts`'s own
-docstring. Every frontend package in this platform is router-agnostic on
-purpose (root `AGENTS.md`'s "no react-router dependency of its own"
-rule, applied here the same way `AppShell`/`Table`/`DataTable` apply it
-elsewhere in this repo) - a host wires `paths`/`screens` into its OWN
-router the same three-line way it already wires up
-`platform-auth-frontend`'s `LoginScreen`/`SignupScreen` +
-`BASE_PATH`/`LOGIN_PATH`/`SIGNUP_PATH`. `CrudEditScreen` takes `id` as a
-plain prop rather than reading a router param itself - same rule
-`platform-org-frontend`'s `OrgsScreen` follows for `accessToken`.
+**`createCrudRouter(baseUrl)` (client-safe, the `"."` export) binds
+`baseUrl` into `List`/`Create`/`Edit` once**, so a caller never passes it
+again - `{ paths, List, Create, Edit }` (`CrudRouter.ts`). A domain
+module's own screen-wrapper package (e.g. `platform-org-frontend`) has
+ONE `lib/<x>Router.ts` per resource (`export const OrgsRouter =
+createCrudRouter<Organization>("/api/v1/orgs")`), and its own
+`<x>Paths.ts`/screen files just re-export `.paths`/`.List`/`.Create`/
+`.Edit` - see `platform-org-frontend`'s own `lib/orgsRouter.ts` for the
+reference shape. Every frontend package in this platform is router-
+agnostic on purpose (root `AGENTS.md`'s "no react-router dependency of
+its own" rule) - `createCrudRouter`'s OWN return value is plain
+component references, never an actual `<Routes>`/`<Route>` tree.
+`CrudEditScreen` takes `id` as a plain prop rather than reading a router
+param itself - same rule every screen in this platform follows for
+routing-dependent values.
+
+**`createCrudRoutes(apiPath)` (Node-only, the `"./routes"` subpath) is
+the ACTUAL react-router wiring** - and it's the one place in this whole
+platform where "no react-router dependency of its own" doesn't apply,
+on purpose: it registers a resource's list/create/edit URLs against
+THREE GENERIC route files this package itself ships
+(`src/routes/crud-list.tsx`/`crud-new.tsx`/`crud-edit.tsx`) - the SAME
+three files for every resource, not one set per domain module anymore,
+since `CrudListScreen`/etc. are already fully generic (schema-driven, no
+per-resource UI difference left to justify per-resource route files). A
+host's `routes.ts` registers a whole resource with one call:
+```ts
+import { createCrudRoutes } from "platform-core/routes";
+...
+layout("routes/app-shell.tsx", [
+  ...createCrudRoutes("/api/v1/orgs"),
+  ...createCrudRoutes("/api/v1/goals"),
+]),
+```
+The generic route files derive WHICH resource they're rendering at
+RENDER TIME, from the URL's own first path segment (`useLocation()`,
+NOT a static import) - `/goals` -> resource `"goals"` -> `baseUrl
+"/api/v1/goals"`, relying on this platform's own established "URL
+segment always equals the backend resource name" convention (true for
+every resource today; would need revisiting if that convention were
+ever broken for one resource). Three things worth knowing if you touch
+this:
+- **`createCrudRoutes` must pass an explicit `id` to each `route()`
+  call** (`{ id: `crud-list-${resource}` }`, etc.) - react-router derives
+  a route's `id` from its `file` by default, and since every resource
+  points at the SAME file, omitting `id` collides ("Unable to define
+  routes with duplicate route id", confirmed the hard way the moment a
+  second resource was registered).
+- **The generic route files' own `routesDir` is computed from
+  `import.meta.url`** (Node ESM's own `__dirname` equivalent), not a
+  relative string baking in the CALLER's directory depth - this package
+  only ever has to know where its OWN `src/routes/` folder is relative to
+  ITSELF, regardless of which host imports `createCrudRoutes` or from
+  where. A caller-supplied `dir` argument existed briefly during this
+  migration (when route files were still per-domain-module) and was
+  removed once centralizing them here made it unnecessary - don't
+  reintroduce it.
+- **This is genuinely the only file in this package allowed to import
+  `react-router`/`@react-router/dev/routes`** - `crud-list.tsx`/etc. are
+  real client-bundled route MODULES (they render actual UI, so they
+  can't live in the Node-only `"./routes"` subpath themselves), while
+  `routes.ts` (which builds the `route()` entries) is Node-only and
+  lives in `lib/`, imported only via `"./routes"` - never let
+  `@react-router/dev/routes` leak into the `"."` entry `AppShell`/
+  `CrudListScreen`/etc. ship from: that package IS client-bundled
+  (`AppShell` gets pulled into every host's `app-shell.tsx`), so
+  anything re-exported from it rides along into the browser bundle -
+  measured once at a real ~16KB cost for code that never runs in a
+  browser. If you ever need a per-resource CUSTOM route module again
+  (a resource whose UI genuinely differs from the generic screens),
+  put it back in that domain module's own package, not here - see root
+  `AGENTS.md`'s "A module with its own route modules" section.
+
+**`CrudListScreen` calls `useDataTable` itself and passes the instance
+to `<DataTable table={...}>`, rather than handing `DataTable` a `config`
+and letting it own the hook** - it owns this card's whole chrome (New
+link + search + `ColumnPicker` in `CardHeader`, `Pagination` in
+`CardFooter`; `DataTable` itself renders BARE, no chrome of its own -
+see `DataTable`'s own section for the `config`-vs-`table` split this
+required), all of it reading/writing the SAME state. After a delete, it
+calls the shared instance's `table.refetch()` to get the list back in
+sync with the server - an earlier version forced this by remounting
+`<DataTable key={refreshNonce}>`, which stopped being an option the
+moment `CrudListScreen` started owning the hook (remounting `DataTable`
+no longer resets a hook call that lives one level up).
 
 **`CrudListScreen` calls `useDataTable` itself and passes the instance
 to `<DataTable table={...}>`, rather than handing `DataTable` a `config`
@@ -542,8 +661,8 @@ here too" costs little next to Delete definitely still working.
 **`LinkComponentProps` grew `tabIndex`/`aria-hidden` (and `children`
 became optional) to support these decoys** - a small, deliberately
 additive widening (every existing `LinkComponent` implementation across
-this platform - `DefaultLink` here, `apps/main`'s `ShellLink`,
-`platform-org-frontend`'s `OrgsLink` - needed a one-line `...rest`
+this platform - `DefaultLink` here, `apps/main`'s `ShellLink`, the
+`CrudLink` defined inside `crud-list.tsx` - needed a one-line `...rest`
 spread added to actually forward them, otherwise the widened prop type
 would type-check but silently do nothing). Grep for `LinkComponentProps`
 across the platform if you add a new `LinkComponent` implementation -
@@ -553,6 +672,57 @@ of passthrough anchor attributes) work through it.
 Edit and Delete also share the exact same `.btn.btn-link.btn-sm`
 classes now (previously Edit was a bare, unstyled `<a>`, which put it
 visibly out of alignment with Delete's `Button`-rendered `.btn`).
+
+#### Adding a new resource's UI end-to-end - the whole cookbook
+
+Given a `BaseViewSet`/`BaseSerializer`-backed backend resource already
+exists (see the "`BaseSerializer`/`BaseViewSet`" section below) at, say,
+`/api/v1/widgets`:
+
+1. **Backend: nothing extra.** `GET /api/v1/widgets/schema` already
+   works the moment the `BaseViewSet` subclass exists - `BaseViewSet`
+   ships the `schema` action for free (`core_api/viewsets.py`).
+2. **Frontend, in the domain module's own package** (e.g.
+   `goalnexa-frontend`) - two tiny files, no hand-written config:
+   ```ts
+   // lib/widgetsRouter.ts
+   import { createCrudRouter } from "platform-core";
+   import type { Widget } from "./api/widgets";
+   export const WidgetsRouter = createCrudRouter<Widget>("/api/v1/widgets");
+   ```
+   ```ts
+   // lib/widgetsPaths.ts
+   export const WIDGETS_PATHS = WidgetsRouter.paths;
+   ```
+   Export `WIDGETS_PATHS`/`WIDGETS_PATH`/`WIDGETS_NEW_PATH`/
+   `widgetsEditPath` (`WIDGETS_PATHS.listPath`/`.createPath`/
+   `.editPath`) from the package's own `index.ts` barrel, same as every
+   other resource's `*_PATH` exports there - `apps/main`'s
+   `app-shell.tsx` needs these for its nav item.
+   **No screen wrapper files, no route files, no `CrudConfig` needed** -
+   `WidgetsRouter.List`/`.Create`/`.Edit` ARE the screens; the actual
+   route registration (step 3) points straight at platform-core's own
+   generic route files, not anything in this package. Only build a
+   custom screen file if this resource needs something a generic screen
+   can't do (e.g. `GoalsEditScreen`'s nested `GoalMetricsSection` -
+   compose `WidgetsRouter.Edit` with the extra piece the same way that
+   file does).
+3. **`apps/main/frontend/app/routes.ts`** - one line:
+   ```ts
+   ...createCrudRoutes("/api/v1/widgets"),
+   ```
+   inside the same `layout("routes/app-shell.tsx", [...])` array every
+   other resource's call sits in.
+4. **`apps/main/frontend/app/routes/app-shell.tsx`** - import
+   `WIDGETS_PATH` from the domain package's barrel and add a `{ label:
+   "Widgets", to: `/${WIDGETS_PATH}` }` entry to `NAV_ITEMS`.
+
+That's the whole thing - list/create/edit, schema-derived columns and
+form fields, search/sort/pagination, delete-with-confirm, all working,
+zero per-resource UI code beyond the two one-liner files in step 2.
+Known gaps to expect (not bugs, see this section's own "Known gaps"
+paragraph above): a relation field shows/accepts a bare id, not a
+looked-up label; no date/datetime input type yet.
 
 ## Single-port composition
 

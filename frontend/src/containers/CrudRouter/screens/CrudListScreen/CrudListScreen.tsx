@@ -1,24 +1,102 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button, Card, CardFooter, CardHeader, DefaultLink, FormControl, Pagination } from "../../../../components";
+import type { LinkComponent } from "../../../../components";
 import { ColumnPicker, DataTable, useDataTable } from "../../../DataTable";
 import type { DataTableColumn } from "../../../DataTable";
-import { createDefaultCrudApi } from "../../lib/api";
+import { createBaseApi } from "../../lib/baseApi";
+import type { BaseApi } from "../../lib/baseApi";
 import { createCrudPaths } from "../../lib/paths";
-import type { CrudConfig } from "../../lib/types";
+import { createRequest } from "../../lib/request";
+import type { Schema } from "../../lib/schema";
+import { createSchemaColumns } from "../../lib/schemaColumns";
 
 export interface CrudListScreenProps<T> {
-  config: CrudConfig<T>;
+  /** The resource's own base URL, e.g. `"/api/v1/goals"` - the only resource-shaped input this screen needs; `createBaseApi`/`createRequest` (see their own docstrings) build the actual client internally from this plus `accessToken`. */
+  baseUrl: string;
+  /** This platform's own Bearer-token convention (see `createRequest`'s own docstring) - a host passes whatever it already has (e.g. from `platform-auth-frontend`'s `LoginScreen`/`SignupScreen` `onSuccess` callback). */
+  accessToken: string;
+  /** Same convention as every other `components`/`containers` piece - defaults to a plain `<a>` (`DefaultLink`) when the host doesn't pass its own router's `Link`. */
+  linkComponent?: LinkComponent;
+  /** Shows the `CardHeader` search box, wired to the same `DataTable` state as everything else on the list. @default true */
+  searchable?: boolean;
   /** Fires after a row is successfully deleted - e.g. to show a toast. The list refetches itself either way. */
   onDeleted?: (row: T) => void;
 }
 
 /**
- * `DataTable` plus a "New" link and a per-row Edit/Delete column, framed
- * in a `Card` - the "R" (and the delete half of "D") of `CrudRouter`'s
- * three screens. Edit is a `linkComponent` link (routing, not a callback
- * - same "host's router owns navigation" rule the whole package
- * follows), Delete is a real action (calls `config.api.remove`/the
- * default REST call, confirms first).
+ * Loads the resource's OWN schema first (`baseApi.schema()`), THEN the
+ * list - not in parallel. `useDataTable`'s `columnOrder`/`hiddenColumns`
+ * state is a LAZY `useState` initializer, computed once from `columns`
+ * at mount (see its own source) - a `columns` array that changes on a
+ * LATER render (e.g. once an async schema fetch resolves) would leave
+ * that initial state stale, silently hiding/misordering columns that
+ * didn't exist yet the first time. Splitting into this outer component
+ * (owns only the schema fetch) and `CrudListScreenTable` (mounted only
+ * once schema is ready, calls `useDataTable` exactly once with its
+ * FINAL columns from the start) sidesteps that rather than fighting it.
+ *
+ * `baseApi` itself is built HERE (`useMemo`, not per-render) from
+ * `baseUrl`/`accessToken` - a caller hands over just the resource's URL
+ * and a token, not a pre-built client object.
+ */
+function CrudListScreen<T>({ baseUrl, accessToken, linkComponent, searchable, onDeleted }: CrudListScreenProps<T>) {
+  const baseApi = useMemo(() => createBaseApi<T>(baseUrl, createRequest(accessToken)), [baseUrl, accessToken]);
+  const [schema, setSchema] = useState<Schema | null>(null);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    // Synchronizing with an external system (the network) - see
+    // useDataTable's own fetch effect for the same rule applied there.
+    baseApi
+      .schema()
+      .then((result) => {
+        if (!cancelled) setSchema(result);
+      })
+      .catch((thrown: unknown) => {
+        if (!cancelled) setError(thrown instanceof Error ? thrown : new Error(String(thrown)));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [baseApi]);
+
+  if (error)
+    return (
+      <p className="text-danger" role="alert">
+        {error.message}
+      </p>
+    );
+  if (!schema) return <p className="text-secondary">Loading…</p>;
+
+  return (
+    <CrudListScreenTable baseApi={baseApi} schema={schema} linkComponent={linkComponent} searchable={searchable} onDeleted={onDeleted} />
+  );
+}
+
+interface CrudListScreenTableProps<T> extends Omit<CrudListScreenProps<T>, "baseUrl" | "accessToken"> {
+  baseApi: BaseApi<T>;
+  schema: Schema;
+}
+
+/**
+ * The actual `DataTable` plus a "New" link and a per-row Edit/Delete
+ * column, framed in a `Card` - the "R" (and the delete half of "D") of
+ * `CrudRouter`'s three screens. Edit is a `linkComponent` link (routing,
+ * not a callback - same "host's router owns navigation" rule the whole
+ * package follows), Delete is a real action (`baseApi.remove`, confirms
+ * first). `columns` come from `createSchemaColumns(schema)` - see its
+ * own docstring for what it includes/excludes.
+ *
+ * `resource` (for the "New"/edit link paths - `createCrudPaths`) is
+ * read off `baseApi.endpoint`'s own last `/`-segment (`"/api/v1/goals"`
+ * -> `"goals"`) rather than a separate prop - true for every resource
+ * in this platform today (a `BaseViewSet`'s registered URL segment
+ * always matches its own standalone `config/urls.py` path, which this
+ * platform's own convention keeps in sync with the host's mount point -
+ * see root AGENTS.md). `rowKey` is hardcoded to `row.id` the same way -
+ * every model here uses `id` as its primary key, no exceptions, so
+ * there's nothing left for a caller to actually configure.
  *
  * `useDataTable` is called HERE, not left to `DataTable`'s own default:
  * this screen owns the whole card's chrome (search + `ColumnPicker` in
@@ -54,18 +132,21 @@ export interface CrudListScreenProps<T> {
  * mostly-full-of-controls cell, so losing "click blank space here too"
  * costs little, in exchange for Delete definitely still working.
  */
-function CrudListScreen<T>({ config, onDeleted }: CrudListScreenProps<T>) {
-  const Link = config.linkComponent ?? DefaultLink;
-  const paths = createCrudPaths(config.resource);
-  const api = { ...createDefaultCrudApi<T>(config.endpoint), ...config.api };
+function CrudListScreenTable<T>({ baseApi, schema, linkComponent, searchable, onDeleted }: CrudListScreenTableProps<T>) {
+  const Link = linkComponent ?? DefaultLink;
+  const resource = baseApi.endpoint.split("/").filter(Boolean).pop() ?? baseApi.endpoint;
+  const paths = createCrudPaths(resource);
+  const rowKey = (row: T) => (row as { id: string | number }).id;
   const [deletingId, setDeletingId] = useState<string | number | null>(null);
+
+  const schemaColumns = useMemo(() => createSchemaColumns<T>(schema), [schema]);
 
   async function handleDelete(row: T) {
     if (!window.confirm("Delete this item?")) return;
-    const id = config.rowKey(row);
+    const id = rowKey(row);
     setDeletingId(id);
     try {
-      await api.remove(id);
+      await baseApi.remove(id);
       table.refetch();
       onDeleted?.(row);
     } finally {
@@ -74,11 +155,11 @@ function CrudListScreen<T>({ config, onDeleted }: CrudListScreenProps<T>) {
   }
 
   function rowLink(row: T) {
-    return <Link to={paths.editPath(config.rowKey(row))} tabIndex={-1} aria-hidden="true" className="stretched-link" />;
+    return <Link to={paths.editPath(rowKey(row))} tabIndex={-1} aria-hidden="true" className="stretched-link" />;
   }
 
   const columns: DataTableColumn<T>[] = [
-    ...config.columns.map((column) => ({
+    ...schemaColumns.map((column) => ({
       ...column,
       className: ["position-relative", column.className].filter(Boolean).join(" "),
       render: (row: T) => (
@@ -93,7 +174,7 @@ function CrudListScreen<T>({ config, onDeleted }: CrudListScreenProps<T>) {
       header: "",
       className: "w-1",
       render: (row) => {
-        const id = config.rowKey(row);
+        const id = rowKey(row);
         return (
           <div className="d-flex gap-2">
             <Link to={paths.editPath(id)} className="btn btn-link btn-sm p-0">
@@ -114,7 +195,7 @@ function CrudListScreen<T>({ config, onDeleted }: CrudListScreenProps<T>) {
     },
   ];
 
-  const table = useDataTable({ ...config, columns, searchable: false });
+  const table = useDataTable({ endpoint: baseApi.endpoint, columns, rowKey, fetcher: baseApi.list, searchable });
 
   return (
     <Card>
@@ -123,7 +204,7 @@ function CrudListScreen<T>({ config, onDeleted }: CrudListScreenProps<T>) {
           New
         </Link>
         <div className="d-flex align-items-center gap-2 ms-auto">
-          {config.searchable !== false && (
+          {searchable !== false && (
             <FormControl
               type="search"
               aria-label="Search"
