@@ -32,8 +32,11 @@ class BaseViewSet(ModelViewSet):
         if not included:
             return queryset
 
-        declared_fields = getattr(self.get_serializer_class(), "_declared_fields", {})
-        to_prefetch = [
-            name for name, field in declared_fields.items() if name in included and isinstance(field, DynamicRelationField)
-        ]
+        serializer_class = self.get_serializer_class()
+        declared_fields = getattr(serializer_class, "_declared_fields", {})
+        prefetchable = {name for name, field in declared_fields.items() if isinstance(field, DynamicRelationField)}
+        get_auto_relations = getattr(serializer_class, "get_auto_relations", None)
+        if get_auto_relations is not None:
+            prefetchable |= set(get_auto_relations())
+        to_prefetch = [name for name in included if name in prefetchable]
         return queryset.prefetch_related(*to_prefetch) if to_prefetch else queryset

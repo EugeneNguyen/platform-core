@@ -112,22 +112,37 @@ class BaseSerializer(serializers.ModelSerializer):
             meta.fields = "__all__"
             cls._auto_fields = True
 
+    @classmethod
+    def get_auto_relations(cls):
+        """Every relation `get_fields()` would auto-wrap for this class:
+        `{field_name: RelationInfo}`, keyed the same way as
+        `model_meta.get_field_info().forward_relations`/`reverse_relations`.
+        A classmethod (no instance/request needed) so `BaseViewSet` can
+        tell which `?include[]=` names are auto-added relations worth
+        `prefetch_related`-ing, the same way it already does for a
+        hand-declared `DynamicRelationField` in `_declared_fields`.
+        """
+        if not cls._auto_fields:
+            return {}
+        declared = set(cls._declared_fields)
+        info = model_meta.get_field_info(cls.Meta.model)
+        relations = {**info.forward_relations, **info.reverse_relations}
+        return {
+            name: relation_info
+            for name, relation_info in relations.items()
+            if name not in declared and cls._model_registry.get(relation_info.related_model) is not None
+        }
+
     def get_fields(self):
         fields = super().get_fields()
         self._auto_deferred: set[str] = set()
-        if self._auto_fields:
-            declared = set(self._declared_fields)
-            info = model_meta.get_field_info(self.Meta.model)
-            relations = {**info.forward_relations, **info.reverse_relations}
-            for name, relation_info in relations.items():
-                if name in declared or self._model_registry.get(relation_info.related_model) is None:
-                    continue
-                related_model = relation_info.related_model
-                fields[name] = DynamicRelationField(
-                    lambda m=related_model: self._model_registry.get(m),
-                    many=relation_info.to_many,
-                )
-                self._auto_deferred.add(name)
+        for name, relation_info in self.get_auto_relations().items():
+            related_model = relation_info.related_model
+            fields[name] = DynamicRelationField(
+                lambda m=related_model: self._model_registry.get(m),
+                many=relation_info.to_many,
+            )
+            self._auto_deferred.add(name)
         for name in getattr(self.Meta, "auto_exclude", ()):
             fields.pop(name, None)
         return fields
