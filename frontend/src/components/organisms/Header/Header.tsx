@@ -44,7 +44,7 @@ function SidebarIcon() {
 function Header({ user, onLogout, onToggleSidebar, sidebarFolded = false }: HeaderProps) {
   return (
     <header className="navbar d-print-none sticky-top bg-white">
-      <div className="container-xl">
+      <div className="container-fluid">
         {onToggleSidebar && (
           <button
             type="button"

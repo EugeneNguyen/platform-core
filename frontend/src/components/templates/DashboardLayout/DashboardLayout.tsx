@@ -63,10 +63,10 @@ function useSidebarFolded(initial: boolean) {
  * the fixed sidebar is Tabler's own CSS, not this component's.
  *
  * `.page-body` itself only adds vertical padding - the horizontal gutter
- * (and the max-width that keeps a wide viewport from stretching content
- * edge to edge) comes from Tabler's own `.container-xl`, which has to be
- * an explicit child (Tabler doesn't put it on `.page-body` for you,
- * since not every page wants the same container width).
+ * comes from Tabler's own `.container-fluid`, which has to be an explicit
+ * child (Tabler doesn't put it on `.page-body` for you). Fluid, not
+ * `.container-xl`: content (and the header, which matches it) uses the
+ * whole width beside the sidebar, with no max-width.
  */
 function DashboardLayout({
   navItems,
@@ -92,7 +92,7 @@ function DashboardLayout({
       <Header user={user} onLogout={onLogout} onToggleSidebar={toggleFolded} sidebarFolded={folded} />
       <div className="page-wrapper">
         <main className="page-body">
-          <div className="container-xl">{children}</div>
+          <div className="container-fluid">{children}</div>
         </main>
       </div>
     </div>

@@ -37,6 +37,11 @@ function CrudEditScreen<T>({ baseUrl, accessToken, id, onUpdated, onDeleted }: C
 
   useEffect(() => {
     let cancelled = false;
+    // A new client (new token or resource) retries from scratch - a
+    // failed earlier attempt (e.g. a 401 on a just-expired token) must
+    // not keep hiding a schema that now loads fine.
+    // oxlint-disable-next-line react/set-state-in-effect
+    setError(null);
     baseApi
       .schema()
       .then((result) => {

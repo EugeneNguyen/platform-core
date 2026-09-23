@@ -6,3 +6,7 @@
  */
 export * from "./components";
 export * from "./containers";
+// For a host's own route module that renders a CRUD screen outside the
+// generic route files (e.g. a detail screen in a drawer) and wants its
+// relation links to land where the host mounted each resource.
+export { useResourcePath } from "./routes/useResourcePath";

@@ -210,14 +210,15 @@ narrower than Tabler's own 16rem): set as `--tblr-sidebar-width` on
 offset alike - no layout CSS here. Folding still wins, since Tabler sets
 the folded width directly on the sidebar and its siblings.
 
-**`page-body` wraps `children` in a `.container-xl`** — Tabler's
-`.page-body` only ever adds vertical padding; the horizontal gutter (and
-the max-width that stops content stretching edge to edge on a wide
-viewport) comes from `.container-xl` being an explicit child, which
-Tabler leaves to the page rather than baking into `.page-body` itself
-(not every page wants the same container width). Missing this looked
-like "the whole app has no left/right padding," not obviously a missing
-class one level up.
+**`page-body` wraps `children` in a `.container-fluid`** (and `Header`
+uses one too, so they line up) — Tabler's `.page-body` only ever adds
+vertical padding; the horizontal gutter comes from the container being
+an explicit child, which Tabler leaves to the page rather than baking
+into `.page-body` itself. Fluid on purpose: content spans the full width
+beside the sidebar, no max-width (it was `.container-xl`, capped at
+1320px, until that left wide screens mostly empty). Missing the
+container entirely looked like "the whole app has no left/right
+padding," not obviously a missing class one level up.
 
 ### Modal (`components/organisms/Modal/Modal.tsx`)
 
@@ -231,6 +232,17 @@ close. The opener is read during the render that opens the modal, since
 by the time an effect runs, `autoFocus` has already moved focus. There's
 no full focus trap yet. To put a form's submit button in `footer`, give
 the button the native `form="<form id>"` attribute.
+
+### Drawer (`components/organisms/Drawer/Drawer.tsx`)
+
+Tabler's offcanvas, same rules as `Modal`: React-controlled
+(`open`/`onClose`, no Bootstrap JS), portaled, Escape / close button /
+backdrop close it, page scroll locked, focus in and back. `placement`
+(`end` default, or `start`) and `width` (default `40rem`, capped at the
+viewport). A `Modal` opened inside it stacks above it, and Escape closes
+only that modal: the drawer ignores Escape while `body.modal-open` is
+set. goalnexa's dashboard uses it to show `CrudDetailScreen`; `"."` also
+exports `useResourcePath` for a host route like that one.
 
 ### Breadcrumb (`components/organisms/Breadcrumb/Breadcrumb.tsx`)
 

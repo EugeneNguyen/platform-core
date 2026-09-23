@@ -61,6 +61,11 @@ function CrudListScreen<T>({ baseUrl, accessToken, basePath, linkComponent, sear
     let cancelled = false;
     // Synchronizing with an external system (the network) - see
     // useDataTable's own fetch effect for the same rule applied there.
+    // A new client (new token or resource) retries from scratch - a
+    // failed earlier attempt (e.g. a 401 on a just-expired token) must
+    // not keep hiding a schema that now loads fine.
+    // oxlint-disable-next-line react/set-state-in-effect
+    setError(null);
     baseApi
       .schema()
       .then((result) => {
