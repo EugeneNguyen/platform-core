@@ -932,47 +932,16 @@ of returning the error it was actually trying to report. Grep every
 `settings.py` across the platform for `EXCEPTION_HANDLER` after touching
 this file's exception handler name.
 
-## MCP server (`core_api/mcp.py`)
+## MCP server - moved to platform-mcp
 
-`McpView` exposes every registered `BaseViewSet` as MCP tools, nothing
-per resource to write: `<resource>_schema/_list/_get/_create/_update/
-_delete`, plus `_link/_unlink` when the resource has a many-to-many
-relation. `<resource>` is the endpoint's last path segment with non-word
-chars as `_` (`/api/v1/check-ins` → `check_ins_list`). A resource shows up
-when it has both a `BaseViewSet` (auto-registered) and a
-`register_model_endpoint` call; `mcp_enabled = False` on the viewset
-hides it.
-
-**Every tool call is an internal sub-request to the real API URL**
-(`_call_api`: builds a `WSGIRequest` from the MCP request's own `META` -
-auth header, cookies - resolves the path through the host's urlconf and
-calls the view). So auth, permissions, `get_queryset()` scoping,
-validation and the `{code, message, field_errors}` error contract are the
-REST API's own; an API error comes back as a tool result with
-`isError: true` and `HTTP <status>: <body>`. Input schemas are built from
-each resource's `schema` action, fetched the same way per `tools/list` -
-a resource whose schema the caller can't read gets no tools. `_create`/
-`_update` take the writable fields plus any read-only to-one relation:
-a child's parent (a check-in's `metric`) is read-only in the schema but
-set by the view from the request body, the same key the UI's forms send,
-so the tool has to accept it too. Don't add a
-tool that talks to the ORM directly; that's a second code path with its
-own permission bugs.
-
-Transport is stateless Streamable HTTP: one `POST` per JSON-RPC message
-or batch, JSON answers (no SSE, no sessions, `GET` → 405). A host mounts
-it itself and decides who may reach it:
-
-```python
-path("api/v1/mcp", McpView.as_view(permission_classes=[IsAuthenticated]))
-```
-
-Optional settings: `MCP_SERVER_NAME`, `MCP_SERVER_VERSION`,
-`MCP_INSTRUCTIONS`. Gaps: the registry path is resolved as-is, so a
-module mounted under a gateway prefix that the backend never sees would
-404; and a client needs a bearer token - with platform-auth's 15-minute
-access tokens that's fine for a quick session, not a long-lived client
-config (needs a personal-token or OAuth flow, not built).
+The MCP server over every `BaseViewSet` used to live here
+(`core_api/mcp.py`). It's its own module now, `platform-mcp`, together
+with the personal access tokens MCP clients authenticate with - see its
+AGENTS.md. It still builds on this kernel's registry
+(`core_api.registry`) and each resource's `schema` action, so a change
+to either shape affects its tools. `mcp_enabled = False` on a viewset
+still hides a resource from it (platform-mcp reads it with `getattr`;
+nothing here declares it).
 
 ## Adding a shared convention
 

@@ -156,9 +156,6 @@ def _scoped_queryset(model, request):
 class BaseViewSet(ModelViewSet):
     pagination_class = EnvelopePageNumberPagination
     filter_backends = [DynamicFilterBackend, SortParamOrderingFilter, QParamSearchFilter]
-    # Whether `core_api.mcp.McpView` offers this resource as MCP tools.
-    mcp_enabled = True
-
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
         queryset = cls.__dict__.get("queryset")
