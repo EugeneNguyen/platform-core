@@ -25,11 +25,13 @@ class ClubSerializer(BaseSerializer):
 
 
 class OwnedViewSet(BaseViewSet):
-    """Scoped to `?as=<owner>` - stands in for a real module's
+    """Scoped to `?as=<owner>` (or an `X-As` header, which an MCP call's
+    sub-requests carry through) - stands in for a real module's
     `request.user.id` scoping without needing an auth stack."""
 
     def get_queryset(self):
-        return super().get_queryset().filter(owner=self.request.query_params.get("as", "")).order_by("pk")
+        owner = self.request.query_params.get("as") or self.request.headers.get("X-As", "")
+        return super().get_queryset().filter(owner=owner).order_by("pk")
 
 
 class ShelfViewSet(OwnedViewSet):

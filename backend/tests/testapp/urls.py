@@ -1,4 +1,7 @@
+from django.urls import path
 from rest_framework.routers import SimpleRouter
+
+from core_api.mcp import McpView
 
 from core_api.registry import register_model_endpoint
 from tests.testapp.models import Book, Club, Shelf, Tag
@@ -9,7 +12,7 @@ router.register("shelves", ShelfViewSet, basename="shelves")
 router.register("tags", TagViewSet, basename="tags")
 router.register("books", BookViewSet, basename="books")
 router.register("clubs", ClubViewSet, basename="clubs")
-for model, path in ((Shelf, "/shelves"), (Tag, "/tags"), (Book, "/books"), (Club, "/clubs")):
-    register_model_endpoint(model, path)
+for model, endpoint in ((Shelf, "/shelves"), (Tag, "/tags"), (Book, "/books"), (Club, "/clubs")):
+    register_model_endpoint(model, endpoint)
 
-urlpatterns = router.urls
+urlpatterns = [*router.urls, path("mcp", McpView.as_view())]
