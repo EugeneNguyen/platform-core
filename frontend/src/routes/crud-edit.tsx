@@ -1,15 +1,26 @@
 import { useLocation, useNavigate, useOutletContext } from "react-router";
-import { createCrudPaths } from "../containers/CrudRouter/lib/paths";
 import CrudEditScreen from "../containers/CrudRouter/screens/CrudEditScreen";
 
-/** See `crud-list.tsx`'s own docstring for why this is ONE shared file, not one per resource. The resource is the URL's own FIRST segment (`/goals/:id/edit` -> `"goals"`). */
-function resourceFromPathname(pathname: string): string {
-  return pathname.split("/").filter(Boolean)[0] ?? "";
+/**
+ * See `crud-list.tsx`'s own docstring for why this is ONE shared file,
+ * not one per resource. The resource is the URL's own THIRD-TO-LAST
+ * segment (`/goals/:id/edit` -> `"goals"`; `/platform-org/orgs/:id/edit`
+ * -> `"orgs"` - end-anchored, same "last segment(s), not first" rule
+ * `crud-list.tsx`/`crud-new.tsx` follow - a PREVIOUS version of this
+ * file used the URL's first segment instead, which only happened to
+ * work because nothing was nested yet). The list path (`onUpdated`/
+ * `onDeleted`'s navigate target) is those same segments minus the
+ * trailing `":id/edit"` - no `createCrudPaths` needed here, same reason
+ * `crud-new.tsx` doesn't need it either.
+ */
+function segmentsFromPathname(pathname: string): string[] {
+  return pathname.split("/").filter(Boolean);
 }
 
 // oxlint-disable-next-line react/only-export-components
 export function meta({ location }: { location: { pathname: string } }) {
-  const resource = resourceFromPathname(location.pathname);
+  const segments = segmentsFromPathname(location.pathname);
+  const resource = segments.at(-3) ?? segments[0] ?? "";
   return [{ title: `Edit ${resource.replace(/-/g, " ").replace(/s$/, "")}` }];
 }
 
@@ -24,9 +35,10 @@ export default function CrudEditRoute({ params }: { params: { id: string } }) {
   const accessToken = useOutletContext<string>();
   const navigate = useNavigate();
   const location = useLocation();
-  const resource = resourceFromPathname(location.pathname);
-  const paths = createCrudPaths(resource);
-  const goToList = () => navigate(`/${paths.listPath}`);
+  const segments = segmentsFromPathname(location.pathname);
+  const resource = segments.at(-3) ?? segments[0] ?? "";
+  const listPath = segments.slice(0, -2).join("/");
+  const goToList = () => navigate(`/${listPath}`);
 
   return (
     <CrudEditScreen

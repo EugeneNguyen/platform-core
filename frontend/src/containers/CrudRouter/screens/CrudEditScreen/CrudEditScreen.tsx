@@ -14,7 +14,7 @@ export interface CrudEditScreenProps<T> {
   /** The resource's own base URL, e.g. `"/api/v1/goals"` - see `CrudListScreen`'s own docstring on `baseApi` being built internally from this plus `accessToken`. */
   baseUrl: string;
   accessToken: string;
-  /** The record's id - a prop, not read from a router param: same "routing-dependent value passed in" rule as `platform-org-frontend`'s `OrgsScreen` taking `accessToken`. The host reads its own `:id` param and passes it here. */
+  /** The record's id - a prop, not read from a router param: same "routing-dependent value passed in" rule this screen already follows for `baseUrl`/`accessToken` (see `createCrudRouter`'s own docstring). The host reads its own `:id` param and passes it here. */
   id: string | number;
   onUpdated?: (row: T) => void;
   /** Fires after a successful delete - the host still owns navigating away. */

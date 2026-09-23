@@ -1,7 +1,6 @@
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { route, type RouteConfigEntry } from "@react-router/dev/routes";
-import { createCrudPaths } from "./paths";
+import { index, prefix, route, type RouteConfigEntry } from "@react-router/dev/routes";
 
 /**
  * `../../../routes` from THIS file's own location
@@ -23,10 +22,12 @@ import { createCrudPaths } from "./paths";
 const routesDir = join(dirname(fileURLToPath(import.meta.url)), "../../../routes");
 
 /**
- * The three `route()` calls every `BaseViewSet`-backed resource needs
- * (list/create/edit), ALL THREE pointing at platform-core's own generic
- * route files (`crud-list.tsx`/etc - shared by every resource, not one
- * set per module - see their own docstrings) - a host's `routes.ts`
+ * The three routes every `BaseViewSet`-backed resource needs (list/
+ * create/edit), `prefix()`-nested under the resource's own name (see
+ * `createCrudRoutes`'s own comment on why `prefix()`, not `route()` +
+ * children) and ALL THREE pointing at platform-core's own generic route
+ * files by default (`crud-list.tsx`/etc - shared by every resource, not
+ * one set per module - see their own docstrings) - a host's `routes.ts`
  * registers a whole resource with one call, giving only the resource's
  * own backend base URL:
  * ```ts
@@ -52,17 +53,38 @@ const routesDir = join(dirname(fileURLToPath(import.meta.url)), "../../../routes
  * browser. This file avoids that by living somewhere the client bundle
  * never reaches.
  */
-export function createCrudRoutes(apiPath: string): RouteConfigEntry[] {
+export interface CrudRoutesOptions {
+  /**
+   * An absolute path to a HOST-OWNED route file to use instead of the
+   * generic `crud-edit.tsx` for this resource's edit route - the escape
+   * hatch for a resource whose edit page needs more than the plain
+   * schema-driven form (e.g. goalnexa's own `goals-edit.tsx`, which
+   * renders `GoalsEditScreen` - `CrudEditScreen` plus a goal's own
+   * `GoalMetricsSection`). Everything else about the resource (list,
+   * create, and the edit route's own URL/`id`) stays exactly as generic
+   * as always; only WHICH FILE handles the edit route changes. Build it
+   * the same self-referential-`import.meta.url` way this file builds
+   * `routesDir` - a relative string would bake in an assumption about
+   * this file's own location, the opposite of the point.
+   */
+  editFile?: string;
+}
+
+export function createCrudRoutes(apiPath: string, options: CrudRoutesOptions = {}): RouteConfigEntry[] {
   const resource = apiPath.split("/").filter(Boolean).pop() ?? apiPath;
-  const paths = createCrudPaths(resource);
-  // Every resource points at the SAME three files (see routesDir's own
-  // docstring) - react-router derives a route's `id` from its `file` by
-  // default, so without an explicit one here, two resources registering
-  // the same file would collide ("duplicate route id", confirmed the
-  // hard way). `id` just needs to be unique per route, not meaningful.
-  return [
-    route(paths.listPath, join(routesDir, "crud-list.tsx"), { id: `crud-list-${resource}` }),
-    route(paths.createPath, join(routesDir, "crud-new.tsx"), { id: `crud-new-${resource}` }),
-    route(paths.editPath(":id"), join(routesDir, "crud-edit.tsx"), { id: `crud-edit-${resource}` }),
-  ];
+  // `prefix()` (not `route()` + children) - it only joins path segments
+  // (`resource` + `"new"` -> `"orgs/new"`, matching `createCrudPaths`'s
+  // own computation exactly), no wrapping layout/`<Outlet/>` required,
+  // which list/create/edit have no use for (none of them share chrome).
+  // Every resource points at the SAME three files by default (see
+  // routesDir's own docstring) - react-router derives a route's `id`
+  // from its `file` by default, so without an explicit one here, two
+  // resources registering the same file would collide ("duplicate route
+  // id", confirmed the hard way). `id` just needs to be unique per
+  // route, not meaningful.
+  return prefix(resource, [
+    index(join(routesDir, "crud-list.tsx"), { id: `crud-list-${resource}` }),
+    route("new", join(routesDir, "crud-new.tsx"), { id: `crud-new-${resource}` }),
+    route(":id/edit", options.editFile ?? join(routesDir, "crud-edit.tsx"), { id: `crud-edit-${resource}` }),
+  ]);
 }

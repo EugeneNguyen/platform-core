@@ -15,6 +15,18 @@ export interface CrudListScreenProps<T> {
   baseUrl: string;
   /** This platform's own Bearer-token convention (see `createRequest`'s own docstring) - a host passes whatever it already has (e.g. from `platform-auth-frontend`'s `LoginScreen`/`SignupScreen` `onSuccess` callback). */
   accessToken: string;
+  /**
+   * The UI's own mount path for this resource's list/new/edit pages
+   * (e.g. `"platform-org/orgs"`, when a host nests a resource under its
+   * own prefix - see `createCrudRoutes`'s `prefix()` note) - only needed
+   * when that differs from the resource's bare name (the default,
+   * derived from `baseUrl`'s own last segment - see `CrudListScreenTable`'s
+   * own docstring). Threaded straight into `createCrudPaths` for the
+   * New/Edit link hrefs this screen builds internally; a route file that
+   * already knows its own real mounted `location.pathname` (e.g.
+   * `crud-list.tsx`) is what computes and passes this.
+   */
+  basePath?: string;
   /** Same convention as every other `components`/`containers` piece - defaults to a plain `<a>` (`DefaultLink`) when the host doesn't pass its own router's `Link`. */
   linkComponent?: LinkComponent;
   /** Shows the `CardHeader` search box, wired to the same `DataTable` state as everything else on the list. @default true */
@@ -39,7 +51,7 @@ export interface CrudListScreenProps<T> {
  * `baseUrl`/`accessToken` - a caller hands over just the resource's URL
  * and a token, not a pre-built client object.
  */
-function CrudListScreen<T>({ baseUrl, accessToken, linkComponent, searchable, onDeleted }: CrudListScreenProps<T>) {
+function CrudListScreen<T>({ baseUrl, accessToken, basePath, linkComponent, searchable, onDeleted }: CrudListScreenProps<T>) {
   const baseApi = useMemo(() => createBaseApi<T>(baseUrl, createRequest(accessToken)), [baseUrl, accessToken]);
   const [schema, setSchema] = useState<Schema | null>(null);
   const [error, setError] = useState<Error | null>(null);
@@ -70,7 +82,14 @@ function CrudListScreen<T>({ baseUrl, accessToken, linkComponent, searchable, on
   if (!schema) return <p className="text-secondary">Loading…</p>;
 
   return (
-    <CrudListScreenTable baseApi={baseApi} schema={schema} linkComponent={linkComponent} searchable={searchable} onDeleted={onDeleted} />
+    <CrudListScreenTable
+      baseApi={baseApi}
+      schema={schema}
+      basePath={basePath}
+      linkComponent={linkComponent}
+      searchable={searchable}
+      onDeleted={onDeleted}
+    />
   );
 }
 
@@ -90,11 +109,13 @@ interface CrudListScreenTableProps<T> extends Omit<CrudListScreenProps<T>, "base
  *
  * `resource` (for the "New"/edit link paths - `createCrudPaths`) is
  * read off `baseApi.endpoint`'s own last `/`-segment (`"/api/v1/goals"`
- * -> `"goals"`) rather than a separate prop - true for every resource
- * in this platform today (a `BaseViewSet`'s registered URL segment
- * always matches its own standalone `config/urls.py` path, which this
+ * -> `"goals"`) by default - true for every ROOT-mounted resource in
+ * this platform (a `BaseViewSet`'s registered URL segment always
+ * matches its own standalone `config/urls.py` path, which this
  * platform's own convention keeps in sync with the host's mount point -
- * see root AGENTS.md). `rowKey` is hardcoded to `row.id` the same way -
+ * see root AGENTS.md) - `basePath` overrides it for a resource nested
+ * under its own host prefix instead (e.g. `platform-org-frontend`'s own
+ * `orgs` under `"platform-org/"`). `rowKey` is hardcoded to `row.id` the same way -
  * every model here uses `id` as its primary key, no exceptions, so
  * there's nothing left for a caller to actually configure.
  *
@@ -132,10 +153,10 @@ interface CrudListScreenTableProps<T> extends Omit<CrudListScreenProps<T>, "base
  * mostly-full-of-controls cell, so losing "click blank space here too"
  * costs little, in exchange for Delete definitely still working.
  */
-function CrudListScreenTable<T>({ baseApi, schema, linkComponent, searchable, onDeleted }: CrudListScreenTableProps<T>) {
+function CrudListScreenTable<T>({ baseApi, schema, basePath, linkComponent, searchable, onDeleted }: CrudListScreenTableProps<T>) {
   const Link = linkComponent ?? DefaultLink;
   const resource = baseApi.endpoint.split("/").filter(Boolean).pop() ?? baseApi.endpoint;
-  const paths = createCrudPaths(resource);
+  const paths = createCrudPaths(basePath ?? resource);
   const rowKey = (row: T) => (row as { id: string | number }).id;
   const [deletingId, setDeletingId] = useState<string | number | null>(null);
 
