@@ -43,6 +43,8 @@ export default function CrudEditRoute({ params }: { params: { id: string } }) {
 
   return (
     <CrudEditScreen
+      // Keyed by resource and row: one route file serves every edit form.
+      key={`${resource}/${params.id}`}
       baseUrl={`/api/v1/${resource}`}
       accessToken={accessToken}
       id={params.id}

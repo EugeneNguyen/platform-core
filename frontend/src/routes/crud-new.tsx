@@ -33,6 +33,8 @@ export default function CrudNewRoute() {
 
   return (
     <CrudCreateScreen
+      // Keyed by resource: one route file serves every resource's form.
+      key={resource}
       baseUrl={`/api/v1/${resource}`}
       accessToken={accessToken}
       // To the new row's detail page, where its relations can be filled in.

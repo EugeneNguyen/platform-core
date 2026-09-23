@@ -66,6 +66,12 @@ export default function CrudListRoute() {
   const resource = segments.at(-1) ?? "";
   const basePath = segments.join("/");
   return (
-    <CrudListScreen baseUrl={`/api/v1/${resource}`} basePath={basePath} accessToken={accessToken} linkComponent={CrudLink} />
+    // Keyed by resource: every resource's list is this one route file, so
+    // /goals -> /metrics reuses the element, and the table's column state is
+    // computed once at mount - without a remount it keeps the old resource's
+    // columns (only same-named ones like `parent` would show).
+    <CrudListScreen
+      key={basePath}
+      baseUrl={`/api/v1/${resource}`} basePath={basePath} accessToken={accessToken} linkComponent={CrudLink} />
   );
 }

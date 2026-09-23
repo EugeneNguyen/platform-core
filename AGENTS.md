@@ -589,7 +589,12 @@ THREE GENERIC route files this package itself ships
 (`src/routes/crud-list.tsx`/`crud-new.tsx`/`crud-edit.tsx`) - the SAME
 three files for every resource, not one set per domain module anymore,
 since `CrudListScreen`/etc. are already fully generic (schema-driven, no
-per-resource UI difference left to justify per-resource route files). A
+per-resource UI difference left to justify per-resource route files).
+**Because they're shared, each one keys its screen by resource (and row)**
+- `/goals` -> `/metrics` client-side reuses the same route element, and
+`useDataTable`'s column state is computed once at mount, so without the
+`key` the metrics list kept the goals columns and showed only the ones
+both share (just `parent`: a list with "no columns"). A
 host's `routes.ts` registers a whole resource with one call:
 ```ts
 import { createCrudRoutes } from "platform-core";
