@@ -2,6 +2,7 @@
 name = "platform-core-backend"
 version = "0.3.0"
 description = "platform-core backend — shared DRF conventions: error contract, pagination, filters, uuid7 utils, and BaseSerializer/BaseViewSet (dynamic field selection + relation sideloading, inspired by dynamic-rest). No models: other modules provide their own."
+license = { text = "PolyForm-Shield-1.0.0" }
 requires-python = ">=3.11"
 dependencies = [
     "django>=5.2,<6.0",
