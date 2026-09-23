@@ -1,3 +1,4 @@
+import axios from "axios";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { buildDataTableUrl, nextSort } from "./query";
 import type { DataTableColumn, DataTableConfig, DataTableFetcher } from "./types";
@@ -12,9 +13,12 @@ const DEFAULT_PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 const DEFAULT_PAGE_SIZE = 25;
 
 const defaultFetcher: DataTableFetcher<unknown> = async (url) => {
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`GET ${url} failed with ${response.status}`);
-  return response.json();
+  try {
+    return (await axios.get(url)).data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) throw new Error(`GET ${url} failed with ${error.response.status}`);
+    throw error;
+  }
 };
 
 /**

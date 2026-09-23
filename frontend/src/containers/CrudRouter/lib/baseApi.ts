@@ -1,7 +1,7 @@
 import type { DataTablePage } from "../../DataTable";
 import type { Schema } from "./schema";
 
-/** A caller's own authenticated-fetch-and-parse function (this platform's `apiFetch` convention: Bearer token injection, error shaping into `ApiError`) - `createBaseApi` only owns the URL-building/method wiring, never the fetch mechanism itself. */
+/** A caller's own authenticated-fetch-and-parse function (Bearer token injection, error shaping - see `createRequest`) - `createBaseApi` only owns the URL-building/method wiring, never the fetch mechanism itself. */
 export type BaseApiRequest = <R>(path: string, init?: RequestInit) => Promise<R>;
 
 /**

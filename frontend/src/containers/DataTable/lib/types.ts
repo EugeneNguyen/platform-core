@@ -38,7 +38,7 @@ export interface DataTableConfig<T> {
   columns: DataTableColumn<T>[];
   /** Extracts a stable React key from a row - usually `(row) => row.id`. */
   rowKey: (row: T) => string | number;
-  /** @default fetch(url).then(r => r.json()) - override for auth headers, a non-`fetch` client, etc. */
+  /** @default an unauthenticated `axios.get(url)` - override for auth headers etc. */
   fetcher?: DataTableFetcher<T>;
   /** @default [10, 25, 50, 100] */
   pageSizeOptions?: number[];
