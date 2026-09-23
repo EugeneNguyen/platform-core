@@ -4,6 +4,9 @@
 
 import re
 
+from django.core.exceptions import FieldError
+from django.core.exceptions import ValidationError as DjangoValidationError
+from rest_framework.exceptions import ValidationError
 from rest_framework.filters import BaseFilterBackend, OrderingFilter, SearchFilter
 
 
@@ -55,5 +58,13 @@ class DynamicFilterBackend(BaseFilterBackend):
                 value = value.lower() in ("1", "true", "yes")
 
             condition = {orm_lookup: value}
-            queryset = queryset.exclude(**condition) if negate else queryset.filter(**condition)
+            try:
+                queryset = queryset.exclude(**condition) if negate else queryset.filter(**condition)
+            except (FieldError, ValueError, DjangoValidationError):
+                # An unknown field/lookup, a relation path through a plain
+                # field, or a value the field can't take (a malformed uuid)
+                # is the caller's mistake: a 400 naming the filter, not a
+                # 500 - an MCP client (see platform-mcp) reads it as a tool
+                # error and retries with a better filter.
+                raise ValidationError({key: [f"Invalid filter: {field_path}={values[-1]}"]}) from None
         return queryset

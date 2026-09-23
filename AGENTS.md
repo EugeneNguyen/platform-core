@@ -916,7 +916,11 @@ to get, for free:
 - **Filtering**: `?filter{field}=value` (exact), `?filter{field.lookup}=
   value` (`icontains`/`gt`/`gte`/`lt`/`lte`/`in`/`isnull`), a leading `-`
   on the field name negates. See `filters.py`'s own docstring for the
-  field-vs-lookup-name ambiguity this accepts as a limitation.
+  field-vs-lookup-name ambiguity this accepts as a limitation. A filter
+  the ORM can't apply (unknown field/lookup, a path through a plain
+  field like `org_id.name`, a malformed uuid) is a **400 naming the
+  filter key**, not a 500 - AI clients guess filters (platform-mcp hands
+  them straight through), and a 400 is something they can recover from.
 - `BaseViewSet.get_queryset()` auto-`prefetch_related`s any sideloaded
   `many=True` relation, so using `?include[]=` against a real dataset
   doesn't quietly turn into an N+1.
