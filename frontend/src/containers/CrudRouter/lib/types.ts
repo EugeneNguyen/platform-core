@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-export type CrudFieldType = "text" | "email" | "tel" | "password" | "number" | "checkbox" | "select";
+export type CrudFieldType = "text" | "email" | "tel" | "password" | "number" | "checkbox" | "select" | "date" | "datetime";
 
 export interface CrudFieldOption {
   value: string;
@@ -18,6 +18,10 @@ export interface CrudField<T> {
   /** @default "text" */
   type?: CrudFieldType;
   required?: boolean;
+  /** What an emptied `date`/`datetime` input submits: `true` -> `null` (clear it), otherwise the key is left out of the payload entirely so the server's own default applies (e.g. a check-in time defaulting to now). */
+  nullable?: boolean;
+  /** Shown under the input (`.form-hint`) - from the schema's `help_text`. */
+  helpText?: string;
   autoComplete?: string;
   /** Only meaningful when `type === "select"` - the `<option>` list. Populated synchronously from a `SchemaField`'s own `choices` (an enum) by `createSchemaFields`; for a relation field (see `relatedEndpoint`) it starts empty and is filled in asynchronously by `CrudCreateForm`/`CrudEditForm` once `fetchRelationOptions` resolves. */
   options?: CrudFieldOption[];

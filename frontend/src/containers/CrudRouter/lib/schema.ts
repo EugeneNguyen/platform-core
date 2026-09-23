@@ -22,6 +22,10 @@ export interface SchemaField {
   required: boolean;
   read_only: boolean;
   label: string;
+  /** Whether the field accepts an explicit `null` (DRF's `allow_null`). */
+  nullable?: boolean;
+  /** The model field's `help_text`, when it has one. */
+  help_text?: string;
   /** Only present on a `ChoiceField` (e.g. a model's `TextChoices` status). */
   choices?: SchemaFieldChoice[];
   /** Only present when `type === "relation"`. */

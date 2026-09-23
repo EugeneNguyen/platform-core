@@ -1,7 +1,17 @@
 import FormControl from "../../../../components/atoms/FormControl";
 import FormLabel from "../../../../components/atoms/FormLabel";
 import FormCheck from "../../../../components/molecules/FormCheck";
+import { isoToLocalInput, localInputToIso } from "../../lib/dateInput";
 import type { CrudField } from "../../lib/types";
+
+/** An emptied optional input: `null` clears a nullable field; `undefined` drops the key from the JSON payload so the server's default applies. */
+function emptyValue<T>(field: CrudField<T>): null | undefined {
+  return field.nullable ? null : undefined;
+}
+
+function Hint({ text }: { text?: string }) {
+  return text ? <small className="form-hint">{text}</small> : null;
+}
 
 export interface CrudFormFieldsProps<T> {
   fields: CrudField<T>[];
@@ -19,8 +29,14 @@ export interface CrudFormFieldsProps<T> {
  * native `<select>` (Tabler's `form-select` class, same `sm`-by-default
  * convention as `FormControl`) from `field.options` - no design-system
  * `Select` atom exists yet, and one native element doesn't earn it;
- * everything else is a `FormLabel` + `FormControl` pair, `type` passed
- * straight to the native `input`.
+ * a `date`/`datetime` field is a native date / `datetime-local` picker -
+ * form state holds the API's own format (`YYYY-MM-DD` / an absolute ISO
+ * timestamp), converted to and from the picker's local wall time here,
+ * so nothing upstream needs to know; everything else is a `FormLabel` +
+ * `FormControl` pair, `type` passed straight to the native `input`.
+ * Emptying an optional date/datetime submits `null` if the field is
+ * `nullable`, otherwise drops it (server default applies - see
+ * `CrudField.nullable`).
  */
 function CrudFormFields<T>({ fields, values, onChange }: CrudFormFieldsProps<T>) {
   return (
@@ -64,6 +80,31 @@ function CrudFormFields<T>({ fields, values, onChange }: CrudFormFieldsProps<T>)
                   </option>
                 ))}
               </select>
+              <Hint text={field.helpText} />
+            </div>
+          );
+        }
+
+        if (field.type === "date" || field.type === "datetime") {
+          const isDateTime = field.type === "datetime";
+          const raw = values[field.key];
+          return (
+            <div key={field.key} className="mb-3">
+              <FormLabel htmlFor={fieldId} required={field.required}>
+                {field.label}
+              </FormLabel>
+              <FormControl
+                id={fieldId}
+                type={isDateTime ? "datetime-local" : "date"}
+                required={field.required}
+                value={isDateTime ? isoToLocalInput(raw) : typeof raw === "string" ? raw : ""}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  const next = value === "" ? emptyValue(field) : isDateTime ? localInputToIso(value) : value;
+                  onChange(field.key, next as T[typeof field.key]);
+                }}
+              />
+              <Hint text={field.helpText} />
             </div>
           );
         }
@@ -84,6 +125,7 @@ function CrudFormFields<T>({ fields, values, onChange }: CrudFormFieldsProps<T>)
                 onChange(field.key, raw as T[typeof field.key]);
               }}
             />
+            <Hint text={field.helpText} />
           </div>
         );
       })}

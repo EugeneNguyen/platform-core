@@ -54,6 +54,9 @@ export type { PaginationProps } from "./organisms/Pagination";
 export { default as Sidebar } from "./organisms/Sidebar";
 export type { SidebarProps } from "./organisms/Sidebar";
 
+export { default as Modal } from "./organisms/Modal";
+export type { ModalProps, ModalSize } from "./organisms/Modal";
+
 export * from "./organisms/Table";
 
 export { default as AppShell } from "./templates/DashboardLayout";

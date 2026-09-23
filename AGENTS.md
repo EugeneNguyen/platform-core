@@ -189,6 +189,21 @@ broken). Keep checking this if you ever add a class to `Header`.
 `apps/main/frontend/app/root.tsx`'s `<script>` tag), same "host loads
 the design system" convention as Tabler's CSS.
 
+**Folding the sidebar (desktop, lg+)** uses Tabler's own
+`.navbar-folded` class on `Sidebar`'s `<aside>`: Tabler's CSS narrows it
+to a 4rem icon rail and re-offsets the header and `.page-wrapper` through
+`--tblr-sidebar-width`, so there's no layout CSS here. `AppShell` owns
+the state and puts a toggle at the start of `Header`, hidden below lg,
+where the usual collapsible top bar applies. The choice is remembered
+in localStorage (`platform-core:sidebar-folded`), read after mount to
+avoid a hydration mismatch, and a storage failure just means it isn't
+remembered. The toggle is React-controlled on purpose; don't add
+Tabler's `data-bs-toggle="sidebar-folded"`, which its JS bundle would
+also act on (double toggle). When folded, nav titles are hidden, so each
+item shows its `NavItem.icon` (or its first letter if it has none), and
+the label becomes a `title` tooltip. Hosts should give every item an
+icon; `apps/main`'s are in `app/lib/navIcons.tsx`.
+
 **`page-body` wraps `children` in a `.container-xl`** — Tabler's
 `.page-body` only ever adds vertical padding; the horizontal gutter (and
 the max-width that stops content stretching edge to edge on a wide
@@ -197,6 +212,19 @@ Tabler leaves to the page rather than baking into `.page-body` itself
 (not every page wants the same container width). Missing this looked
 like "the whole app has no left/right padding," not obviously a missing
 class one level up.
+
+### Modal (`components/organisms/Modal/Modal.tsx`)
+
+Tabler's modal markup rendered by React, with open/closed as plain host
+state (`open`/`onClose`). It deliberately doesn't use Bootstrap's modal
+JS. It's portaled to `document.body`. Escape, the close button and a
+backdrop click (only when the press started on the backdrop) all call
+`onClose`. The page behind stops scrolling (`body.modal-open`). Focus
+moves in (a child's `autoFocus` wins) and returns to the opener on
+close. The opener is read during the render that opens the modal, since
+by the time an effect runs, `autoFocus` has already moved focus. There's
+no full focus trap yet. To put a form's submit button in `footer`, give
+the button the native `form="<form id>"` attribute.
 
 ### Breadcrumb (`components/organisms/Breadcrumb/Breadcrumb.tsx`)
 
@@ -495,9 +523,9 @@ Two subfolders, split by concern rather than left flat:
   input anymore. `paths.ts` - `createCrudPaths(resource)`, computed from
   a resource's own name (see its own docstring for how this compares to
   `platform-auth-frontend`'s static `BASE_PATH`). `routes.ts` -
-  `createCrudRoutes`, see below - lives here but is NOT part of the
-  `"."` export (see its own docstring on the separate `"./routes"`
-  subpath and why). `useCrudForm.ts` / `fields.ts` - the Create/Edit
+  `createCrudRoutes`/`prefixRoutes`/`routeFilePath`, see below -
+  exported from `"."` like everything else, browser-safe on purpose
+  (see its own docstring). `useCrudForm.ts` / `fields.ts` - the Create/Edit
   screens' shared form state and `pickFieldValues` (strips a submit
   payload down to exactly the field list schemaFields.ts built - without
   it, `CrudEditScreen`'s form, prefilled wholesale from `api.read`'s
@@ -535,7 +563,7 @@ component references, never an actual `<Routes>`/`<Route>` tree.
 param itself - same rule every screen in this platform follows for
 routing-dependent values.
 
-**`createCrudRoutes(apiPath)` (Node-only, the `"./routes"` subpath) is
+**`createCrudRoutes(apiPath)` (from the `"."` entry) is
 the ACTUAL react-router wiring** - and it's the one place in this whole
 platform where "no react-router dependency of its own" doesn't apply,
 on purpose: it registers a resource's list/create/edit URLs against
@@ -546,7 +574,7 @@ since `CrudListScreen`/etc. are already fully generic (schema-driven, no
 per-resource UI difference left to justify per-resource route files). A
 host's `routes.ts` registers a whole resource with one call:
 ```ts
-import { createCrudRoutes } from "platform-core/routes";
+import { createCrudRoutes } from "platform-core";
 ...
 layout("routes/app-shell.tsx", [
   ...createCrudRoutes("/api/v1/orgs"),
@@ -561,14 +589,14 @@ segment always equals the backend resource name" convention (true for
 every resource today; would need revisiting if that convention were
 ever broken for one resource). Three things worth knowing if you touch
 this:
-- **`createCrudRoutes` must pass an explicit `id` to each `route()`
-  call** (`{ id: `crud-list-${resource}` }`, etc.) - react-router derives
+- **`createCrudRoutes` must set an explicit `id` on each route
+  entry** (`{ id: `crud-list-${resource}` }`, etc.) - react-router derives
   a route's `id` from its `file` by default, and since every resource
   points at the SAME file, omitting `id` collides ("Unable to define
   routes with duplicate route id", confirmed the hard way the moment a
   second resource was registered).
-- **The generic route files' own `routesDir` is computed from
-  `import.meta.url`** (Node ESM's own `__dirname` equivalent), not a
+- **The generic route files' paths are computed from
+  `import.meta.url`** (via `routeFilePath`, plain string ops), not a
   relative string baking in the CALLER's directory depth - this package
   only ever has to know where its OWN `src/routes/` folder is relative to
   ITSELF, regardless of which host imports `createCrudRoutes` or from
@@ -576,18 +604,21 @@ this:
   migration (when route files were still per-domain-module) and was
   removed once centralizing them here made it unnecessary - don't
   reintroduce it.
-- **This is genuinely the only file in this package allowed to import
-  `react-router`/`@react-router/dev/routes`** - `crud-list.tsx`/etc. are
-  real client-bundled route MODULES (they render actual UI, so they
-  can't live in the Node-only `"./routes"` subpath themselves), while
-  `routes.ts` (which builds the `route()` entries) is Node-only and
-  lives in `lib/`, imported only via `"./routes"` - never let
-  `@react-router/dev/routes` leak into the `"."` entry `AppShell`/
-  `CrudListScreen`/etc. ship from: that package IS client-bundled
-  (`AppShell` gets pulled into every host's `app-shell.tsx`), so
-  anything re-exported from it rides along into the browser bundle -
-  measured once at a real ~16KB cost for code that never runs in a
-  browser. If you ever need a per-resource CUSTOM route module again
+- **`routes.ts` must stay browser-safe** - it's exported from `"."`,
+  which IS client-bundled (`AppShell` gets pulled into every host's
+  `app-shell.tsx`). So: plain route-config objects (`RouteEntry`), never
+  `@react-router/dev/routes` (Node-only tooling - measured once at a
+  real ~16KB client-bundle cost when it leaked into `"."`; `prefixRoutes`
+  replicates its `prefix()`), no `node:*` imports, nothing computed at
+  module load (paths are built only when a builder is CALLED - in Node,
+  from the host's `routes.ts`), and never `new URL(rel,
+  import.meta.url)` (Vite rewrites that into an asset reference). The
+  builders tree-shake out of the client build. `routeFilePath`/
+  `prefixRoutes` are exported for sibling packages' own builders
+  (`platform-org-frontend`'s `createOrgsRoutes`). `crud-list.tsx`/etc.
+  are the only files here importing `react-router` itself - real route
+  MODULES that render UI.
+- If you ever need a per-resource CUSTOM route module again
   (a resource whose UI genuinely differs from the generic screens),
   put it back in that domain module's own package, not here - see root
   `AGENTS.md`'s "A module with its own route modules" section.

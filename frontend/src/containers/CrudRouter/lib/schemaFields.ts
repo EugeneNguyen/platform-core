@@ -22,6 +22,8 @@ const TYPE_MAP: Partial<Record<SchemaFieldType, CrudFieldType>> = {
   integer: "number",
   number: "number",
   email: "email",
+  date: "date",
+  datetime: "datetime",
 };
 
 function crudFieldType(field: SchemaField): CrudFieldType {
@@ -49,8 +51,8 @@ function crudFieldType(field: SchemaField): CrudFieldType {
  * leaves EMPTY (`relatedEndpoint` tells the caller where to fetch them
  * from instead - see `relationOptions.ts` and `CrudCreateForm`/
  * `CrudEditForm`, which is where that fetch actually happens). A
- * `date`/`datetime` field has no dedicated `CrudField` type yet - falls
- * back to plain text, a known gap.
+ * `date`/`datetime` field gets a native date / `datetime-local` picker
+ * (see `CrudFormFields` for the timezone conversion).
  */
 export function createSchemaFields<T>(schema: Schema): CrudField<T>[] {
   return schema.fields.filter(isWritable).map((field): CrudField<T> => {
@@ -60,6 +62,8 @@ export function createSchemaFields<T>(schema: Schema): CrudField<T>[] {
       label: field.label,
       type,
       required: field.required,
+      nullable: field.nullable,
+      ...(field.help_text ? { helpText: field.help_text } : {}),
       ...(type === "select" && field.choices ? { options: field.choices } : {}),
       ...(type === "select" && field.type === "relation" && field.related_endpoint
         ? { options: [], relatedEndpoint: field.related_endpoint }

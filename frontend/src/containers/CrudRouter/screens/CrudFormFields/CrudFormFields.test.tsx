@@ -79,4 +79,36 @@ describe("CrudFormFields", () => {
     const select = screen.getByLabelText("Plan") as HTMLSelectElement;
     expect(select.querySelector('option[value=""]')).toBeDisabled();
   });
+
+  describe("date/datetime fields", () => {
+    interface Entry {
+      when: string | null;
+      due: string | null;
+    }
+    const DATE_FIELDS: CrudField<Entry>[] = [
+      { key: "when", label: "When", type: "datetime", helpText: "Leave blank for now." },
+      { key: "due", label: "Due", type: "date", nullable: true },
+    ];
+
+    it("renders native pickers prefilled from API values, with help text", () => {
+      const iso = new Date(2026, 8, 23, 9, 30).toISOString();
+      render(<CrudFormFields fields={DATE_FIELDS} values={{ when: iso, due: "2026-10-01" }} onChange={vi.fn()} />);
+      expect(screen.getByLabelText("When")).toHaveAttribute("type", "datetime-local");
+      expect(screen.getByLabelText("When")).toHaveValue("2026-09-23T09:30");
+      expect(screen.getByLabelText("Due")).toHaveValue("2026-10-01");
+      expect(screen.getByText("Leave blank for now.")).toBeInTheDocument();
+    });
+
+    it("emits an ISO timestamp, and on clear: undefined (non-nullable) vs null (nullable)", () => {
+      const onChange = vi.fn();
+      const iso = new Date(2026, 8, 23, 9, 30).toISOString();
+      render(<CrudFormFields fields={DATE_FIELDS} values={{ when: iso, due: "2026-10-01" }} onChange={onChange} />);
+      fireEvent.change(screen.getByLabelText("When"), { target: { value: "2026-09-24T10:15" } });
+      expect(onChange).toHaveBeenLastCalledWith("when", new Date(2026, 8, 24, 10, 15).toISOString());
+      fireEvent.change(screen.getByLabelText("When"), { target: { value: "" } });
+      expect(onChange).toHaveBeenLastCalledWith("when", undefined);
+      fireEvent.change(screen.getByLabelText("Due"), { target: { value: "" } });
+      expect(onChange).toHaveBeenLastCalledWith("due", null);
+    });
+  });
 });

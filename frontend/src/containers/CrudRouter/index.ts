@@ -2,6 +2,9 @@ export { createCrudRouter } from "./CrudRouter";
 export type { CrudRouter } from "./CrudRouter";
 
 export { createCrudPaths } from "./lib/paths";
+
+export { createCrudRoutes, prefixRoutes, routeFilePath } from "./lib/routes";
+export type { CrudRoutesOptions, RouteEntry } from "./lib/routes";
 export type { CrudPaths } from "./lib/paths";
 
 export * from "./lib/types";

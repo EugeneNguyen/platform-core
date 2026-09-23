@@ -53,7 +53,14 @@ def _describe_field(name: str, field, *, deferred: bool, cross_module_endpoint: 
         "required": bool(getattr(field, "required", False)),
         "read_only": bool(getattr(field, "read_only", False)),
         "label": str(getattr(field, "label", None) or name),
+        # Whether an explicit null is accepted - lets a generic form tell
+        # "clear this optional value" (send null) apart from "leave it to
+        # the server's default" (omit the key) for an emptied input.
+        "nullable": bool(getattr(field, "allow_null", False)),
     }
+    help_text = getattr(field, "help_text", None)
+    if help_text:
+        description["help_text"] = str(help_text)
     if isinstance(field, drf_serializers.ChoiceField):
         description["choices"] = [{"value": value, "label": str(label)} for value, label in field.choices.items()]
     if isinstance(field, DynamicRelationField):

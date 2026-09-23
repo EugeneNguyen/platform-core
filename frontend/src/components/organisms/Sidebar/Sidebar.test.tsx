@@ -20,4 +20,20 @@ describe("Sidebar", () => {
     expect(screen.getByRole("link", { name: "Organizations" }).closest("li")).toHaveClass("active");
     expect(screen.getByRole("link", { name: "Home" }).closest("li")).not.toHaveClass("active");
   });
+
+  it("folds to Tabler's icon rail: first-letter fallback icon + label tooltip", () => {
+    render(<Sidebar brand="GoalNexa" navItems={NAV_ITEMS} currentPath="/" linkComponent={DefaultLink} folded />);
+    expect(document.querySelector("aside")).toHaveClass("navbar-folded");
+    const item = screen.getByRole("link", { name: /Organizations/ }).closest("li");
+    expect(item).toHaveAttribute("title", "Organizations");
+    expect(item?.querySelector(".nav-link-icon")).toHaveTextContent("O");
+  });
+
+  it("is expanded by default, with no tooltip or fallback icon", () => {
+    render(<Sidebar brand="GoalNexa" navItems={NAV_ITEMS} currentPath="/" linkComponent={DefaultLink} />);
+    expect(document.querySelector("aside")).not.toHaveClass("navbar-folded");
+    const item = screen.getByRole("link", { name: "Home" }).closest("li");
+    expect(item).not.toHaveAttribute("title");
+    expect(item?.querySelector(".nav-link-icon")).toBeNull();
+  });
 });

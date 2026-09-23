@@ -1,90 +1,104 @@
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
-import { index, prefix, route, type RouteConfigEntry } from "@react-router/dev/routes";
+/**
+ * Route-config builders a host's `routes.ts` calls - exported from this
+ * package's main `"."` entry (no separate `"./routes"` subpath). That
+ * entry IS client-bundled (`AppShell` etc. ride along into
+ * `app-shell.tsx`), so this file must stay browser-safe:
+ * - no `@react-router/dev/routes` import (Node-only tooling; used to cost
+ *   ~16KB in the client bundle when it leaked into `"."`) - these build
+ *   the same plain route-config objects its `index()`/`route()`/
+ *   `prefix()` helpers do, and the host's own `satisfies RouteConfig`
+ *   still type-checks them;
+ * - no `node:path`/`node:url`, and nothing computed at module load -
+ *   file paths are string ops on `import.meta.url`, only run when a
+ *   builder is CALLED, which only happens in Node (react-router's tooling
+ *   reading the host's `routes.ts`). Not `new URL(..., import.meta.url)`:
+ *   Vite rewrites that pattern into a bundled asset reference.
+ * Every function here is unused by client code, so it tree-shakes out.
+ */
+export interface RouteEntry {
+  id?: string;
+  path?: string;
+  index?: boolean;
+  file: string;
+  children?: RouteEntry[];
+}
 
 /**
- * `../../../routes` from THIS file's own location
- * (`src/containers/CrudRouter/lib/routes.ts`) resolves to
- * `src/routes/` - `crud-list.tsx`/`crud-new.tsx`/`crud-edit.tsx` (see
- * their own docstrings for why there's exactly one of each, shared by
- * every resource). Built from `import.meta.url` (Node ESM's own
- * `__dirname` equivalent), NOT a relative string like
- * `"../../platform-core/frontend/src/routes"` - that would bake in an
- * assumption about the CALLER's own directory depth, which is exactly
- * the fragility this avoids: this path only ever has to be correct
- * relative to `routes.ts` itself, regardless of which host imports
- * `createCrudRoutes` or from where. `path.resolve`'s own "an absolute
- * path wins over its base, unchanged" behavior is what makes the
- * RESULT still resolve correctly once react-router's tooling joins it
- * against the CALLER's `appDirectory` - see `createCrudRoutes`'s own
- * docstring for the same rule applied there.
+ * Absolute filesystem path of `relativePath`, resolved against the
+ * directory of the module whose `import.meta.url` is passed in (Node's
+ * `file://` URL) - self-referential, so it never bakes in the CALLER's
+ * directory depth. Exported for sibling packages building their own
+ * route lists (platform-auth-frontend, goalnexa-frontend, ...).
  */
-const routesDir = join(dirname(fileURLToPath(import.meta.url)), "../../../routes");
+export function routeFilePath(moduleUrl: string, relativePath: string): string {
+  const segments = moduleUrl.replace(/^file:\/\//, "").split("/");
+  segments.pop();
+  for (const part of relativePath.split("/")) {
+    if (part === "..") segments.pop();
+    else if (part !== "." && part !== "") segments.push(part);
+  }
+  return decodeURIComponent(segments.join("/"));
+}
+
+/**
+ * Same as `@react-router/dev/routes`'s `prefix()`: joins `prefixPath`
+ * onto every top-level entry's path (an index entry takes `prefixPath`
+ * as its own path), no wrapping layout/`<Outlet/>`.
+ */
+export function prefixRoutes(prefixPath: string, routes: RouteEntry[]): RouteEntry[] {
+  const base = prefixPath.replace(/\/+$/, "");
+  return routes.map((route) => {
+    if (route.index || typeof route.path === "string") {
+      return { ...route, path: route.path ? `${base}/${route.path.replace(/^\/+/, "")}` : base };
+    }
+    if (route.children) return { ...route, children: prefixRoutes(prefixPath, route.children) };
+    return route;
+  });
+}
 
 /**
  * The three routes every `BaseViewSet`-backed resource needs (list/
- * create/edit), `prefix()`-nested under the resource's own name (see
- * `createCrudRoutes`'s own comment on why `prefix()`, not `route()` +
- * children) and ALL THREE pointing at platform-core's own generic route
- * files by default (`crud-list.tsx`/etc - shared by every resource, not
- * one set per module - see their own docstrings) - a host's `routes.ts`
- * registers a whole resource with one call, giving only the resource's
- * own backend base URL:
+ * create/edit), `prefixRoutes()`-nested under the resource's own name
+ * (not `route()` + children - that needs a wrapping layout element with
+ * its own `<Outlet/>`, which none of the three share or need) and ALL
+ * THREE pointing at platform-core's own generic route files by default
+ * (`src/routes/crud-list.tsx`/etc - shared by every resource, see their
+ * own docstrings). A host registers a whole resource with one call,
+ * giving only the resource's own backend base URL:
  * ```ts
  * // apps/main/frontend/app/routes.ts
- * import { createCrudRoutes } from "platform-core/routes";
+ * import { createCrudRoutes } from "platform-core";
  * ...
  * layout("routes/app-shell.tsx", [
- *   ...createCrudRoutes("/api/v1/orgs"),
  *   ...createCrudRoutes("/api/v1/goals"),
  * ]),
  * ```
- * Deliberately its OWN `package.json` `exports` subpath
- * (`"platform-core/routes"`), not part of the main `"."` entry
- * `AppShell`/`CrudListScreen`/etc. ship from - `apps/main/routes.ts` is
- * the only caller this is meant for, and it's a pure Node/build-time
- * file (react-router's own tooling reads it directly, in Node, before
- * any client bundling starts - never part of the browser bundle). The
- * main entry stays free of `@react-router/dev/routes` for exactly the
- * reason documented in root `AGENTS.md`'s "A module with its own route
- * modules..." section: that package IS client-bundled (`AppShell`
- * pulls it into `app-shell.tsx`), so anything it re-exports rides along
- * - measured there at a real ~16KB cost for code that never runs in a
- * browser. This file avoids that by living somewhere the client bundle
- * never reaches.
  */
 export interface CrudRoutesOptions {
   /**
    * An absolute path to a HOST-OWNED route file to use instead of the
    * generic `crud-edit.tsx` for this resource's edit route - the escape
    * hatch for a resource whose edit page needs more than the plain
-   * schema-driven form (e.g. goalnexa's own `goals-edit.tsx`, which
-   * renders `GoalsEditScreen` - `CrudEditScreen` plus a goal's own
-   * `GoalMetricsSection`). Everything else about the resource (list,
-   * create, and the edit route's own URL/`id`) stays exactly as generic
-   * as always; only WHICH FILE handles the edit route changes. Build it
-   * the same self-referential-`import.meta.url` way this file builds
-   * `routesDir` - a relative string would bake in an assumption about
-   * this file's own location, the opposite of the point.
+   * schema-driven form (e.g. goalnexa's own `goals-edit.tsx`). Build it
+   * with `routeFilePath(import.meta.url, ...)` from the file that owns
+   * it - a relative string would bake in an assumption about this
+   * file's own location.
    */
   editFile?: string;
 }
 
-export function createCrudRoutes(apiPath: string, options: CrudRoutesOptions = {}): RouteConfigEntry[] {
+export function createCrudRoutes(apiPath: string, options: CrudRoutesOptions = {}): RouteEntry[] {
   const resource = apiPath.split("/").filter(Boolean).pop() ?? apiPath;
-  // `prefix()` (not `route()` + children) - it only joins path segments
-  // (`resource` + `"new"` -> `"orgs/new"`, matching `createCrudPaths`'s
-  // own computation exactly), no wrapping layout/`<Outlet/>` required,
-  // which list/create/edit have no use for (none of them share chrome).
-  // Every resource points at the SAME three files by default (see
-  // routesDir's own docstring) - react-router derives a route's `id`
-  // from its `file` by default, so without an explicit one here, two
-  // resources registering the same file would collide ("duplicate route
-  // id", confirmed the hard way). `id` just needs to be unique per
-  // route, not meaningful.
-  return prefix(resource, [
-    index(join(routesDir, "crud-list.tsx"), { id: `crud-list-${resource}` }),
-    route("new", join(routesDir, "crud-new.tsx"), { id: `crud-new-${resource}` }),
-    route(":id/edit", options.editFile ?? join(routesDir, "crud-edit.tsx"), { id: `crud-edit-${resource}` }),
+  // `../../../routes` from this file (`src/containers/CrudRouter/lib/`)
+  // is `src/routes/`.
+  const file = (name: string) => routeFilePath(import.meta.url, `../../../routes/${name}`);
+  // Every resource points at the SAME three files by default -
+  // react-router derives a route's `id` from its `file` by default, so
+  // without an explicit one here, two resources registering the same
+  // file would collide ("duplicate route id", confirmed the hard way).
+  return prefixRoutes(resource, [
+    { index: true, file: file("crud-list.tsx"), id: `crud-list-${resource}` },
+    { path: "new", file: file("crud-new.tsx"), id: `crud-new-${resource}` },
+    { path: ":id/edit", file: options.editFile ?? file("crud-edit.tsx"), id: `crud-edit-${resource}` },
   ]);
 }

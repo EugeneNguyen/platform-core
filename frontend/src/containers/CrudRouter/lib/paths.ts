@@ -10,8 +10,7 @@ export interface CrudPaths {
  * names its own bare segments, the host decides nesting/mounting"
  * convention `platform-auth-frontend`'s `BASE_PATH`/`LOGIN_PATH` use,
  * just computed instead of static since the resource name varies.
- * `createCrudRouter` (client-safe) and `createCrudRoutes` (Node-only,
- * `"platform-core/routes"`) both build this the same way, from a
+ * `createCrudRouter` and `createCrudRoutes` (see `routes.ts`) both build this the same way, from a
  * resource's own backend base URL's last `/`-segment - see their own
  * docstrings.
  */

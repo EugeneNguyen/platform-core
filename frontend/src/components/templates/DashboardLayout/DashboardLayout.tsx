@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Header from "../../organisms/Header";
 import Sidebar from "../../organisms/Sidebar";
 import { DefaultLink, type AppShellUser, type LinkComponent, type NavItem } from "../../types";
@@ -10,7 +10,42 @@ export interface DashboardLayoutProps {
   brand?: ReactNode;
   user?: AppShellUser | null;
   onLogout?: () => void;
+  /** Whether the desktop sidebar starts folded to its icon rail, before any remembered choice is read. @default false */
+  defaultSidebarFolded?: boolean;
   children: ReactNode;
+}
+
+const FOLDED_KEY = "platform-core:sidebar-folded";
+
+/**
+ * Remembered per browser (localStorage - a per-viewer convenience, fine to
+ * lose). Read AFTER mount, not in the initial state: the server render
+ * can't see localStorage, and reading it during the first client render
+ * would mismatch hydration. Storage can throw (private mode, blocked
+ * site data) - then it just isn't remembered.
+ */
+function useSidebarFolded(initial: boolean) {
+  const [folded, setFolded] = useState(initial);
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(FOLDED_KEY);
+      if (stored !== null) setFolded(stored === "1");
+    } catch {
+      // unavailable - keep the default
+    }
+  }, []);
+  function toggle() {
+    setFolded((prev) => {
+      const next = !prev;
+      try {
+        window.localStorage.setItem(FOLDED_KEY, next ? "1" : "0");
+      } catch {
+        // unavailable - still toggles for this page view
+      }
+      return next;
+    });
+  }
+  return [folded, toggle] as const;
 }
 
 /**
@@ -33,12 +68,20 @@ function DashboardLayout({
   brand = "GoalNexa",
   user,
   onLogout,
+  defaultSidebarFolded = false,
   children,
 }: DashboardLayoutProps) {
+  const [folded, toggleFolded] = useSidebarFolded(defaultSidebarFolded);
   return (
     <div className="page">
-      <Sidebar brand={brand} navItems={navItems} currentPath={currentPath} linkComponent={linkComponent} />
-      <Header user={user} onLogout={onLogout} />
+      <Sidebar
+        brand={brand}
+        navItems={navItems}
+        currentPath={currentPath}
+        linkComponent={linkComponent}
+        folded={folded}
+      />
+      <Header user={user} onLogout={onLogout} onToggleSidebar={toggleFolded} sidebarFolded={folded} />
       <div className="page-wrapper">
         <main className="page-body">
           <div className="container-xl">{children}</div>

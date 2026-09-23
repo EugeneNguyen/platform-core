@@ -8,6 +8,8 @@ export interface SidebarProps {
   navItems: NavItem[];
   currentPath: string;
   linkComponent: LinkComponent;
+  /** Desktop (lg+) only: fold to Tabler's 4rem icon rail (`.navbar-folded` - Tabler's own CSS narrows it and re-offsets the header/page via `--tblr-sidebar-width`). Below lg the sidebar is the usual collapsible top bar either way. */
+  folded?: boolean;
 }
 
 function isActive(currentPath: string, to: string): boolean {
@@ -26,9 +28,9 @@ function isActive(currentPath: string, to: string): boolean {
  * (which includes it), same "host loads the design system" convention
  * as loading Tabler's CSS. See apps/main/frontend/app/root.tsx.
  */
-function Sidebar({ brand, navItems, currentPath, linkComponent }: SidebarProps) {
+function Sidebar({ brand, navItems, currentPath, linkComponent, folded = false }: SidebarProps) {
   return (
-    <aside className="navbar navbar-vertical navbar-expand-lg">
+    <aside className={`navbar navbar-vertical navbar-expand-lg${folded ? " navbar-folded" : ""}`}>
       <div className="container-fluid">
         <button
           className="navbar-toggler"
@@ -41,7 +43,20 @@ function Sidebar({ brand, navItems, currentPath, linkComponent }: SidebarProps) 
         >
           <span className="navbar-toggler-icon" />
         </button>
-        <Brand label={brand} linkComponent={linkComponent} />
+        <Brand
+          label={
+            folded && typeof brand === "string" ? (
+              // Folded is a desktop-only state - the mobile top bar keeps the full name.
+              <>
+                <span className="d-none d-lg-inline">{brand.charAt(0)}</span>
+                <span className="d-lg-none">{brand}</span>
+              </>
+            ) : (
+              brand
+            )
+          }
+          linkComponent={linkComponent}
+        />
         <div className="collapse navbar-collapse" id="sidebar-menu">
           <ul className="navbar-nav pt-lg-3">
             {navItems.map((item) => (
@@ -50,6 +65,7 @@ function Sidebar({ brand, navItems, currentPath, linkComponent }: SidebarProps) 
                 item={item}
                 active={isActive(currentPath, item.to)}
                 linkComponent={linkComponent}
+                folded={folded}
               />
             ))}
           </ul>
