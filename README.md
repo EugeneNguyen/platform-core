@@ -29,7 +29,7 @@ auth, no product logic of its own. Ships:
   (see `platform-auth`'s own `/api/v1/auth/...`).
 
 That's it. Auth lives in its own module
-([`platform-auth`](https://github.com/EugeneNguyen/platform-auth)); orgs,
+([`platform-auth`](https://github.com/PMNexa/platform-auth)); orgs,
 RBAC, and any product feature are expected to become their own modules
 the same way — this repo deliberately does not grow entity-specific code
 again.
