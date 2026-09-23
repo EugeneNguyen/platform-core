@@ -129,7 +129,10 @@ def _tools_for(key: str, schema: dict) -> list[dict]:
     response (see `BaseViewSet.schema`)."""
     fields = schema["fields"]
     one, many = schema["label"], schema["label_plural"]
-    writable = [f for f in fields if not f["read_only"] and not f.get("many")]
+    # A read-only to-one relation stays an input: this platform's views set
+    # a child's parent from the request body themselves (a check-in's
+    # `metric`, scoped to the caller), the same key the UI's forms send.
+    writable = [f for f in fields if not f.get("many") and (not f["read_only"] or f["type"] == "relation")]
     write_props = {f["name"]: _field_schema(f) for f in writable}
     includable = [f["name"] for f in fields if f["type"] == "relation"]
     m2m = [f for f in fields if f.get("kind") == "many_to_many"]

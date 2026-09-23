@@ -951,7 +951,11 @@ validation and the `{code, message, field_errors}` error contract are the
 REST API's own; an API error comes back as a tool result with
 `isError: true` and `HTTP <status>: <body>`. Input schemas are built from
 each resource's `schema` action, fetched the same way per `tools/list` -
-a resource whose schema the caller can't read gets no tools. Don't add a
+a resource whose schema the caller can't read gets no tools. `_create`/
+`_update` take the writable fields plus any read-only to-one relation:
+a child's parent (a check-in's `metric`) is read-only in the schema but
+set by the view from the request body, the same key the UI's forms send,
+so the tool has to accept it too. Don't add a
 tool that talks to the ORM directly; that's a second code path with its
 own permission bugs.
 

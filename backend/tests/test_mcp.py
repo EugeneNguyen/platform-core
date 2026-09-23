@@ -3,6 +3,7 @@ import json
 from django.test import TestCase
 from rest_framework.test import APIClient
 
+from core_api.mcp import _tools_for
 from tests.testapp.models import Book, Shelf, Tag
 
 
@@ -52,6 +53,23 @@ class McpTests(TestCase):
         self.assertIn("null", create["properties"]["ref"]["type"])
         self.assertIn("q", tools["books_list"]["inputSchema"]["properties"])
         self.assertNotIn("q", tools["tags_list"]["inputSchema"]["properties"])
+
+    def test_read_only_parent_relation_is_an_input(self):
+        schema = {
+            "label": "check-in",
+            "label_plural": "check-ins",
+            "fields": [
+                {"name": "id", "type": "string", "required": False, "read_only": True, "label": "Id"},
+                {"name": "value", "type": "number", "required": True, "read_only": False, "label": "Value"},
+                {"name": "metric", "type": "relation", "required": False, "read_only": True, "label": "Metric", "many": False},
+            ],
+        }
+        tools = {tool["name"]: tool for tool in _tools_for("check_ins", schema)}
+        create = tools["check_ins_create"]["inputSchema"]
+        self.assertIn("metric", create["properties"])
+        self.assertNotIn("id", create["properties"])  # read-only, not a relation
+        self.assertEqual(create["required"], ["value"])
+        self.assertIn("metric", tools["check_ins_update"]["inputSchema"]["properties"])
 
     def test_crud_goes_through_the_api(self):
         error, book = self.call("books_create", title="Dune", owner="me")
