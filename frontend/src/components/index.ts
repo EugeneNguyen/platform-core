@@ -23,6 +23,9 @@ export type { ButtonProps, ButtonSize, ButtonVariant } from "./atoms/Button";
 export { default as Checkbox } from "./atoms/Checkbox";
 export type { CheckboxProps } from "./atoms/Checkbox";
 
+export { default as Icon } from "./atoms/Icon";
+export type { IconName, IconProps } from "./atoms/Icon";
+
 export { default as FormLabel } from "./atoms/FormLabel";
 export type { FormLabelProps } from "./atoms/FormLabel";
 

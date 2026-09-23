@@ -24,6 +24,10 @@ export interface SchemaField {
   label: string;
   /** Whether the field accepts an explicit `null` (DRF's `allow_null`). */
   nullable?: boolean;
+  /** `"uuid"` for a UUID field - still `type: "string"`, but an opaque id rather than human text (a detail page hides a read-only one, a list hides its column by default). */
+  format?: "uuid";
+  /** A model `TextField` - long text: a textarea in forms, a full-width block on a detail page. */
+  multiline?: boolean;
   /** The model field's `help_text`, when it has one. */
   help_text?: string;
   /** Only present on a `ChoiceField` (e.g. a model's `TextChoices` status). */
@@ -35,8 +39,24 @@ export interface SchemaField {
   related_endpoint?: string | null;
   /** Only present when `type === "relation"` - whether this field is left off a plain response unless `?include[]=`'d (a to-many relation always is - see `core_api.serializers.BaseSerializer`'s own docstring; a to-one relation never is). */
   deferred?: boolean;
+  /** Only on a to-many relation (`many: true`) backed by a real model relation - how a detail screen manages its rows: `one_to_many` (a reverse FK - the related rows are children, created/edited/deleted in place) or `many_to_many` (rows are linked/unlinked via `BaseApi.link`/`unlink`). See core_api/relations.py. */
+  kind?: RelationKind;
+  /** With `kind` - the lookup on `related_endpoint` pointing back at the row being viewed: `?filter{<back_filter>}=<id>` lists exactly its related rows. For `one_to_many` it's also the child's own FK field, preset when creating a child. */
+  back_filter?: string;
+  /** Only with `kind: "many_to_many"` - a custom through model's own fields, asked for on link (e.g. a membership's `role`). Empty for a plain M2M. */
+  through_fields?: SchemaField[];
 }
 
+export type RelationKind = "one_to_many" | "many_to_many";
+
 export interface Schema {
+  /** The model's `verbose_name`, lowercase as Django keeps it (e.g. `"check-in"`). */
+  label?: string;
+  /** The model's `verbose_name_plural`. */
+  label_plural?: string;
+  /** The field whose value names a row - a picker option, a detail page title, a link to it (see `rowLabel`). */
+  display_field?: string;
+  /** Whether `?q=` searches anything on this resource (its viewset has `search_fields`); a UI hides its search box otherwise. */
+  searchable?: boolean;
   fields: SchemaField[];
 }

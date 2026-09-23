@@ -8,8 +8,8 @@ import CrudEditScreen from "../containers/CrudRouter/screens/CrudEditScreen";
  * -> `"orgs"` - end-anchored, same "last segment(s), not first" rule
  * `crud-list.tsx`/`crud-new.tsx` follow - a PREVIOUS version of this
  * file used the URL's first segment instead, which only happened to
- * work because nothing was nested yet). The list path (`onUpdated`/
- * `onDeleted`'s navigate target) is those same segments minus the
+ * work because nothing was nested yet). After a save it goes back to the row's detail page; the list path
+ * (`onDeleted`'s navigate target) is those same segments minus the
  * trailing `":id/edit"` - no `createCrudPaths` needed here, same reason
  * `crud-new.tsx` doesn't need it either.
  */
@@ -39,13 +39,14 @@ export default function CrudEditRoute({ params }: { params: { id: string } }) {
   const resource = segments.at(-3) ?? segments[0] ?? "";
   const listPath = segments.slice(0, -2).join("/");
   const goToList = () => navigate(`/${listPath}`);
+  const goToDetail = () => navigate(`/${segments.slice(0, -1).join("/")}`);
 
   return (
     <CrudEditScreen
       baseUrl={`/api/v1/${resource}`}
       accessToken={accessToken}
       id={params.id}
-      onUpdated={goToList}
+      onUpdated={goToDetail}
       onDeleted={goToList}
     />
   );

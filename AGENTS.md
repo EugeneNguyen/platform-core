@@ -204,6 +204,12 @@ item shows its `NavItem.icon` (or its first letter if it has none), and
 the label becomes a `title` tooltip. Hosts should give every item an
 icon; `apps/main`'s are in `app/lib/navIcons.tsx`.
 
+**Sidebar width** is `AppShell`'s `sidebarWidth` prop (default `13rem`,
+narrower than Tabler's own 16rem): set as `--tblr-sidebar-width` on
+`.page`, which Tabler's CSS uses for the sidebar, the header and the page
+offset alike - no layout CSS here. Folding still wins, since Tabler sets
+the folded width directly on the sidebar and its siblings.
+
 **`page-body` wraps `children` in a `.container-xl`** — Tabler's
 `.page-body` only ever adds vertical padding; the horizontal gutter (and
 the max-width that stops content stretching edge to edge on a wide
@@ -735,9 +741,8 @@ exists (see the "`BaseSerializer`/`BaseViewSet`" section below) at, say,
    route registration (step 3) points straight at platform-core's own
    generic route files, not anything in this package. Only build a
    custom screen file if this resource needs something a generic screen
-   can't do (e.g. `GoalsEditScreen`'s nested `GoalMetricsSection` -
-   compose `WidgetsRouter.Edit` with the extra piece the same way that
-   file does).
+   can't do - related rows are NOT that case anymore (see
+   "Relationships" below).
 3. **`apps/main/frontend/app/routes.ts`** - one line:
    ```ts
    ...createCrudRoutes("/api/v1/widgets"),
@@ -754,6 +759,95 @@ zero per-resource UI code beyond the two one-liner files in step 2.
 Known gaps to expect (not bugs, see this section's own "Known gaps"
 paragraph above): a relation field shows/accepts a bare id, not a
 looked-up label; no date/datetime input type yet.
+
+### Relationships - detail screen, 1-n CRUD, n-n link
+
+`CrudDetailScreen` (`/<resource>/:id`, generic route `crud-detail.tsx`)
+shows one record and manages its to-many relations - nothing per
+resource, it's all from the schema.
+
+**Backend** (`core_api/relations.py` + `BaseViewSet`):
+- `schema` also describes the resource itself, so the UI never guesses
+  from a URL or a row's shape: `label`/`label_plural` (the model's
+  `verbose_name`/`verbose_name_plural` - set them on the model when the
+  class name reads badly, e.g. `CheckIn` -> "check-in"), `display_field`
+  (what names a row: `Meta.display_field` on the serializer, else the
+  first model `CharField`, else the first plain field, else the pk) and
+  `searchable` (the viewset has `search_fields`; search boxes are hidden
+  otherwise). Per field: `format: "uuid"` (a UUID - opaque id, not human
+  text: a read-only one is hidden on the detail page and hidden-by-default
+  as a list column) and `multiline` (a `TextField`: `<textarea>` in forms,
+  full-width block on the detail page).
+- `schema` tags each to-many `DynamicRelationField` backed by a real
+  model relation with `kind` (`one_to_many` = reverse FK,
+  `many_to_many` = M2M either side) and `back_filter` - the lookup on
+  `related_endpoint` pointing back (`?filter{goal}=<id>` lists a goal's
+  metrics; `?filter{-goal}=<id>` the rest). `many_to_many` also gets
+  `through_fields`: a custom through model's own editable, non-FK fields
+  (empty for Django's auto through).
+- `POST <res>/<id>/relations/<name>/link` `{ids, through?}` and
+  `.../unlink` `{ids}` - M2M only (404 otherwise). Link resolves ids
+  through the RELATED model's own `BaseViewSet` (`get_queryset()` +
+  permissions, for the same request), so a caller can only link rows
+  they could list themselves; any unknown id fails the whole request.
+  `through` is validated by a `ModelSerializer` over `through_fields` and
+  passed as `through_defaults`. `BaseViewSet.__init_subclass__`
+  registers model -> viewset (`registry.model_viewset`) for this -
+  automatic, no extra call. A related model with no `BaseViewSet` can't
+  be linked (403).
+- Tests: `backend/tests/` (a test-only app with shelf/book/tag/club
+  models, one per relation shape) - `python manage.py test tests
+  --settings=config.test_settings`.
+
+**Frontend** (`containers/CrudRouter/screens/`):
+- `CrudDetailScreen` - schema, then record. Tabler page header
+  (breadcrumb back to the list, `label` pretitle, `display_field` title,
+  Edit/Delete), then ONE full-width card whose tabs are "Details" (first,
+  selected on load: a responsive grid of fields - `lib/format.ts`'s
+  `formatFieldValue`, also used by list columns; choices/booleans as
+  badges; the title field and read-only uuids left out) and one per
+  relation with a row-count badge (`?filter{back}=<id>&page_size=1`,
+  re-counted after a change) - so a relation's table gets the page's
+  whole width. A to-one relation shows the related
+  row's `display_field` (related schema via `lib/schemaCache.ts`'s
+  `loadSchema`, cached per token + endpoint; row from
+  `related_endpoint/<id>`) and links to its detail page wherever
+  `resourcePath` says it's mounted. Tabs = relations with a `kind`.
+- **Where another resource is mounted** comes from the host's route
+  manifest, not a guess: `routes/useResourcePath.ts` finds the
+  `crud-detail-<resource>` route id `createCrudRoutes` registers and joins
+  its ancestors' paths (`/api/v1/orgs` -> `platform-org/orgs`); no such
+  route -> `null` -> plain label, no link. Reads react-router's
+  `UNSAFE_FrameworkContext` manifest, so the host MUST set
+  `routeDiscovery: { mode: "initial" }` (lazy discovery only ships the
+  routes matched so far - see `apps/main/frontend/react-router.config.ts`). A section change reloads the
+  record (`onChanged`) since parents may show derived values
+  (`Metric.current_value`).
+- `CrudRelationSection` - spinner on the first fetch, then either an
+  empty state ("No metrics yet" + the create/link actions) or a toolbar
+  (search, columns, actions) over the table; row actions are icon buttons
+  (`components/atoms/Icon` - inline Tabler icons, `aria-label` like
+  "Edit Revenue"), same as `CrudListScreen`'s rows. It loads
+  the related resource's own schema + a bare
+  `DataTable` on `related_endpoint?filter{back}=<id>`; buttons named from
+  the related schema's `label` ("New check-in"). `one_to_many`:
+  New/Edit in `CrudFormModal` with the back FK hidden and preset on
+  create (the owning ViewSet resolves it from the body, per this
+  platform's convention), Delete. `many_to_many`: Link existing
+  (`CrudLinkModal`: multi-select of unlinked rows labelled by the related
+  `display_field`, first 20 matches, search only if `searchable`, plus
+  through fields), New = create + link in one form
+  (through fields prefixed `through__` to avoid name clashes), Unlink.
+- `CrudFormModal` - schema-driven form in `Modal`; body mounts only
+  while open (fresh state per open); `load` is read once on mount.
+
+Known gaps: through values of existing links can't be edited (unlink +
+relink, or manage the through model as its own resource - its reverse FK
+shows as a `one_to_many` tab if it has a `BaseViewSet`); the generic
+route files still derive their OWN API base URL from the URL's last
+segment (`/api/v1/<resource>`); document titles (`meta`) still come from
+the URL, since `meta` can't fetch the schema; a `one_to_many` child whose FK the owning ViewSet doesn't resolve from the
+request body won't get its parent set.
 
 ## Single-port composition
 

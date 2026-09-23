@@ -58,4 +58,9 @@ describe("DashboardLayout", () => {
       expect(document.querySelector("aside")).not.toHaveClass("navbar-folded");
     });
   });
+
+  it("narrows the sidebar through Tabler's width variable", () => {
+    const { container } = render(<DashboardLayout navItems={[]} currentPath="/">content</DashboardLayout>);
+    expect((container.querySelector(".page") as HTMLElement).style.getPropertyValue("--tblr-sidebar-width")).toBe("13rem");
+  });
 });

@@ -1,28 +1,23 @@
 import { useEffect, useMemo, useState } from "react";
 import type { DataTablePage } from "../../DataTable";
 import type { BaseApiRequest } from "./baseApi";
+import { loadSchema } from "./schemaCache";
 import type { CrudField, CrudFieldOption } from "./types";
 
-const LABEL_FIELD_CANDIDATES = ["title", "name", "label", "email"];
-
 /**
- * Picks a relation row's own display label - tried in order, the first
- * one present and non-empty wins. No schema-driven way to know which
- * field a given resource considers its "name" (that's not something
- * `BaseViewSet.schema()` describes), so this is a plain convention
- * instead: every resource in this platform happens to have one of these.
- * Falls back to the row's own id - still correct, just less readable.
+ * A row's display label: its schema's `display_field` value (see
+ * `core_api.viewsets._display_field` - chosen server-side, per resource),
+ * or the row's id if that's empty or unknown.
  */
-function relationOptionLabel(row: Record<string, unknown>): string {
-  for (const key of LABEL_FIELD_CANDIDATES) {
-    const value = row[key];
-    if (typeof value === "string" && value) return value;
-  }
+export function rowLabel(row: Record<string, unknown>, displayField?: string): string {
+  const value = displayField ? row[displayField] : undefined;
+  if (value != null && value !== "") return String(value);
   return String(row.id);
 }
 
 /**
- * `CrudCreateForm`/`CrudEditForm`'s own relation-picker fetch - a plain
+ * `CrudCreateForm`/`CrudEditForm`'s own relation-picker fetch - the related
+ * resource's schema (for its `display_field`, cached) plus a plain
  * `GET <relatedEndpoint>?page_size=<max>` (the same `request` they
  * already build `baseApi` from, so it carries the same auth) turned into
  * a `CrudField.options` list. Capped at `EnvelopePageNumberPagination`'s
@@ -31,8 +26,11 @@ function relationOptionLabel(row: Record<string, unknown>): string {
  * a known gap, not solved here.
  */
 export async function fetchRelationOptions(endpoint: string, request: BaseApiRequest): Promise<CrudFieldOption[]> {
-  const page = await request<DataTablePage<Record<string, unknown>>>(`${endpoint}?page_size=100`);
-  return page.items.map((row) => ({ value: String(row.id), label: relationOptionLabel(row) }));
+  const [schema, page] = await Promise.all([
+    loadSchema(endpoint, request),
+    request<DataTablePage<Record<string, unknown>>>(`${endpoint}?page_size=100`),
+  ]);
+  return page.items.map((row) => ({ value: String(row.id), label: rowLabel(row, schema.display_field) }));
 }
 
 /**

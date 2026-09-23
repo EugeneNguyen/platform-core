@@ -2,6 +2,7 @@ export interface CrudPaths {
   basePath: string;
   listPath: string;
   createPath: string;
+  detailPath: (id: string | number) => string;
   editPath: (id: string | number) => string;
 }
 
@@ -19,6 +20,7 @@ export function createCrudPaths(resource: string): CrudPaths {
     basePath: resource,
     listPath: resource,
     createPath: `${resource}/new`,
+    detailPath: (id) => `${resource}/${id}`,
     editPath: (id) => `${resource}/${id}/edit`,
   };
 }

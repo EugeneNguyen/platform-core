@@ -1,4 +1,5 @@
 import type { DataTableColumn } from "../../DataTable";
+import { formatFieldValue } from "./format";
 import type { Schema, SchemaField } from "./schema";
 
 function isDisplayable(field: SchemaField): boolean {
@@ -27,12 +28,11 @@ export function createSchemaColumns<T>(schema: Schema): DataTableColumn<T>[] {
       key: field.name,
       header: field.label,
       sortable: field.type !== "relation",
-      render: (row) => {
-        const value = (row as Record<string, unknown>)[field.name];
-        if (value == null || value === "") return "—";
-        if (field.type === "boolean") return value ? "Yes" : "No";
-        return String(value);
-      },
+      // An opaque read-only id (e.g. `owner_id`) or long text is noise in
+      // a row - still available through the column picker.
+      hidden: (field.format === "uuid" && field.read_only && field.type !== "relation") || Boolean(field.multiline),
+      truncate: field.multiline,
+      render: (row) => formatFieldValue(field, (row as Record<string, unknown>)[field.name]),
     }),
   );
 }

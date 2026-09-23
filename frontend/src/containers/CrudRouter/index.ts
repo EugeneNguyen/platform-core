@@ -30,3 +30,19 @@ export type { CrudCreateScreenProps } from "./screens/CrudCreateScreen";
 
 export { default as CrudEditScreen } from "./screens/CrudEditScreen";
 export type { CrudEditScreenProps } from "./screens/CrudEditScreen";
+
+export { default as CrudDetailScreen } from "./screens/CrudDetailScreen";
+export type { CrudDetailScreenProps } from "./screens/CrudDetailScreen";
+
+export { default as CrudRelationSection } from "./screens/CrudRelationSection";
+export type { CrudRelationSectionProps } from "./screens/CrudRelationSection";
+
+export { default as CrudFormModal } from "./screens/CrudFormModal";
+export type { CrudFormModalProps } from "./screens/CrudFormModal";
+
+export { default as CrudLinkModal } from "./screens/CrudLinkModal";
+export type { CrudLinkModalProps } from "./screens/CrudLinkModal";
+
+export { formatFieldValue } from "./lib/format";
+export { rowLabel } from "./lib/relationOptions";
+export { loadSchema } from "./lib/schemaCache";

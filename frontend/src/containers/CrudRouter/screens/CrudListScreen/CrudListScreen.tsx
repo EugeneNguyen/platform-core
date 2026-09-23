@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { Button, Card, CardFooter, CardHeader, DefaultLink, FormControl, Pagination } from "../../../../components";
+import { Button, Card, CardFooter, CardHeader, DefaultLink, FormControl, Icon, Pagination } from "../../../../components";
 import type { LinkComponent } from "../../../../components";
 import { ColumnPicker, DataTable, useDataTable } from "../../../DataTable";
 import type { DataTableColumn } from "../../../DataTable";
 import { createBaseApi } from "../../lib/baseApi";
 import type { BaseApi } from "../../lib/baseApi";
 import { createCrudPaths } from "../../lib/paths";
+import { rowLabel } from "../../lib/relationOptions";
 import { createRequest } from "../../lib/request";
 import type { Schema } from "../../lib/schema";
 import { createSchemaColumns } from "../../lib/schemaColumns";
@@ -29,7 +30,7 @@ export interface CrudListScreenProps<T> {
   basePath?: string;
   /** Same convention as every other `components`/`containers` piece - defaults to a plain `<a>` (`DefaultLink`) when the host doesn't pass its own router's `Link`. */
   linkComponent?: LinkComponent;
-  /** Shows the `CardHeader` search box, wired to the same `DataTable` state as everything else on the list. @default true */
+  /** Shows the `CardHeader` search box (only if the schema says the resource is `searchable`), wired to the same `DataTable` state as everything else on the list. @default true */
   searchable?: boolean;
   /** Fires after a row is successfully deleted - e.g. to show a toast. The list refetches itself either way. */
   onDeleted?: (row: T) => void;
@@ -128,8 +129,8 @@ interface CrudListScreenTableProps<T> extends Omit<CrudListScreenProps<T>, "base
  * instances. After a delete, `table.refetch()` gets the list back in
  * sync with the server.
  *
- * Every DATA cell in the row opens the edit screen, not just the "Edit"
- * text - each gets its own invisible `.stretched-link` decoy anchor
+ * Every DATA cell in the row opens the detail screen, not just the "View"
+ * link - each gets its own invisible `.stretched-link` decoy anchor
  * (`tabIndex={-1}`/`aria-hidden`, no visible content, no `.btn` or any
  * other class carrying its OWN `position`) filling that cell's
  * `position-relative` box. Deliberately NOT one stretched-link spanning
@@ -176,7 +177,7 @@ function CrudListScreenTable<T>({ baseApi, schema, basePath, linkComponent, sear
   }
 
   function rowLink(row: T) {
-    return <Link to={paths.editPath(rowKey(row))} tabIndex={-1} aria-hidden="true" className="stretched-link" />;
+    return <Link to={paths.detailPath(rowKey(row))} tabIndex={-1} aria-hidden="true" className="stretched-link" />;
   }
 
   const columns: DataTableColumn<T>[] = [
@@ -196,19 +197,25 @@ function CrudListScreenTable<T>({ baseApi, schema, basePath, linkComponent, sear
       className: "w-1",
       render: (row) => {
         const id = rowKey(row);
+        const name = rowLabel(row as Record<string, unknown>, schema.display_field);
         return (
-          <div className="d-flex gap-2">
-            <Link to={paths.editPath(id)} className="btn btn-link btn-sm p-0">
-              Edit
+          <div className="d-flex gap-1 justify-content-end text-nowrap">
+            <Link to={paths.detailPath(id)} className="btn btn-ghost-secondary btn-icon btn-sm" aria-label={`View ${name}`}>
+              <Icon name="eye" />
+            </Link>
+            <Link to={paths.editPath(id)} className="btn btn-ghost-secondary btn-icon btn-sm" aria-label={`Edit ${name}`}>
+              <Icon name="pencil" />
             </Link>
             <Button
               type="button"
-              variant="link"
-              className="text-danger p-0"
+              icon
+              className="btn-ghost-danger"
+              aria-label={`Delete ${name}`}
+              title="Delete"
               disabled={deletingId === id}
               onClick={() => handleDelete(row)}
             >
-              Delete
+              <Icon name="trash" />
             </Button>
           </div>
         );
@@ -216,16 +223,19 @@ function CrudListScreenTable<T>({ baseApi, schema, basePath, linkComponent, sear
     },
   ];
 
-  const table = useDataTable({ endpoint: baseApi.endpoint, columns, rowKey, fetcher: baseApi.list, searchable });
+  // Only where `?q=` actually searches something (the schema says so).
+  const showSearch = searchable !== false && Boolean(schema.searchable);
+  const table = useDataTable({ endpoint: baseApi.endpoint, columns, rowKey, fetcher: baseApi.list, searchable: showSearch });
 
   return (
     <Card>
       <CardHeader className="d-flex align-items-center gap-2">
         <Link to={paths.createPath} className="btn btn-primary btn-sm">
-          New
+          <Icon name="plus" />
+          New{schema.label ? ` ${schema.label}` : ""}
         </Link>
         <div className="d-flex align-items-center gap-2 ms-auto">
-          {searchable !== false && (
+          {showSearch && (
             <FormControl
               type="search"
               aria-label="Search"

@@ -57,11 +57,11 @@ export function prefixRoutes(prefixPath: string, routes: RouteEntry[]): RouteEnt
 }
 
 /**
- * The three routes every `BaseViewSet`-backed resource needs (list/
- * create/edit), `prefixRoutes()`-nested under the resource's own name
+ * The four routes every `BaseViewSet`-backed resource needs (list/
+ * create/detail/edit), `prefixRoutes()`-nested under the resource's own name
  * (not `route()` + children - that needs a wrapping layout element with
- * its own `<Outlet/>`, which none of the three share or need) and ALL
- * THREE pointing at platform-core's own generic route files by default
+ * its own `<Outlet/>`, which none of them share or need) and ALL
+ * of them pointing at platform-core's own generic route files by default
  * (`src/routes/crud-list.tsx`/etc - shared by every resource, see their
  * own docstrings). A host registers a whole resource with one call,
  * giving only the resource's own backend base URL:
@@ -85,6 +85,8 @@ export interface CrudRoutesOptions {
    * file's own location.
    */
   editFile?: string;
+  /** Same as `editFile`, for the detail route (`:id`, the generic `crud-detail.tsx`). */
+  detailFile?: string;
 }
 
 export function createCrudRoutes(apiPath: string, options: CrudRoutesOptions = {}): RouteEntry[] {
@@ -92,13 +94,14 @@ export function createCrudRoutes(apiPath: string, options: CrudRoutesOptions = {
   // `../../../routes` from this file (`src/containers/CrudRouter/lib/`)
   // is `src/routes/`.
   const file = (name: string) => routeFilePath(import.meta.url, `../../../routes/${name}`);
-  // Every resource points at the SAME three files by default -
+  // Every resource points at the SAME files by default -
   // react-router derives a route's `id` from its `file` by default, so
   // without an explicit one here, two resources registering the same
   // file would collide ("duplicate route id", confirmed the hard way).
   return prefixRoutes(resource, [
     { index: true, file: file("crud-list.tsx"), id: `crud-list-${resource}` },
     { path: "new", file: file("crud-new.tsx"), id: `crud-new-${resource}` },
+    { path: ":id", file: options.detailFile ?? file("crud-detail.tsx"), id: `crud-detail-${resource}` },
     { path: ":id/edit", file: options.editFile ?? file("crud-edit.tsx"), id: `crud-edit-${resource}` },
   ]);
 }

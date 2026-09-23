@@ -85,6 +85,25 @@ function CrudFormFields<T>({ fields, values, onChange }: CrudFormFieldsProps<T>)
           );
         }
 
+        if (field.type === "textarea") {
+          return (
+            <div key={field.key} className="mb-3">
+              <FormLabel htmlFor={fieldId} required={field.required}>
+                {field.label}
+              </FormLabel>
+              <textarea
+                id={fieldId}
+                className="form-control form-control-sm"
+                rows={3}
+                required={field.required}
+                value={(values[field.key] as string | undefined) ?? ""}
+                onChange={(event) => onChange(field.key, event.target.value as T[typeof field.key])}
+              />
+              <Hint text={field.helpText} />
+            </div>
+          );
+        }
+
         if (field.type === "date" || field.type === "datetime") {
           const isDateTime = field.type === "datetime";
           const raw = values[field.key];

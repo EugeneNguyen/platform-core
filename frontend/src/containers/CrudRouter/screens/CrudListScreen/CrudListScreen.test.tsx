@@ -14,6 +14,8 @@ interface Org {
 }
 
 const SCHEMA: Schema = {
+  searchable: true,
+  display_field: "name",
   fields: [
     { name: "id", type: "string", required: false, read_only: true, label: "Id" },
     { name: "name", type: "string", required: true, read_only: false, label: "Name" },
@@ -29,6 +31,8 @@ function mockApi(overrides: Partial<BaseApi<Org>> = {}): BaseApi<Org> {
     create: vi.fn().mockResolvedValue({ id: 1, name: "Acme" }),
     update: vi.fn().mockResolvedValue({ id: 1, name: "Acme" }),
     remove: vi.fn().mockResolvedValue(undefined),
+    link: vi.fn().mockResolvedValue(undefined),
+    unlink: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   };
   vi.mocked(createBaseApi).mockReturnValue(api);
@@ -38,13 +42,21 @@ function mockApi(overrides: Partial<BaseApi<Org>> = {}): BaseApi<Org> {
 const PROPS = { baseUrl: "/api/v1/orgs", accessToken: "token" };
 
 describe("CrudListScreen", () => {
+  it("hides the search box when the schema says the resource isn't searchable", async () => {
+    mockApi({ schema: vi.fn().mockResolvedValue({ ...SCHEMA, searchable: false }) });
+    render(<CrudListScreen {...PROPS} />);
+    expect(await screen.findByText("Acme")).toBeInTheDocument();
+    expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
+  });
+
   it("renders a New link to the create path and an Edit link per row", async () => {
     mockApi();
     render(<CrudListScreen {...PROPS} />);
     await waitFor(() => expect(screen.getByText("Acme")).toBeInTheDocument());
 
     expect(screen.getByRole("link", { name: "New" })).toHaveAttribute("href", "orgs/new");
-    expect(screen.getByRole("link", { name: "Edit" })).toHaveAttribute("href", "orgs/1/edit");
+    expect(screen.getByRole("link", { name: "Edit Acme" })).toHaveAttribute("href", "orgs/1/edit");
+    expect(screen.getByRole("link", { name: "View Acme" })).toHaveAttribute("href", "orgs/1");
   });
 
   it("frames the New link and search box in the Card header, table full-bleed in the Card", async () => {
@@ -76,13 +88,13 @@ describe("CrudListScreen", () => {
     render(<CrudListScreen {...PROPS} />);
     await waitFor(() => expect(screen.getByText("Acme")).toBeInTheDocument());
 
-    const edit = screen.getByRole("link", { name: "Edit" });
-    const del = screen.getByRole("button", { name: "Delete" });
-    expect(edit).toHaveClass("btn", "btn-link", "btn-sm");
-    expect(del).toHaveClass("btn", "btn-link", "btn-sm");
+    const edit = screen.getByRole("link", { name: "Edit Acme" });
+    const del = screen.getByRole("button", { name: "Delete Acme" });
+    expect(edit).toHaveClass("btn", "btn-ghost-secondary", "btn-icon", "btn-sm");
+    expect(del).toHaveClass("btn", "btn-ghost-danger", "btn-icon", "btn-sm");
   });
 
-  it("gives every DATA cell (not the actions cell) an invisible, unfocusable decoy link to the edit page", async () => {
+  it("gives every DATA cell (not the actions cell) an invisible, unfocusable decoy link to the detail page", async () => {
     mockApi();
     render(<CrudListScreen {...PROPS} />);
     await waitFor(() => expect(screen.getByText("Acme")).toBeInTheDocument());
@@ -91,7 +103,7 @@ describe("CrudListScreen", () => {
     const decoys = row.querySelectorAll("a.stretched-link");
     expect(decoys.length).toBeGreaterThan(0);
     for (const decoy of decoys) {
-      expect(decoy).toHaveAttribute("href", "orgs/1/edit");
+      expect(decoy).toHaveAttribute("href", "orgs/1");
       expect(decoy).toHaveAttribute("tabindex", "-1");
       expect(decoy).toHaveAttribute("aria-hidden", "true");
       // Every decoy's own cell (not the whole `<tr>`) is the positioned
@@ -103,7 +115,7 @@ describe("CrudListScreen", () => {
     // The actions cell (Edit/Delete) deliberately has none - see this
     // file's own docstring for why a same-cell decoy there blocked
     // Delete's clicks in a real browser.
-    const actionsCell = screen.getByRole("button", { name: "Delete" }).closest("td")!;
+    const actionsCell = screen.getByRole("button", { name: "Delete Acme" }).closest("td")!;
     expect(actionsCell.querySelector("a.stretched-link")).not.toBeInTheDocument();
   });
 
@@ -148,7 +160,7 @@ describe("CrudListScreen", () => {
     render(<CrudListScreen {...PROPS} onDeleted={onDeleted} />);
     await waitFor(() => expect(screen.getByText("Acme")).toBeInTheDocument());
 
-    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete Acme" }));
     await waitFor(() => expect(api.remove).toHaveBeenCalledWith(1));
     expect(onDeleted).toHaveBeenCalledWith({ id: 1, name: "Acme" });
   });
@@ -159,7 +171,7 @@ describe("CrudListScreen", () => {
     render(<CrudListScreen {...PROPS} />);
     await waitFor(() => expect(screen.getByText("Acme")).toBeInTheDocument());
 
-    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete Acme" }));
     expect(api.remove).not.toHaveBeenCalled();
   });
 });

@@ -8,7 +8,7 @@ import CrudCreateScreen from "../containers/CrudRouter/screens/CrudCreateScreen"
  * `"orgs"` - end-anchored, so a nested mount's extra FRONT segments
  * never throw this off), same "last segment(s), not first" rule
  * `crud-list.tsx` follows. The list path (`onCreated`'s navigate target)
- * is just those same segments minus the trailing `"new"` - no
+ * is just those same segments minus the trailing `"new"` (`onCreated` goes to the new row's detail page under it) - no
  * `createCrudPaths` needed here at all, since this file already has the
  * one thing that ever mattered: its own REAL mounted `location.pathname`.
  */
@@ -35,7 +35,8 @@ export default function CrudNewRoute() {
     <CrudCreateScreen
       baseUrl={`/api/v1/${resource}`}
       accessToken={accessToken}
-      onCreated={() => navigate(`/${listPath}`)}
+      // To the new row's detail page, where its relations can be filled in.
+      onCreated={(row) => navigate(`/${listPath}/${(row as { id: string | number }).id}`)}
     />
   );
 }

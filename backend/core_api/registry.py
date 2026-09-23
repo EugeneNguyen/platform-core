@@ -7,9 +7,16 @@ doesn't invert to a model name (or vice versa) in a general way - see
 has to be told: each app's own urls.py calls `register_model_endpoint`
 right next to the `router.register(...)` call that already decides the
 same mapping, one extra line per resource.
+
+Also a model -> viewset registry, filled automatically by
+`BaseViewSet.__init_subclass__` (no call needed): the generic
+`link`/`unlink` actions use the RELATED model's own viewset to scope which
+rows a caller may link (its `get_queryset()`, e.g. "only your own goals"),
+so linking can't reach a row the caller couldn't list themselves.
 """
 
 _registry: dict[type, str] = {}
+_viewsets: dict[type, type] = {}
 
 
 def register_model_endpoint(model: type, path: str) -> None:
@@ -18,3 +25,11 @@ def register_model_endpoint(model: type, path: str) -> None:
 
 def model_endpoint(model: type) -> str | None:
     return _registry.get(model)
+
+
+def register_model_viewset(model: type, viewset_class: type) -> None:
+    _viewsets[model] = viewset_class
+
+
+def model_viewset(model: type) -> type | None:
+    return _viewsets.get(model)

@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import Header from "../../organisms/Header";
 import Sidebar from "../../organisms/Sidebar";
 import { DefaultLink, type AppShellUser, type LinkComponent, type NavItem } from "../../types";
@@ -12,6 +12,13 @@ export interface DashboardLayoutProps {
   onLogout?: () => void;
   /** Whether the desktop sidebar starts folded to its icon rail, before any remembered choice is read. @default false */
   defaultSidebarFolded?: boolean;
+  /**
+   * The unfolded desktop sidebar's width - Tabler's `--tblr-sidebar-width`
+   * (its own default is 16rem), set on `.page` so the sidebar, header and
+   * page offset all follow it. Folding still wins: Tabler sets the folded
+   * width directly on the sidebar and its siblings. @default "13rem"
+   */
+  sidebarWidth?: string;
   children: ReactNode;
 }
 
@@ -69,11 +76,12 @@ function DashboardLayout({
   user,
   onLogout,
   defaultSidebarFolded = false,
+  sidebarWidth = "13rem",
   children,
 }: DashboardLayoutProps) {
   const [folded, toggleFolded] = useSidebarFolded(defaultSidebarFolded);
   return (
-    <div className="page">
+    <div className="page" style={{ "--tblr-sidebar-width": sidebarWidth } as CSSProperties}>
       <Sidebar
         brand={brand}
         navItems={navItems}

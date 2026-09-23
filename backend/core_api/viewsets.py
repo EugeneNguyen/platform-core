@@ -13,14 +13,18 @@ been sideloaded (named in `?include[]=`) - without this, sideloading a
 against a real dataset instead of a handful of local test rows.
 """
 
+from django.db import models
 from rest_framework import serializers as drf_serializers
+from rest_framework import status
 from rest_framework.decorators import action
+from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from core_api.filters import DynamicFilterBackend, QParamSearchFilter, SortParamOrderingFilter
 from core_api.pagination import EnvelopePageNumberPagination
-from core_api.registry import model_endpoint
+from core_api.registry import model_endpoint, model_viewset, register_model_viewset
+from core_api.relations import MANY_TO_MANY, through_serializer_class, to_many_relation
 from core_api.serializers import DynamicRelationField
 
 _FIELD_TYPES = (
@@ -46,7 +50,7 @@ def _field_type(field) -> str:
     return "string"
 
 
-def _describe_field(name: str, field, *, deferred: bool, cross_module_endpoint: str | None = None) -> dict:
+def _describe_field(name: str, field, *, deferred: bool, cross_module_endpoint: str | None = None, model=None) -> dict:
     description = {
         "name": name,
         "type": _field_type(field),
@@ -58,6 +62,17 @@ def _describe_field(name: str, field, *, deferred: bool, cross_module_endpoint: 
         # the server's default" (omit the key) for an emptied input.
         "nullable": bool(getattr(field, "allow_null", False)),
     }
+    if isinstance(field, drf_serializers.UUIDField) or (
+        isinstance(field, drf_serializers.ModelField) and isinstance(field.model_field, models.UUIDField)
+    ):
+        # Still `type: "string"` (it's entered/shown as text), but a UI
+        # can tell an opaque id apart from human text - e.g. hide a
+        # read-only `owner_id` on a detail page.
+        description["format"] = "uuid"
+    if getattr(field, "style", {}).get("base_template") == "textarea.html":
+        # A model `TextField` - long text: a textarea in forms, its own
+        # full-width block on a detail page.
+        description["multiline"] = True
     help_text = getattr(field, "help_text", None)
     if help_text:
         description["help_text"] = str(help_text)
@@ -74,6 +89,17 @@ def _describe_field(name: str, field, *, deferred: bool, cross_module_endpoint: 
         # explicitly, rather than left to be inferred from "many", so a
         # schema consumer doesn't have to know that rule itself.
         description["deferred"] = deferred
+        relation = to_many_relation(model, name) if field.many and model is not None else None
+        if relation is not None:
+            # What a generic detail screen needs to show/manage this
+            # relation's rows - see core_api/relations.py.
+            description["kind"] = relation.kind
+            description["back_filter"] = relation.back_filter
+            if relation.kind == MANY_TO_MANY:
+                through_class = through_serializer_class(relation.through) if relation.through else None
+                description["through_fields"] = (
+                    [_describe_field(n, f, deferred=False) for n, f in through_class().fields.items()] if through_class else []
+                )
     elif cross_module_endpoint:
         # A bare id field (e.g. Goal.org_id) pointing at ANOTHER module's
         # model - never a real FK/`DynamicRelationField` (see root
@@ -92,9 +118,50 @@ def _describe_field(name: str, field, *, deferred: bool, cross_module_endpoint: 
     return description
 
 
+def _display_field(serializer, fields, model) -> str:
+    """The field whose value names a row in a UI (a picker option, a detail
+    page title, a link to it): the serializer's `Meta.display_field` if
+    set, else the first emitted model `CharField` (`title`, `name`, an
+    email, a slug - not a `TextField`), else the first emitted non-pk,
+    non-relation field, else the pk.
+    """
+    explicit = getattr(serializer.Meta, "display_field", None)
+    if explicit:
+        return explicit
+    model_fields = {field.name: field for field in model._meta.concrete_fields}
+    candidates = [
+        name
+        for name, field in fields.items()
+        if name in model_fields and not model_fields[name].primary_key and not model_fields[name].is_relation
+        and not isinstance(field, DynamicRelationField)
+    ]
+    for name in candidates:
+        if isinstance(model_fields[name], models.CharField):
+            return name
+    return candidates[0] if candidates else model._meta.pk.name
+
+
+def _scoped_queryset(model, request):
+    """`model`'s rows as ITS OWN registered viewset would list them for this
+    request (its permissions + `get_queryset()` scoping), or `None` when no
+    `BaseViewSet` serves that model."""
+    viewset_class = model_viewset(model)
+    if viewset_class is None:
+        return None
+    view = viewset_class(request=request, args=(), kwargs={}, format_kwarg=None, action="list")
+    view.check_permissions(request)
+    return view.get_queryset()
+
+
 class BaseViewSet(ModelViewSet):
     pagination_class = EnvelopePageNumberPagination
     filter_backends = [DynamicFilterBackend, SortParamOrderingFilter, QParamSearchFilter]
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        queryset = cls.__dict__.get("queryset")
+        if queryset is not None:
+            register_model_viewset(queryset.model, cls)
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -132,6 +199,11 @@ class BaseViewSet(ModelViewSet):
         No auth/permission bypass here - this action still goes through
         the viewset's own `permission_classes` like any other.
 
+        Besides `fields`: `label`/`label_plural` (the model's
+        `verbose_name`/`verbose_name_plural`), `display_field` (the field
+        that names a row - see `_display_field`) and `searchable` (whether
+        `?q=` does anything here, i.e. the viewset has `search_fields`).
+
         A serializer's own `Meta.related_endpoints` (`{field_name: url}`,
         e.g. `GoalSerializer`'s `{"org_id": "/api/v1/orgs"}`) tags a bare
         cross-module id field as a relation too, same picker treatment a
@@ -150,11 +222,81 @@ class BaseViewSet(ModelViewSet):
             # this method's own docstring) fills in `label`'s humanized
             # default ("Target date", not "target_date").
             field.bind(field_name=name, parent=serializer)
+        model = serializer.Meta.model
         return Response(
             {
+                # Resource-level description, so a generic UI never has
+                # to guess names from a URL or a row's shape.
+                "label": str(model._meta.verbose_name),
+                "label_plural": str(model._meta.verbose_name_plural),
+                "display_field": _display_field(serializer, fields, model),
+                "searchable": bool(getattr(self, "search_fields", None)),
                 "fields": [
-                    _describe_field(name, field, deferred=name in deferred, cross_module_endpoint=related_endpoints.get(name))
+                    _describe_field(
+                        name,
+                        field,
+                        deferred=name in deferred,
+                        cross_module_endpoint=related_endpoints.get(name),
+                        model=model,
+                    )
                     for name, field in fields.items()
-                ]
+                ],
             }
         )
+
+    def _m2m_relation(self, relation_name):
+        model = self.get_serializer_class().Meta.model
+        relation = to_many_relation(model, relation_name)
+        if relation is None or relation.kind != MANY_TO_MANY:
+            raise NotFound(f"'{relation_name}' is not a many-to-many relation.")
+        return relation
+
+    @staticmethod
+    def _requested_ids(request) -> list:
+        ids = request.data.get("ids")
+        if not isinstance(ids, list) or not ids:
+            raise ValidationError({"ids": ["A non-empty list of ids is required."]})
+        return list(dict.fromkeys(str(value) for value in ids))
+
+    @action(detail=True, methods=["post"], url_path=r"relations/(?P<relation_name>\w+)/link")
+    def link(self, request, pk=None, relation_name=None):
+        """`POST <resource>/<id>/relations/<relation>/link` - `{"ids": [...],
+        "through": {...}}` - adds many-to-many links from this row to each
+        id. Only ids the caller could list through the RELATED resource's
+        own viewset count (`_scoped_queryset`) - any other id fails the
+        whole request, nothing is linked. `through` holds a custom through
+        model's own fields (see `schema`'s `through_fields`), validated by
+        a plain `ModelSerializer` over them; applied to every new link.
+        Already-linked ids are left as they are.
+        """
+        relation = self._m2m_relation(relation_name)
+        instance = self.get_object()
+        ids = self._requested_ids(request)
+        scoped = _scoped_queryset(relation.related_model, request)
+        if scoped is None:
+            raise PermissionDenied(f"'{relation_name}' rows aren't served by any API, so they can't be linked.")
+        related = list(scoped.filter(pk__in=ids))
+        if len(related) != len(ids):
+            found = {str(row.pk) for row in related}
+            raise ValidationError({"ids": [f"Unknown id: {value}" for value in ids if value not in found]})
+
+        through_defaults = {}
+        through_class = through_serializer_class(relation.through) if relation.through else None
+        if through_class is not None:
+            through = through_class(data=request.data.get("through") or {})
+            through.is_valid(raise_exception=True)
+            through_defaults = through.validated_data
+        getattr(instance, relation.name).add(*related, through_defaults=through_defaults)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=True, methods=["post"], url_path=r"relations/(?P<relation_name>\w+)/unlink")
+    def unlink(self, request, pk=None, relation_name=None):
+        """`POST <resource>/<id>/relations/<relation>/unlink` - `{"ids": [...]}`
+        - removes those links (the related rows themselves stay). Ids not
+        currently linked are ignored.
+        """
+        relation = self._m2m_relation(relation_name)
+        instance = self.get_object()
+        manager = getattr(instance, relation.name)
+        manager.remove(*manager.filter(pk__in=self._requested_ids(request)))
+        return Response(status=status.HTTP_204_NO_CONTENT)

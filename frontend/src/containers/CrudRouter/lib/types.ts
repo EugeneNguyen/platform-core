@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-export type CrudFieldType = "text" | "email" | "tel" | "password" | "number" | "checkbox" | "select" | "date" | "datetime";
+export type CrudFieldType = "text" | "textarea" | "email" | "tel" | "password" | "number" | "checkbox" | "select" | "date" | "datetime";
 
 export interface CrudFieldOption {
   value: string;

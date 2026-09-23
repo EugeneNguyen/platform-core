@@ -29,6 +29,8 @@ function mockApi(overrides: Partial<BaseApi<Org>> = {}): BaseApi<Org> {
     create: vi.fn().mockResolvedValue({ id: 1, name: "Acme" }),
     update: vi.fn().mockResolvedValue({ id: 1, name: "Acme" }),
     remove: vi.fn().mockResolvedValue(undefined),
+    link: vi.fn().mockResolvedValue(undefined),
+    unlink: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   };
   vi.mocked(createBaseApi).mockReturnValue(api);
@@ -42,6 +44,7 @@ describe("createCrudRouter", () => {
       basePath: "orgs",
       listPath: "orgs",
       createPath: "orgs/new",
+      detailPath: expect.any(Function),
       editPath: expect.any(Function),
     });
     expect(router.paths.editPath(1)).toBe("orgs/1/edit");

@@ -37,6 +37,7 @@ function crudFieldType(field: SchemaField): CrudFieldType {
   // below. One with no registered endpoint has no way to fetch a picker
   // list at all - falls back to a bare text input for the id itself.
   if (field.type === "relation") return field.related_endpoint ? "select" : "text";
+  if (field.multiline) return "textarea";
   return TYPE_MAP[field.type] ?? "text";
 }
 

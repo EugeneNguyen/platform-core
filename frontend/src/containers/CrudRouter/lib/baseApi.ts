@@ -28,6 +28,10 @@ export interface BaseApi<T> {
   update: (id: string | number, values: Partial<T>) => Promise<T>;
   /** `DELETE <endpoint>/<id>`. */
   remove: (id: string | number) => Promise<void>;
+  /** `POST <endpoint>/<id>/relations/<relation>/link` - links a many-to-many relation's rows to this one; `through` carries a custom through model's own fields (see `SchemaField.through_fields`). */
+  link: (id: string | number, relation: string, ids: (string | number)[], through?: Record<string, unknown>) => Promise<void>;
+  /** `POST <endpoint>/<id>/relations/<relation>/unlink` - removes those links; the rows themselves stay. */
+  unlink: (id: string | number, relation: string, ids: (string | number)[]) => Promise<void>;
 }
 
 export function createBaseApi<T>(endpoint: string, request: BaseApiRequest): BaseApi<T> {
@@ -39,5 +43,12 @@ export function createBaseApi<T>(endpoint: string, request: BaseApiRequest): Bas
     create: (values) => request<T>(endpoint, { method: "POST", body: JSON.stringify(values) }),
     update: (id, values) => request<T>(`${endpoint}/${id}`, { method: "PATCH", body: JSON.stringify(values) }),
     remove: (id) => request<void>(`${endpoint}/${id}`, { method: "DELETE" }),
+    link: (id, relation, ids, through) =>
+      request<void>(`${endpoint}/${id}/relations/${relation}/link`, {
+        method: "POST",
+        body: JSON.stringify(through ? { ids, through } : { ids }),
+      }),
+    unlink: (id, relation, ids) =>
+      request<void>(`${endpoint}/${id}/relations/${relation}/unlink`, { method: "POST", body: JSON.stringify({ ids }) }),
   };
 }
