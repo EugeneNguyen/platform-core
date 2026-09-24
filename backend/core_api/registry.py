@@ -27,6 +27,13 @@ def model_endpoint(model: type) -> str | None:
     return _registry.get(model)
 
 
+def endpoint_model(path: str) -> type | None:
+    """The model registered at `path` (the inverse of `model_endpoint`) -
+    e.g. to check a bare cross-module id (`Meta.related_endpoints`)
+    against that model's own viewset."""
+    return next((model for model, endpoint in _registry.items() if endpoint == path), None)
+
+
 def register_model_viewset(model: type, viewset_class: type) -> None:
     _viewsets[model] = viewset_class
 

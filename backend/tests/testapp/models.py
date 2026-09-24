@@ -20,6 +20,8 @@ class Book(models.Model):
     title = models.CharField(max_length=64)
     blurb = models.TextField(blank=True, default="")
     ref = models.UUIDField(null=True, blank=True)
+    # a bare id checked through `Meta.related_endpoints`, like Goal.org_id
+    shelf_ref = models.IntegerField(null=True, blank=True)
     owner = models.CharField(max_length=32)
     # one_to_many seen from Shelf (`books`)
     shelf = models.ForeignKey(Shelf, null=True, on_delete=models.SET_NULL, related_name="books")

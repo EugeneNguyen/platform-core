@@ -967,6 +967,13 @@ plug its own). What core guarantees, so a policy doesn't have to:
 - create/update re-check the SAVED row inside a transaction, rolled back
   on denial (`BaseViewSet.create`/`update` reimplement DRF's to do this -
   keep that in mind before overriding them);
+- a bare cross-module id (`Meta.related_endpoints`, e.g. a goal's
+  `org_id`) must, when set or changed, be a row the caller could list at
+  that endpoint - else `400` on that field (`_check_cross_module_ids`;
+  runs with or without a policy). Opt a field out with
+  `Meta.unchecked_related_endpoints` when access to it is decided
+  elsewhere (RBAC's `scope_id`). Endpoints no `BaseViewSet` serves in
+  this host aren't checked;
 - `scope_field` on a viewset (lookup path, e.g. `"goal__org_id"`) tells a
   policy where a row's scope lives; `resource_key(view)`/
   `action_verb(view)`/`scope_of(obj, path)` are the shared helpers.

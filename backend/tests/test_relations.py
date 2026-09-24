@@ -134,3 +134,29 @@ class SchemaResourceTests(TestCase):
         self.assertTrue(fields["blurb"]["multiline"])
         self.assertNotIn("multiline", fields["title"])
         self.assertNotIn("format", fields["title"])
+
+
+class CrossModuleIdTests(TestCase):
+    """A `Meta.related_endpoints` id must be one the caller can list there."""
+
+    def setUp(self):
+        self.client = APIClient(headers={"X-As": "me"})
+        self.mine = Shelf.objects.create(owner="me", name="mine")
+        self.theirs = Shelf.objects.create(owner="them", name="theirs")
+
+    def test_create_accepts_own_and_refuses_others(self):
+        ok = self.client.post("/books", {"title": "A", "owner": "me", "shelf_ref": self.mine.pk}, format="json")
+        self.assertEqual(ok.status_code, 201)
+        refused = self.client.post("/books", {"title": "B", "owner": "me", "shelf_ref": self.theirs.pk}, format="json")
+        self.assertEqual(refused.status_code, 400)
+        self.assertIn("shelf_ref", refused.json()["field_errors"])
+        self.assertFalse(Book.objects.filter(title="B").exists())
+
+    def test_update_refuses_moving_to_others_but_keeps_unchanged(self):
+        book = Book.objects.create(owner="me", title="A", shelf_ref=self.theirs.pk)
+        # Unchanged value (e.g. access lost since) doesn't block other edits.
+        self.assertEqual(self.client.patch(f"/books/{book.pk}", {"title": "A2", "shelf_ref": self.theirs.pk}, format="json").status_code, 200)
+        book.shelf_ref = self.mine.pk
+        book.save()
+        self.assertEqual(self.client.patch(f"/books/{book.pk}", {"shelf_ref": self.theirs.pk}, format="json").status_code, 400)
+        self.assertEqual(self.client.patch(f"/books/{book.pk}", {"shelf_ref": None}, format="json").status_code, 200)

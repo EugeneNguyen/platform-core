@@ -16,6 +16,7 @@ class TagSerializer(BaseSerializer):
 class BookSerializer(BaseSerializer):
     class Meta:
         model = Book
+        related_endpoints = {"shelf_ref": "/shelves"}
 
 
 class ClubSerializer(BaseSerializer):

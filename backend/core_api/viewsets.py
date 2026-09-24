@@ -24,7 +24,7 @@ from rest_framework.viewsets import ModelViewSet
 from core_api.access import CREATE, DELETE, UPDATE, AccessPolicyPermission, get_access_policy
 from core_api.filters import DynamicFilterBackend, QParamSearchFilter, SortParamOrderingFilter
 from core_api.pagination import EnvelopePageNumberPagination
-from core_api.registry import model_endpoint, model_viewset, register_model_viewset
+from core_api.registry import endpoint_model, model_endpoint, model_viewset, register_model_viewset
 from core_api.relations import MANY_TO_MANY, through_serializer_class, to_many_relation
 from core_api.serializers import DynamicRelationField
 
@@ -190,6 +190,7 @@ class BaseViewSet(ModelViewSet):
         # scope the caller has no `create` right in is rolled back.
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        self._check_cross_module_ids(serializer)
         with transaction.atomic():
             self.perform_create(serializer)
             self._check_saved(serializer.instance)
@@ -204,12 +205,42 @@ class BaseViewSet(ModelViewSet):
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
+        self._check_cross_module_ids(serializer, instance)
         with transaction.atomic():
             self.perform_update(serializer)
             self._check_saved(serializer.instance)
         if getattr(instance, "_prefetched_objects_cache", None):
             instance._prefetched_objects_cache = {}
         return Response(serializer.data)
+
+    def _check_cross_module_ids(self, serializer, instance=None):
+        """A bare cross-module id (`Meta.related_endpoints`, e.g. a goal's
+        `org_id`) is written like any plain field, so nothing else checks
+        it points at a row the caller may see - without this, anyone could
+        file a row under someone else's org. Same rule as `link`: the id
+        must be one the caller could list through the resource served at
+        that endpoint (`_scoped_queryset`). Only a new or changed value is
+        checked, so a row keeps its id after the caller loses access to
+        it. An endpoint no `BaseViewSet` here serves (e.g. that module
+        isn't installed in this host) can't be checked and is let through.
+        A field listed in `Meta.unchecked_related_endpoints` is skipped -
+        for one whose access is decided some other way (RBAC's
+        `scope_id`: the policy checks the scope, and an app-wide admin may
+        assign in an org they're no member of).
+        """
+        meta = getattr(serializer, "Meta", None)
+        endpoints = getattr(meta, "related_endpoints", {})
+        unchecked = set(getattr(meta, "unchecked_related_endpoints", ()))
+        for name, endpoint in endpoints.items():
+            if name in unchecked:
+                continue
+            value = serializer.validated_data.get(name)
+            if value is None or (instance is not None and str(getattr(instance, name, None)) == str(value)):
+                continue
+            model = endpoint_model(endpoint)
+            scoped = _scoped_queryset(model, self.request) if model else None
+            if scoped is not None and not scoped.filter(pk=value).exists():
+                raise ValidationError({name: [f"Unknown id: {value}"]})
 
     def _check_saved(self, instance):
         if get_access_policy() is not None and instance is not None:
