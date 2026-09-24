@@ -1,0 +1,53 @@
+# Backend tests and frontend lint/build/tests on every push to main and
+# every PR. The backend suite runs on test_settings (adds tests.testapp,
+# which has no migrations - so no makemigrations check here).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: platform-core
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: pip install -e .
+        working-directory: platform-core/backend
+      - name: Test
+        run: python manage.py test --settings=config.test_settings
+        working-directory: platform-core/backend
+        env:
+          DJANGO_ALLOWED_HOSTS: localhost,testserver
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: platform-core
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci
+        working-directory: platform-core/frontend
+      - run: npm run lint
+        working-directory: platform-core/frontend
+      - run: npm run build
+        working-directory: platform-core/frontend
+      - run: npm test
+        working-directory: platform-core/frontend
