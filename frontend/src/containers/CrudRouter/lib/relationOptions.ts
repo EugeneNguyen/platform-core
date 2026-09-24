@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { DataTablePage } from "../../DataTable";
 import type { BaseApiRequest } from "./baseApi";
+import type { SchemaField } from "./schema";
 import { loadSchema } from "./schemaCache";
 import type { CrudField, CrudFieldOption } from "./types";
 
@@ -72,4 +73,34 @@ export function useRelationFields<T>(baseFields: CrudField<T>[], request: BaseAp
     () => baseFields.map((field) => (field.relatedEndpoint ? { ...field, options: optionsByEndpoint[field.relatedEndpoint] ?? field.options } : field)),
     [baseFields, optionsByEndpoint],
   );
+}
+
+/**
+ * Each related endpoint's `display_field`, from its (cached) schema -
+ * what a list needs to label sideloaded to-one relation cells (see
+ * `createSchemaColumns`). Fills in as each schema resolves; a failed one
+ * stays missing, so its cells fall back to the id.
+ */
+export function useRelatedDisplayFields(fields: SchemaField[], request: BaseApiRequest): Record<string, string | undefined> {
+  const [displayFields, setDisplayFields] = useState<Record<string, string | undefined>>({});
+  const endpoints = useMemo(
+    () => Array.from(new Set(fields.map((field) => field.related_endpoint).filter((value): value is string => Boolean(value)))),
+    [fields],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    for (const endpoint of endpoints) {
+      loadSchema(endpoint, request)
+        .then((schema) => {
+          if (!cancelled) setDisplayFields((prev) => ({ ...prev, [endpoint]: schema.display_field }));
+        })
+        .catch(() => {});
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [endpoints, request]);
+
+  return displayFields;
 }

@@ -9,10 +9,10 @@ import type { LinkComponent } from "../../../../components/types";
 import { ColumnPicker, DataTable, useDataTable } from "../../../DataTable";
 import type { DataTableColumn } from "../../../DataTable";
 import { createBaseApi } from "../../lib/baseApi";
-import { rowLabel } from "../../lib/relationOptions";
+import { rowLabel, useRelatedDisplayFields } from "../../lib/relationOptions";
 import type { BaseApi, BaseApiRequest } from "../../lib/baseApi";
-import type { Schema, SchemaField } from "../../lib/schema";
-import { createSchemaColumns } from "../../lib/schemaColumns";
+import { canDo, type Schema, type SchemaField } from "../../lib/schema";
+import { createSchemaColumns, toOneRelationFields, withRelationIncludes } from "../../lib/schemaColumns";
 import { createSchemaFields } from "../../lib/schemaFields";
 import type { CrudField } from "../../lib/types";
 import CrudFormModal from "../CrudFormModal";
@@ -34,6 +34,8 @@ export interface CrudRelationSectionProps {
   relatedDetailPath?: (id: string | number) => string;
   /** Fires after any change to the relation's rows - a parent may show values derived from them (e.g. a metric's current value, from its check-ins). */
   onChanged?: () => void;
+  /** Whether the caller may update the parent row - linking/unlinking a many-to-many row is an update of the parent (the parent schema's `can.update`). @default true */
+  parentCanUpdate?: boolean;
 }
 
 /**
@@ -107,6 +109,7 @@ function CrudRelationTable({
   onChanged,
   relatedApi,
   schema,
+  parentCanUpdate = true,
 }: CrudRelationTableProps) {
   const Link = linkComponent ?? DefaultLink;
   const isManyToMany = relation.kind === "many_to_many";
@@ -114,6 +117,11 @@ function CrudRelationTable({
   const rowKey = (row: Row) => row.id as string | number;
   const [modal, setModal] = useState<ModalState>(null);
   const [busyId, setBusyId] = useState<string | number | null>(null);
+  // Only actions that can succeed (schema `can` - see `canDo`).
+  const canLink = isManyToMany && parentCanUpdate;
+  const canCreate = canDo(schema, "create") && (!isManyToMany || parentCanUpdate);
+  const canEdit = !isManyToMany && canDo(schema, "update");
+  const canRemove = isManyToMany ? parentCanUpdate : canDo(schema, "delete");
 
   // The back-pointing FK is the same on every child row (it's the
   // parent) - no column, and not a form field either (preset on create).
@@ -129,9 +137,11 @@ function CrudRelationTable({
       })),
     [relation],
   );
+  const relationFields = useMemo(() => toOneRelationFields(schema).filter((field) => field.name !== backFilter), [schema, backFilter]);
+  const displayFields = useRelatedDisplayFields(relationFields, request);
   const schemaColumns = useMemo(
-    () => createSchemaColumns<Row>(schema).filter((column) => column.key !== backFilter),
-    [schema, backFilter],
+    () => createSchemaColumns<Row>(schema, displayFields).filter((column) => column.key !== backFilter),
+    [schema, backFilter, displayFields],
   );
 
   function changed() {
@@ -201,21 +211,23 @@ function CrudRelationTable({
                 <Icon name="eye" />
               </Link>
             )}
-            {!isManyToMany && (
+            {canEdit && (
               <Button icon className="btn-ghost-secondary" aria-label={`Edit ${name}`} title="Edit" onClick={() => setModal({ type: "edit", id })}>
                 <Icon name="pencil" />
               </Button>
             )}
-            <Button
-              icon
-              className="btn-ghost-danger"
-              aria-label={`${isManyToMany ? "Unlink" : "Delete"} ${name}`}
-              title={isManyToMany ? "Unlink" : "Delete"}
-              disabled={busyId === id}
-              onClick={() => handleRemove(row)}
-            >
-              <Icon name={isManyToMany ? "unlink" : "trash"} />
-            </Button>
+            {canRemove && (
+              <Button
+                icon
+                className="btn-ghost-danger"
+                aria-label={`${isManyToMany ? "Unlink" : "Delete"} ${name}`}
+                title={isManyToMany ? "Unlink" : "Delete"}
+                disabled={busyId === id}
+                onClick={() => handleRemove(row)}
+              >
+                <Icon name={isManyToMany ? "unlink" : "trash"} />
+              </Button>
+            )}
           </div>
         );
       },
@@ -223,7 +235,7 @@ function CrudRelationTable({
   ];
 
   const table = useDataTable<Row>({
-    endpoint: `${relatedApi.endpoint}?filter{${backFilter}}=${encodeURIComponent(String(parentId))}`,
+    endpoint: withRelationIncludes(`${relatedApi.endpoint}?filter{${backFilter}}=${encodeURIComponent(String(parentId))}`, schema, [backFilter]),
     columns,
     rowKey,
     fetcher: relatedApi.list,
@@ -243,16 +255,18 @@ function CrudRelationTable({
 
   const actions = (
     <>
-      {isManyToMany && (
+      {canLink && (
         <Button variant="primary" outline onClick={() => setModal({ type: "link" })}>
           <Icon name="link" />
           Link existing
         </Button>
       )}
-      <Button variant="primary" onClick={() => setModal({ type: "new" })}>
-        <Icon name="plus" />
-        New {singular}
-      </Button>
+      {canCreate && (
+        <Button variant="primary" onClick={() => setModal({ type: "new" })}>
+          <Icon name="plus" />
+          New {singular}
+        </Button>
+      )}
     </>
   );
 
@@ -267,7 +281,13 @@ function CrudRelationTable({
         <div className="empty py-5">
           <p className="empty-title">No {plural} yet</p>
           <p className="empty-subtitle text-secondary">
-            {isManyToMany ? `Link existing ${plural} or create a new one.` : `Add the first ${singular}.`}
+            {canLink && canCreate
+              ? `Link existing ${plural} or create a new one.`
+              : canLink
+                ? `Link existing ${plural}.`
+                : canCreate
+                  ? `Add the first ${singular}.`
+                  : `Nothing here yet.`}
           </p>
           <div className="empty-action d-flex gap-2 justify-content-center">{actions}</div>
         </div>

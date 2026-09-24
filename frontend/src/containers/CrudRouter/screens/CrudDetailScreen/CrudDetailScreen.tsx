@@ -12,7 +12,7 @@ import { formatFieldValue } from "../../lib/format";
 import { createCrudPaths } from "../../lib/paths";
 import { rowLabel } from "../../lib/relationOptions";
 import { createRequest } from "../../lib/request";
-import type { Schema, SchemaField } from "../../lib/schema";
+import { canDo, type Schema, type SchemaField } from "../../lib/schema";
 import { loadSchema } from "../../lib/schemaCache";
 import CrudRelationSection from "../CrudRelationSection";
 
@@ -220,14 +220,18 @@ function CrudDetailView({ baseApi, schema, request, id, basePath, linkComponent,
             <h2 className="page-title text-break">{title}</h2>
           </div>
           <div className="col-auto ms-auto d-flex gap-2">
-            <Link to={paths.editPath(id)} className="btn btn-primary btn-sm">
-              <Icon name="pencil" />
-              Edit
-            </Link>
-            <Button variant="danger" outline disabled={deleting} onClick={handleDelete}>
-              <Icon name="trash" />
-              Delete
-            </Button>
+            {canDo(schema, "update") && (
+              <Link to={paths.editPath(id)} className="btn btn-primary btn-sm">
+                <Icon name="pencil" />
+                Edit
+              </Link>
+            )}
+            {canDo(schema, "delete") && (
+              <Button variant="danger" outline disabled={deleting} onClick={handleDelete}>
+                <Icon name="trash" />
+                Delete
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -281,6 +285,7 @@ function CrudDetailView({ baseApi, schema, request, id, basePath, linkComponent,
             linkComponent={linkComponent}
             relatedDetailPath={activeMount == null ? undefined : (rowId) => `${activeMount}/${rowId}`}
             onChanged={handleRelationChanged}
+            parentCanUpdate={canDo(schema, "update")}
           />
         ) : (
           <CardBody>

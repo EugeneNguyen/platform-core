@@ -49,6 +49,16 @@ describe("CrudListScreen", () => {
     expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
   });
 
+  it("hides New/Edit/Delete the schema's `can` says the caller can't use", async () => {
+    mockApi({ schema: vi.fn().mockResolvedValue({ ...SCHEMA, can: { create: false, update: false, delete: false } }) });
+    render(<CrudListScreen {...PROPS} />);
+    expect(await screen.findByText("Acme")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "New" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Edit Acme" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Delete Acme" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "View Acme" })).toBeInTheDocument();
+  });
+
   it("renders a New link to the create path and an Edit link per row", async () => {
     mockApi();
     render(<CrudListScreen {...PROPS} />);

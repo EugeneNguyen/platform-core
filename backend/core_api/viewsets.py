@@ -13,7 +13,7 @@ been sideloaded (named in `?include[]=`) - without this, sideloading a
 against a real dataset instead of a handful of local test rows.
 """
 
-from django.db import models
+from django.db import models, transaction
 from rest_framework import serializers as drf_serializers
 from rest_framework import status
 from rest_framework.decorators import action
@@ -21,6 +21,7 @@ from rest_framework.exceptions import NotFound, PermissionDenied, ValidationErro
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
+from core_api.access import CREATE, DELETE, UPDATE, AccessPolicyPermission, get_access_policy
 from core_api.filters import DynamicFilterBackend, QParamSearchFilter, SortParamOrderingFilter
 from core_api.pagination import EnvelopePageNumberPagination
 from core_api.registry import model_endpoint, model_viewset, register_model_viewset
@@ -150,17 +151,69 @@ def _scoped_queryset(model, request):
         return None
     view = viewset_class(request=request, args=(), kwargs={}, format_kwarg=None, action="list")
     view.check_permissions(request)
-    return view.get_queryset()
+    queryset = view.get_queryset()
+    policy = get_access_policy()
+    return policy.filter_queryset(request, view, queryset) if policy else queryset
 
 
 class BaseViewSet(ModelViewSet):
     pagination_class = EnvelopePageNumberPagination
     filter_backends = [DynamicFilterBackend, SortParamOrderingFilter, QParamSearchFilter]
+    #: Where a row's access scope lives, as a Django lookup path from this
+    #: resource's model (e.g. `"org_id"` on a goal, `"goal__org_id"` on a
+    #: metric; `"id"` on the scope model itself). Read only by the
+    #: configured access policy (see core_api/access.py) - e.g. RBAC grants
+    #: a role within one scope. `None`: rows are unscoped.
+    scope_field: str | None = None
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
         queryset = cls.__dict__.get("queryset")
         if queryset is not None:
             register_model_viewset(queryset.model, cls)
+
+    def get_permissions(self):
+        # The access policy (core_api/access.py) runs on top of the
+        # viewset's own permission classes, never instead of them.
+        permissions = super().get_permissions()
+        if get_access_policy() is not None:
+            permissions.append(AccessPolicyPermission())
+        return permissions
+
+    def filter_queryset(self, queryset):
+        queryset = super().filter_queryset(queryset)
+        policy = get_access_policy()
+        return policy.filter_queryset(self.request, self, queryset) if policy else queryset
+
+    def create(self, request, *args, **kwargs):
+        # DRF's own `create`, plus the saved row checked against the
+        # access policy inside the same transaction - a row created in a
+        # scope the caller has no `create` right in is rolled back.
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        with transaction.atomic():
+            self.perform_create(serializer)
+            self._check_saved(serializer.instance)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    def update(self, request, *args, **kwargs):
+        # DRF's own `update`; the row was checked before (`get_object`),
+        # and is again after saving, so it can't be MOVED into a scope the
+        # caller has no `update` right in either.
+        partial = kwargs.pop("partial", False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        with transaction.atomic():
+            self.perform_update(serializer)
+            self._check_saved(serializer.instance)
+        if getattr(instance, "_prefetched_objects_cache", None):
+            instance._prefetched_objects_cache = {}
+        return Response(serializer.data)
+
+    def _check_saved(self, instance):
+        if get_access_policy() is not None and instance is not None:
+            self.check_object_permissions(self.request, instance)
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -230,6 +283,7 @@ class BaseViewSet(ModelViewSet):
                 "label_plural": str(model._meta.verbose_name_plural),
                 "display_field": _display_field(serializer, fields, model),
                 "searchable": bool(getattr(self, "search_fields", None)),
+                "can": self._capabilities(request),
                 "fields": [
                     _describe_field(
                         name,
@@ -242,6 +296,18 @@ class BaseViewSet(ModelViewSet):
                 ],
             }
         )
+
+    def _capabilities(self, request) -> dict:
+        """What the caller can do here: the viewset serves the method AND
+        the access policy allows the verb somewhere - so a UI shows only
+        actions that can succeed (the API still checks each one)."""
+        policy = get_access_policy()
+        methods = {"create": "post", "update": "patch", "delete": "delete"}
+        verbs = {"create": CREATE, "update": UPDATE, "delete": DELETE}
+        return {
+            name: method in self.http_method_names and (policy is None or policy.allows(request, self, verbs[name]))
+            for name, method in methods.items()
+        }
 
     def _m2m_relation(self, relation_name):
         model = self.get_serializer_class().Meta.model

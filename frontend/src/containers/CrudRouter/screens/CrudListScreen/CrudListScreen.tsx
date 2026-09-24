@@ -4,12 +4,12 @@ import type { LinkComponent } from "../../../../components";
 import { ColumnPicker, DataTable, useDataTable } from "../../../DataTable";
 import type { DataTableColumn } from "../../../DataTable";
 import { createBaseApi } from "../../lib/baseApi";
-import type { BaseApi } from "../../lib/baseApi";
+import type { BaseApi, BaseApiRequest } from "../../lib/baseApi";
 import { createCrudPaths } from "../../lib/paths";
-import { rowLabel } from "../../lib/relationOptions";
+import { rowLabel, useRelatedDisplayFields } from "../../lib/relationOptions";
 import { createRequest } from "../../lib/request";
-import type { Schema } from "../../lib/schema";
-import { createSchemaColumns } from "../../lib/schemaColumns";
+import { canDo, type Schema } from "../../lib/schema";
+import { createSchemaColumns, toOneRelationFields, withRelationIncludes } from "../../lib/schemaColumns";
 
 export interface CrudListScreenProps<T> {
   /** The resource's own base URL, e.g. `"/api/v1/goals"` - the only resource-shaped input this screen needs; `createBaseApi`/`createRequest` (see their own docstrings) build the actual client internally from this plus `accessToken`. */
@@ -53,7 +53,8 @@ export interface CrudListScreenProps<T> {
  * and a token, not a pre-built client object.
  */
 function CrudListScreen<T>({ baseUrl, accessToken, basePath, linkComponent, searchable, onDeleted }: CrudListScreenProps<T>) {
-  const baseApi = useMemo(() => createBaseApi<T>(baseUrl, createRequest(accessToken)), [baseUrl, accessToken]);
+  const request = useMemo(() => createRequest(accessToken), [accessToken]);
+  const baseApi = useMemo(() => createBaseApi<T>(baseUrl, request), [baseUrl, request]);
   const [schema, setSchema] = useState<Schema | null>(null);
   const [error, setError] = useState<Error | null>(null);
 
@@ -90,6 +91,7 @@ function CrudListScreen<T>({ baseUrl, accessToken, basePath, linkComponent, sear
   return (
     <CrudListScreenTable
       baseApi={baseApi}
+      request={request}
       schema={schema}
       basePath={basePath}
       linkComponent={linkComponent}
@@ -101,6 +103,8 @@ function CrudListScreen<T>({ baseUrl, accessToken, basePath, linkComponent, sear
 
 interface CrudListScreenTableProps<T> extends Omit<CrudListScreenProps<T>, "baseUrl" | "accessToken"> {
   baseApi: BaseApi<T>;
+  /** For the related schemas that label to-one relation cells (`useRelatedDisplayFields`). */
+  request: BaseApiRequest;
   schema: Schema;
 }
 
@@ -134,6 +138,10 @@ interface CrudListScreenTableProps<T> extends Omit<CrudListScreenProps<T>, "base
  * instances. After a delete, `table.refetch()` gets the list back in
  * sync with the server.
  *
+ * To-one relation columns show the related row's name, not its id: the
+ * list is fetched with `?include[]=` for them (`withRelationIncludes`),
+ * and each related schema's `display_field` picks the label.
+ *
  * Every DATA cell in the row opens the detail screen, not just the "View"
  * link - each gets its own invisible `.stretched-link` decoy anchor
  * (`tabIndex={-1}`/`aria-hidden`, no visible content, no `.btn` or any
@@ -159,14 +167,16 @@ interface CrudListScreenTableProps<T> extends Omit<CrudListScreenProps<T>, "base
  * mostly-full-of-controls cell, so losing "click blank space here too"
  * costs little, in exchange for Delete definitely still working.
  */
-function CrudListScreenTable<T>({ baseApi, schema, basePath, linkComponent, searchable, onDeleted }: CrudListScreenTableProps<T>) {
+function CrudListScreenTable<T>({ baseApi, request, schema, basePath, linkComponent, searchable, onDeleted }: CrudListScreenTableProps<T>) {
   const Link = linkComponent ?? DefaultLink;
   const resource = baseApi.endpoint.split("/").filter(Boolean).pop() ?? baseApi.endpoint;
   const paths = createCrudPaths(basePath ?? resource);
   const rowKey = (row: T) => (row as { id: string | number }).id;
   const [deletingId, setDeletingId] = useState<string | number | null>(null);
 
-  const schemaColumns = useMemo(() => createSchemaColumns<T>(schema), [schema]);
+  const relationFields = useMemo(() => toOneRelationFields(schema), [schema]);
+  const displayFields = useRelatedDisplayFields(relationFields, request);
+  const schemaColumns = useMemo(() => createSchemaColumns<T>(schema, displayFields), [schema, displayFields]);
 
   async function handleDelete(row: T) {
     if (!window.confirm("Delete this item?")) return;
@@ -208,20 +218,24 @@ function CrudListScreenTable<T>({ baseApi, schema, basePath, linkComponent, sear
             <Link to={paths.detailPath(id)} className="btn btn-ghost-secondary btn-icon btn-sm" aria-label={`View ${name}`}>
               <Icon name="eye" />
             </Link>
-            <Link to={paths.editPath(id)} className="btn btn-ghost-secondary btn-icon btn-sm" aria-label={`Edit ${name}`}>
-              <Icon name="pencil" />
-            </Link>
-            <Button
-              type="button"
-              icon
-              className="btn-ghost-danger"
-              aria-label={`Delete ${name}`}
-              title="Delete"
-              disabled={deletingId === id}
-              onClick={() => handleDelete(row)}
-            >
-              <Icon name="trash" />
-            </Button>
+            {canDo(schema, "update") && (
+              <Link to={paths.editPath(id)} className="btn btn-ghost-secondary btn-icon btn-sm" aria-label={`Edit ${name}`}>
+                <Icon name="pencil" />
+              </Link>
+            )}
+            {canDo(schema, "delete") && (
+              <Button
+                type="button"
+                icon
+                className="btn-ghost-danger"
+                aria-label={`Delete ${name}`}
+                title="Delete"
+                disabled={deletingId === id}
+                onClick={() => handleDelete(row)}
+              >
+                <Icon name="trash" />
+              </Button>
+            )}
           </div>
         );
       },
@@ -230,15 +244,17 @@ function CrudListScreenTable<T>({ baseApi, schema, basePath, linkComponent, sear
 
   // Only where `?q=` actually searches something (the schema says so).
   const showSearch = searchable !== false && Boolean(schema.searchable);
-  const table = useDataTable({ endpoint: baseApi.endpoint, columns, rowKey, fetcher: baseApi.list, searchable: showSearch });
+  const table = useDataTable({ endpoint: withRelationIncludes(baseApi.endpoint, schema), columns, rowKey, fetcher: baseApi.list, searchable: showSearch });
 
   return (
     <Card>
       <CardHeader className="d-flex align-items-center gap-2">
-        <Link to={paths.createPath} className="btn btn-primary btn-sm">
-          <Icon name="plus" />
-          New{schema.label ? ` ${schema.label}` : ""}
-        </Link>
+        {canDo(schema, "create") && (
+          <Link to={paths.createPath} className="btn btn-primary btn-sm">
+            <Icon name="plus" />
+            New{schema.label ? ` ${schema.label}` : ""}
+          </Link>
+        )}
         <div className="d-flex align-items-center gap-2 ms-auto">
           {showSearch && (
             <FormControl

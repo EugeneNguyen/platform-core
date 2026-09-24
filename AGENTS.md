@@ -173,6 +173,16 @@ are passed in) — same conventions as this platform's other module
 frontends. See `apps/main/frontend/app/routes/app-shell.tsx` for the
 reference consumer.
 
+**Collapsible groups**: a `navItems` entry with `children` (`NavGroup`)
+renders as `SidebarNavGroup` - Tabler's own sidebar dropdown markup
+(`.nav-item.dropdown` > `.dropdown-toggle` + `.dropdown-menu`), opened
+by React state, not Bootstrap's dropdown JS. Expanded sidebar: toggles
+inline, and closed groups are remembered per browser
+(`platform-core:sidebar-closed-groups`, labels; read after mount like the
+fold, `platform-core:sidebar-folded`). Folded rail: Tabler's flyout on
+hover/focus only, never remembered - a flyout left open would cover the
+page. A group's label is its storage key, so renaming one reopens it.
+
 **`Header` must never carry a `navbar-expand-*` class** — Tabler's CSS
 treats any `.page` child matching `[class*=navbar-expand]` that isn't
 `.navbar-vertical` as "the other navigation" and hides one of the two
@@ -773,9 +783,12 @@ exists (see the "`BaseSerializer`/`BaseViewSet`" section below) at, say,
 That's the whole thing - list/create/edit, schema-derived columns and
 form fields, search/sort/pagination, delete-with-confirm, all working,
 zero per-resource UI code beyond the two one-liner files in step 2.
-Known gaps to expect (not bugs, see this section's own "Known gaps"
-paragraph above): a relation field shows/accepts a bare id, not a
-looked-up label; no date/datetime input type yet.
+A to-one relation column shows the related row's `display_field`, not
+its id: list tables (`CrudListScreen` and a detail page's relation tabs)
+fetch with `?include[]=<to-one relations>` (`withRelationIncludes`), so
+each such relation arrives as its nested row, and label it with the
+related schema's `display_field` (`useRelatedDisplayFields`). A plain
+uuid column with no model relation (e.g. `org_id`) still shows the id.
 
 ### Relationships - detail screen, 1-n CRUD, n-n link
 
@@ -940,6 +953,28 @@ then 500'd on `ImportError` INSIDE DRF's own exception handling, instead
 of returning the error it was actually trying to report. Grep every
 `settings.py` across the platform for `EXCEPTION_HANDLER` after touching
 this file's exception handler name.
+
+## Access policy (`core_api/access.py`) - authorization hook
+
+`CORE_API_ACCESS_POLICY` (a dotted path, optional) names a class every
+`BaseViewSet` consults on top of its own `permission_classes` and
+`get_queryset()` scoping: `has_permission`, `has_object_permission`,
+`filter_queryset`, `allows`. Unset = no change. Core knows no roles - an
+authorization module implements it (platform-auth's RBAC; any project can
+plug its own). What core guarantees, so a policy doesn't have to:
+- the policy's filter runs for list and for every row lookup, and for
+  the rows a many-to-many link may reach (`_scoped_queryset`);
+- create/update re-check the SAVED row inside a transaction, rolled back
+  on denial (`BaseViewSet.create`/`update` reimplement DRF's to do this -
+  keep that in mind before overriding them);
+- `scope_field` on a viewset (lookup path, e.g. `"goal__org_id"`) tells a
+  policy where a row's scope lives; `resource_key(view)`/
+  `action_verb(view)`/`scope_of(obj, path)` are the shared helpers.
+The schema reports `can: {create, update, delete}` (method served AND
+`policy.allows`); the generic screens (`canDo(schema, ...)`) and
+platform-mcp's tool list hide what the caller can't use. The API still
+enforces every call. Tests: `tests/test_access.py` (a header-driven
+policy).
 
 ## MCP server - moved to platform-mcp
 

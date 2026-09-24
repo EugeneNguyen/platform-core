@@ -4,6 +4,22 @@ export interface NavItem {
   label: string;
   to: string;
   icon?: ReactNode;
+  /** The permission codename needed to open it (e.g. `"orgs.view"`) - metadata for the HOST to filter on (e.g. platform-auth's `filterNavByPermissions`); AppShell itself renders every item it's given. */
+  permission?: string;
+}
+
+/** A collapsible sidebar group - a heading (label + icon) over its own links. Its open/closed state is remembered per browser, keyed by `label`. */
+export interface NavGroup {
+  label: string;
+  icon?: ReactNode;
+  children: NavItem[];
+}
+
+/** One sidebar entry: a link, or a collapsible group of links. */
+export type NavEntry = NavItem | NavGroup;
+
+export function isNavGroup(entry: NavEntry): entry is NavGroup {
+  return "children" in entry;
 }
 
 export interface AppShellUser {

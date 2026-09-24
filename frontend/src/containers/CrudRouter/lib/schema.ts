@@ -47,6 +47,17 @@ export interface SchemaField {
   through_fields?: SchemaField[];
 }
 
+export interface SchemaCapabilities {
+  create: boolean;
+  update: boolean;
+  delete: boolean;
+}
+
+/** `schema.can[action]`, defaulting to allowed for a server that doesn't report it. The API enforces regardless - this only hides what would fail. */
+export function canDo(schema: Pick<Schema, "can">, action: keyof SchemaCapabilities): boolean {
+  return schema.can?.[action] ?? true;
+}
+
 export type RelationKind = "one_to_many" | "many_to_many";
 
 export interface Schema {
@@ -58,5 +69,7 @@ export interface Schema {
   display_field?: string;
   /** Whether `?q=` searches anything on this resource (its viewset has `search_fields`); a UI hides its search box otherwise. */
   searchable?: boolean;
+  /** What the caller may do here - the viewset serves it AND the host's access policy (e.g. RBAC) allows it somewhere. A UI hides the rest; absent = everything (see `canDo`). */
+  can?: SchemaCapabilities;
   fields: SchemaField[];
 }

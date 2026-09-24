@@ -33,3 +33,10 @@ def register_model_viewset(model: type, viewset_class: type) -> None:
 
 def model_viewset(model: type) -> type | None:
     return _viewsets.get(model)
+
+
+def registered_endpoints() -> dict[type, str]:
+    """Every registered model -> endpoint (a copy) - e.g. for an access
+    policy to build its permission catalog. Filled as each app's urls.py
+    is imported, so load the URLconf first."""
+    return dict(_registry)

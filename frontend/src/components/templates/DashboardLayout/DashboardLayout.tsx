@@ -1,10 +1,11 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import Header from "../../organisms/Header";
 import Sidebar from "../../organisms/Sidebar";
-import { DefaultLink, type AppShellUser, type LinkComponent, type NavItem } from "../../types";
+import { DefaultLink, type AppShellUser, type LinkComponent, type NavEntry } from "../../types";
 
 export interface DashboardLayoutProps {
-  navItems: NavItem[];
+  /** Links and collapsible groups (an entry with `children` - `NavGroup`); a group's open/closed state is remembered per browser. */
+  navItems: NavEntry[];
   currentPath: string;
   linkComponent?: LinkComponent;
   brand?: ReactNode;
@@ -23,6 +24,34 @@ export interface DashboardLayoutProps {
 }
 
 const FOLDED_KEY = "platform-core:sidebar-folded";
+const CLOSED_GROUPS_KEY = "platform-core:sidebar-closed-groups";
+
+/** Which sidebar groups the viewer closed (by label) - remembered the same way as the fold (see `useSidebarFolded`). Groups start open. */
+function useClosedGroups() {
+  const [closed, setClosed] = useState<ReadonlySet<string>>(() => new Set());
+  useEffect(() => {
+    try {
+      const stored = JSON.parse(window.localStorage.getItem(CLOSED_GROUPS_KEY) ?? "[]");
+      if (Array.isArray(stored)) setClosed(new Set(stored.filter((value) => typeof value === "string")));
+    } catch {
+      // unavailable or malformed - all open
+    }
+  }, []);
+  function toggle(label: string) {
+    setClosed((prev) => {
+      const next = new Set(prev);
+      if (next.has(label)) next.delete(label);
+      else next.add(label);
+      try {
+        window.localStorage.setItem(CLOSED_GROUPS_KEY, JSON.stringify([...next]));
+      } catch {
+        // unavailable - still toggles for this page view
+      }
+      return next;
+    });
+  }
+  return [closed, toggle] as const;
+}
 
 /**
  * Remembered per browser (localStorage - a per-viewer convenience, fine to
@@ -80,6 +109,7 @@ function DashboardLayout({
   children,
 }: DashboardLayoutProps) {
   const [folded, toggleFolded] = useSidebarFolded(defaultSidebarFolded);
+  const [closedGroups, toggleGroup] = useClosedGroups();
   return (
     <div className="page" style={{ "--tblr-sidebar-width": sidebarWidth } as CSSProperties}>
       <Sidebar
@@ -88,6 +118,8 @@ function DashboardLayout({
         currentPath={currentPath}
         linkComponent={linkComponent}
         folded={folded}
+        closedGroups={closedGroups}
+        onToggleGroup={toggleGroup}
       />
       <Header user={user} onLogout={onLogout} onToggleSidebar={toggleFolded} sidebarFolded={folded} />
       <div className="page-wrapper">

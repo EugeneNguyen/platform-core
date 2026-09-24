@@ -36,6 +36,9 @@ class OwnedViewSet(BaseViewSet):
 class ShelfViewSet(OwnedViewSet):
     queryset = Shelf.objects.all()
     serializer_class = ShelfSerializer
+    # Only read by an access policy (tests/test_access.py) - a plain
+    # field stands in for a real scope like an org id.
+    scope_field = "name"
 
 
 class TagViewSet(OwnedViewSet):

@@ -36,6 +36,8 @@ export { default as FormCheck } from "./molecules/FormCheck";
 export type { FormCheckProps } from "./molecules/FormCheck";
 
 export { default as SidebarNavItem } from "./molecules/SidebarNavItem";
+export { default as SidebarNavGroup } from "./molecules/SidebarNavGroup";
+export type { SidebarNavGroupProps } from "./molecules/SidebarNavGroup";
 export type { SidebarNavItemProps } from "./molecules/SidebarNavItem";
 
 export { default as UserSummary } from "./molecules/UserSummary";
@@ -69,4 +71,5 @@ export { default as AppShell } from "./templates/DashboardLayout";
 export type { DashboardLayoutProps as AppShellProps } from "./templates/DashboardLayout";
 
 export { DefaultLink } from "./types";
-export type { AppShellUser, LinkComponent, LinkComponentProps, NavItem } from "./types";
+export type { AppShellUser, LinkComponent, LinkComponentProps, NavEntry, NavGroup, NavItem } from "./types";
+export { isNavGroup } from "./types";

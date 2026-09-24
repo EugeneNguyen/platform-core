@@ -57,6 +57,28 @@ describe("DashboardLayout", () => {
       fireEvent.click(screen.getByRole("button", { name: "Expand sidebar" }));
       expect(document.querySelector("aside")).not.toHaveClass("navbar-folded");
     });
+
+    it("collapses a nav group and remembers it", () => {
+      const nav = [{ label: "Access", children: [{ label: "Users", to: "/users" }] }];
+      const { unmount } = render(
+        <DashboardLayout navItems={nav} currentPath="/">
+          <div />
+        </DashboardLayout>,
+      );
+      const toggle = screen.getByRole("button", { name: "Access" });
+      expect(toggle).toHaveAttribute("aria-expanded", "true");
+      fireEvent.click(toggle);
+      expect(toggle).toHaveAttribute("aria-expanded", "false");
+      expect(window.localStorage.getItem("platform-core:sidebar-closed-groups")).toBe('["Access"]');
+      unmount();
+
+      render(
+        <DashboardLayout navItems={nav} currentPath="/">
+          <div />
+        </DashboardLayout>,
+      );
+      expect(screen.getByRole("button", { name: "Access" })).toHaveAttribute("aria-expanded", "false");
+    });
   });
 
   it("narrows the sidebar through Tabler's width variable", () => {
