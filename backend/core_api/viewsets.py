@@ -156,6 +156,21 @@ def _scoped_queryset(model, request):
     return policy.filter_queryset(request, view, queryset) if policy else queryset
 
 
+def visible_rows(endpoint: str, request):
+    """The rows at `endpoint` (e.g. `"/api/v1/orgs"`) this request could
+    list there - for a module that must scope by another module's rows
+    without importing its models (goalnexa shares an org's goals with the
+    org's members). `None` when no `BaseViewSet` serves that endpoint in
+    this host; an empty queryset when the caller may not list it at all."""
+    model = endpoint_model(endpoint)
+    if model is None:
+        return None
+    try:
+        return _scoped_queryset(model, request)
+    except PermissionDenied:
+        return model.objects.none()
+
+
 class BaseViewSet(ModelViewSet):
     pagination_class = EnvelopePageNumberPagination
     filter_backends = [DynamicFilterBackend, SortParamOrderingFilter, QParamSearchFilter]

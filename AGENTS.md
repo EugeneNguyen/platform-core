@@ -974,6 +974,10 @@ plug its own). What core guarantees, so a policy doesn't have to:
   `Meta.unchecked_related_endpoints` when access to it is decided
   elsewhere (RBAC's `scope_id`). Endpoints no `BaseViewSet` serves in
   this host aren't checked;
+- `visible_rows(endpoint, request)` (`core_api.viewsets`) is the same
+  "rows the caller could list there" queryset, public - for a module that
+  scopes by another module's rows without importing its models (goalnexa
+  shares org goals with members through it);
 - `scope_field` on a viewset (lookup path, e.g. `"goal__org_id"`) tells a
   policy where a row's scope lives; `resource_key(view)`/
   `action_verb(view)`/`scope_of(obj, path)` are the shared helpers.
