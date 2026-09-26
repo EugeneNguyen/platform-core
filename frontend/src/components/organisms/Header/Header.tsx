@@ -1,9 +1,15 @@
-import UserSummary from "../../molecules/UserSummary";
-import type { AppShellUser } from "../../types";
+import UserMenu from "../../molecules/UserMenu";
+import type { AppShellUser, LinkComponent, UserMenuEntry } from "../../types";
 
 export interface HeaderProps {
   user?: AppShellUser | null;
   onLogout?: () => void;
+  /** The user dropdown's entries above "Log out" (see `UserMenuEntry`). */
+  userMenu?: UserMenuEntry[];
+  /** Called each time the user dropdown opens. */
+  onUserMenuOpen?: () => void;
+  /** Renders `userMenu` links. */
+  linkComponent?: LinkComponent;
   /** Renders the desktop-only (lg+) sidebar fold toggle at the header's start when given. */
   onToggleSidebar?: () => void;
   /** Current fold state - drives the toggle's label/`aria-expanded`. */
@@ -40,8 +46,11 @@ function SidebarIcon() {
  * `data-bs-navbar-position="vertical")` on `<html>` - and setting that
  * instead hides THIS header. Neither is what we want (both should always
  * show); dropping the class here sidesteps the toggle entirely.
+ *
+ * The user block is a dropdown (`UserMenu`): the host's `userMenu`
+ * entries, then "Log out". With no user, a bare "Log out" button.
  */
-function Header({ user, onLogout, onToggleSidebar, sidebarFolded = false }: HeaderProps) {
+function Header({ user, onLogout, userMenu, onUserMenuOpen, linkComponent, onToggleSidebar, sidebarFolded = false }: HeaderProps) {
   return (
     <header className="navbar d-print-none sticky-top bg-white">
       <div className="container-fluid">
@@ -58,8 +67,10 @@ function Header({ user, onLogout, onToggleSidebar, sidebarFolded = false }: Head
           </button>
         )}
         <div className="navbar-nav flex-row order-md-last align-items-center gap-3 ms-auto py-2">
-          {user && <UserSummary user={user} />}
-          {onLogout && (
+          {user && (
+            <UserMenu user={user} items={userMenu} onLogout={onLogout} onOpen={onUserMenuOpen} linkComponent={linkComponent} />
+          )}
+          {!user && onLogout && (
             <button type="button" className="btn btn-outline-secondary btn-sm" onClick={onLogout}>
               Log out
             </button>

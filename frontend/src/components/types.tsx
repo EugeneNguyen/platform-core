@@ -52,3 +52,16 @@ export function DefaultLink({ to, className, children, ...rest }: LinkComponentP
     </a>
   );
 }
+
+/**
+ * One entry in the header's user menu (AppShell's `userMenu`): a link
+ * (`to`, rendered with the host's `linkComponent`), a button (`onClick`),
+ * a section heading (`header`) or a divider. `active` marks the current
+ * choice (e.g. the selected organization) with a check. "Log out" is not
+ * an entry - it's always last, from `onLogout`.
+ */
+export type UserMenuEntry =
+  | { label: ReactNode; to: string; icon?: ReactNode; active?: boolean }
+  | { label: ReactNode; onClick: () => void; icon?: ReactNode; active?: boolean }
+  | { header: ReactNode }
+  | { divider: true };

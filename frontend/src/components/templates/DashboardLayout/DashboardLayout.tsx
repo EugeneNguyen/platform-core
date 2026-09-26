@@ -1,7 +1,7 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import Header from "../../organisms/Header";
 import Sidebar from "../../organisms/Sidebar";
-import { DefaultLink, type AppShellUser, type LinkComponent, type NavEntry } from "../../types";
+import { DefaultLink, type AppShellUser, type LinkComponent, type NavEntry, type UserMenuEntry } from "../../types";
 
 export interface DashboardLayoutProps {
   /** Links and collapsible groups (an entry with `children` - `NavGroup`); a group's open/closed state is remembered per browser. */
@@ -11,6 +11,10 @@ export interface DashboardLayoutProps {
   brand?: ReactNode;
   user?: AppShellUser | null;
   onLogout?: () => void;
+  /** The header's user dropdown entries, above "Log out" - e.g. switch organization, account links. */
+  userMenu?: UserMenuEntry[];
+  /** Called each time the user dropdown opens - e.g. to refresh a list it shows. */
+  onUserMenuOpen?: () => void;
   /** Whether the desktop sidebar starts folded to its icon rail, before any remembered choice is read. @default false */
   defaultSidebarFolded?: boolean;
   /**
@@ -104,6 +108,8 @@ function DashboardLayout({
   brand = "GoalNexa",
   user,
   onLogout,
+  userMenu,
+  onUserMenuOpen,
   defaultSidebarFolded = false,
   sidebarWidth = "13rem",
   children,
@@ -121,7 +127,15 @@ function DashboardLayout({
         closedGroups={closedGroups}
         onToggleGroup={toggleGroup}
       />
-      <Header user={user} onLogout={onLogout} onToggleSidebar={toggleFolded} sidebarFolded={folded} />
+      <Header
+        user={user}
+        onLogout={onLogout}
+        userMenu={userMenu}
+        onUserMenuOpen={onUserMenuOpen}
+        linkComponent={linkComponent}
+        onToggleSidebar={toggleFolded}
+        sidebarFolded={folded}
+      />
       <div className="page-wrapper">
         <main className="page-body">
           <div className="container-fluid">{children}</div>

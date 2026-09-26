@@ -43,6 +43,9 @@ export type { SidebarNavItemProps } from "./molecules/SidebarNavItem";
 export { default as UserSummary } from "./molecules/UserSummary";
 export type { UserSummaryProps } from "./molecules/UserSummary";
 
+export { default as UserMenu } from "./molecules/UserMenu";
+export type { UserMenuProps } from "./molecules/UserMenu";
+
 export * from "./organisms/Breadcrumb";
 
 export * from "./organisms/Card";
@@ -71,5 +74,5 @@ export { default as AppShell } from "./templates/DashboardLayout";
 export type { DashboardLayoutProps as AppShellProps } from "./templates/DashboardLayout";
 
 export { DefaultLink } from "./types";
-export type { AppShellUser, LinkComponent, LinkComponentProps, NavEntry, NavGroup, NavItem } from "./types";
+export type { AppShellUser, LinkComponent, LinkComponentProps, NavEntry, NavGroup, NavItem, UserMenuEntry } from "./types";
 export { isNavGroup } from "./types";
