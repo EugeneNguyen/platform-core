@@ -20,6 +20,9 @@ export type { BrandProps } from "./atoms/Brand";
 export { default as Button } from "./atoms/Button";
 export type { ButtonProps, ButtonSize, ButtonVariant } from "./atoms/Button";
 
+export { default as CopyButton } from "./atoms/CopyButton";
+export type { CopyButtonProps } from "./atoms/CopyButton";
+
 export { default as Checkbox } from "./atoms/Checkbox";
 export type { CheckboxProps } from "./atoms/Checkbox";
 
@@ -31,6 +34,9 @@ export type { FormLabelProps } from "./atoms/FormLabel";
 
 export { default as FormControl } from "./atoms/FormControl";
 export type { FormControlProps } from "./atoms/FormControl";
+
+export { default as CodeBlock } from "./molecules/CodeBlock";
+export type { CodeBlockProps } from "./molecules/CodeBlock";
 
 export { default as FormCheck } from "./molecules/FormCheck";
 export type { FormCheckProps } from "./molecules/FormCheck";
